@@ -25,7 +25,7 @@ class Simulation:
     brain_step_size: float = 0.1
     num_trials: int = 4
     trial_duration: int = 80    
-    target_env_width: float = 400 # environemnt width    
+    target_env_width: float = 200 # environemnt width    
     target_pos_noise: float = 20 # start/border noise
     num_cores: int = 1
     timeit: bool = False
