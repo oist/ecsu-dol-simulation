@@ -1,0 +1,5 @@
+# main
+python -m dol.main --dir ./data/tmp --cores 7 --seed 1 --num_neurons 2 --popsize 20 --num_gen 100 --trial_duration 100
+
+# run from data
+python -m dol.run_from_dir --dir ./data/tmp/2n/seed_001 --generation=100 --write_data --visualize_trial 1 --plot
