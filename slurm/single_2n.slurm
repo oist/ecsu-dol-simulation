@@ -22,7 +22,7 @@ mkdir ${tempdir}
 
 # Start 'myprog' with input from bucket,
 # and output to our temporary directory
-cd ~/Code/dol
+cd ~/Code/dol-simulation
 source .env/bin/activate
 
 # ruse
@@ -37,7 +37,7 @@ python -m dyadic_interaction.main \
 
 # copy our result back to Bucket. We use "scp" to copy the data 
 # back  as bucket isn't writable directly from the compute nodes.
-rsync -avq $tempdir/* deigo:/bucket/FroeseU/fede/dol
+rsync -avq $tempdir/* deigo:/bucket/FroeseU/fede/dol-simulation
 
 # Clean up by removing our temporary directory
 rm -r $tempdir
