@@ -26,7 +26,7 @@ cd ~/Code/dol-simulation
 source .env/bin/activate
 
 # ruse
-python -m dyadic_interaction.main \
+python -m dol.main \
 --dir $tempdir \
 --cores 120 \
 --seed ${seed} \
