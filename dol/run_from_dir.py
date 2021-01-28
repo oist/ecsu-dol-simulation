@@ -27,6 +27,11 @@ def run_simulation_from_dir(**kwargs):
     sim = Simulation.load_from_file(sim_json_filepath)
     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
 
+    random_target = kwargs.get('random_target', False)
+    if random_target:
+        print("Setting random target")
+        sim.init_random_target()
+
     data_record = {}
     genotype_idx_unsorted = evo.population_sorted_indexes[genotype_idx]
     random_seed = evo.pop_eval_random_seeds[genotype_idx_unsorted] 
@@ -66,6 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('--dir', type=str, help='Directory path')    
     parser.add_argument('--generation', type=int, help='Number of generation to load')
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')    
+    parser.add_argument('--random_target', action='store_true', help='Index of agent in population to load')    
     parser.add_argument('--write_data', action='store_true', help='Whether to output data (same directory as input)')
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')

@@ -10,9 +10,9 @@ from numpy.random import RandomState
 from joblib import Parallel, delayed
 from pyevolver.json_numpy import NumpyListJsonEncoder
 from pyevolver.timing import Timing
-from dol.target import compute_positions
 from dol.agent import Agent
 from dol.tracker import Tracker
+from dol.target import Target
 from dol import gen_structure
 from dol import utils
 # from dol.utils import assert_string_in_values
@@ -25,10 +25,15 @@ class Simulation:
     brain_step_size: float = 0.1
     num_trials: int = 6
     trial_duration: int = 80    
-    target_env_width: float = 400 # environemnt width    
-    target_pos_noise: float = 20 # start/border noise
     num_cores: int = 1
     timeit: bool = False
+
+    target_env_width = 400
+    target_trial_vel: list = field(default_factory=lambda:[2, -1, -2, 1, -3, 3])
+    target_trial_start_pos: list = field(default_factory=lambda:[-10, 0, 20, -20, 10, 0])
+    target_trial_delta_bnd: list = field(default_factory=lambda:[0, 20, 10, 20, 0, 10])
+    target_random_pos_max_value: float = None # upper bnd of start self.pos and delta bnd
+    target_random_vel_max_value: float = None # upper bnd of start self.pos and delta bnd
 
     def __post_init__(self):          
 
@@ -46,12 +51,33 @@ class Simulation:
 
         self.tracker = Tracker()
 
+        self.init_target()
+
         self.timing = Timing(self.timeit)        
 
         self.__check_params__()
 
     def __check_params__(self):
         pass
+
+    def init_target(self):
+        self.target = Target(
+            num_data_points = self.num_data_points,
+            env_width = self.target_env_width,
+            trial_vel = self.target_trial_vel,
+            trial_start_pos = self.target_trial_start_pos,
+            trial_delta_bnd = self.target_trial_delta_bnd,
+            random_pos_max_value = self.target_random_pos_max_value,
+            random_vel_max_value = self.target_random_vel_max_value
+        )
+
+    def init_random_target(self, pos_max_value=20, vel_max_value=3):
+        self.target_trial_vel = None
+        self.target_trial_start_pos = None
+        self.target_trial_delta_bnd = None
+        self.target_random_pos_max_value = pos_max_value
+        self.target_random_vel_max_value = vel_max_value
+        self.init_target()
 
     def save_to_file(self, file_path):
         with open(file_path, 'w') as f_out:
@@ -155,12 +181,9 @@ class Simulation:
         self.tracker_signals_strength = np.zeros(2) # init signal strength 
 
         # initi all positions and velocities of target
-        self.target_positions = compute_positions(
-            env_width=self.target_env_width, 
-            pos_noise=self.target_pos_noise, 
-            num_data_points=self.num_data_points, 
-            random_state=self.random_state,
-            trial = t
+        self.target_positions = self.target.compute_positions(            
+            trial = t,
+            rs = self.random_state
         )
         
         # init data of trial
