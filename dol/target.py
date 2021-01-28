@@ -18,10 +18,11 @@ def compute_positions(env_width, pos_noise,
     
     half_env_width = env_width/2
     positions = np.zeros(num_data_points)
-    if pos_noise == 0:
-        pos = 0
-    else:
-        pos = random_state.randint(-pos_noise, pos_noise)
+    pos = 0
+    # if pos_noise == 0:
+    #     pos = 0
+    # else:
+    #     pos = random_state.randint(-pos_noise, pos_noise)
     # random between ±(1,3)
     # vel = 1. * (1. + 2. * random_state.random()) * random_state.choice([-1,1])
     # vel = 1. if trial%2 == 0 else -1

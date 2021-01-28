@@ -26,7 +26,7 @@ class Simulation:
     num_trials: int = 6
     trial_duration: int = 80    
     target_env_width: float = 400 # environemnt width    
-    target_pos_noise: float = 0 # start/border noise
+    target_pos_noise: float = 20 # start/border noise
     num_cores: int = 1
     timeit: bool = False
 
