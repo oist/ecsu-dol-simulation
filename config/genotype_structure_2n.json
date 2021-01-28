@@ -28,7 +28,7 @@
     },
     "motor_gains": {
         "indexes": [12],
-        "range": [1, 5]
+        "range": [1, 20]
     },
     "motor_biases": {
         "indexes": [13],

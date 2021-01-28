@@ -4,12 +4,28 @@ TODO: Missing module docstring
 
 import numpy as np
 
-def compute_positions(env_width, pos_noise, num_data_points, random_state):
+trial_vel = {
+    0: 2,
+    1: -1,
+    2: -2,
+    3: 1,
+    4: -3,
+    5: 3,
+}
+
+def compute_positions(env_width, pos_noise, 
+    num_data_points, random_state, trial):
+    
     half_env_width = env_width/2
     positions = np.zeros(num_data_points)
-    pos = random_state.randint(-pos_noise, pos_noise)
+    if pos_noise == 0:
+        pos = 0
+    else:
+        pos = random_state.randint(-pos_noise, pos_noise)
     # random between ±(1,3)
-    vel = (1. + 2. * random_state.random()) * random_state.choice([-1,1])
+    # vel = 1. * (1. + 2. * random_state.random()) * random_state.choice([-1,1])
+    # vel = 1. if trial%2 == 0 else -1
+    vel = trial_vel[trial]
     # print("velocity", vel)
     positions[0] = pos        
     next_boundary_pos = lambda : np.sign(vel) * (half_env_width - random_state.random()*pos_noise)
@@ -50,7 +66,7 @@ def compute_positions_constant(env_width, num_data_points):
 if __name__ == "__main__":
     positions = compute_positions(
         env_width=100, 
-        pos_noise=20, 
+        pos_noise=0, 
         num_data_points=500, 
         random_state=np.random.RandomState(0)
     )

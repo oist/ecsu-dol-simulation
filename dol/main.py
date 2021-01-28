@@ -23,9 +23,9 @@ if __name__ == "__main__":
     parser.add_argument('--dir', type=str, default=None, help='Output directory')
     parser.add_argument('--cores', type=int, default=4, help='Number of cores')        
     parser.add_argument('--num_neurons', type=int, default=2, help='Number of neurons in agent')    
-    parser.add_argument('--popsize', type=int, default=96, help='Population size')    
-    parser.add_argument('--num_gen', type=int, default=500, help='Number of generations')    
-    parser.add_argument('--trial_duration', type=int, default=200, help='Trial duration')    
+    parser.add_argument('--popsize', type=int, default=100, help='Population size')    
+    parser.add_argument('--num_gen', type=int, default=300, help='Number of generations')    
+    parser.add_argument('--trial_duration', type=int, default=50, help='Trial duration')    
     parser.add_argument('--perf_obj', default='MAX', help='Performance objective') # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
 
     args = parser.parse_args()
@@ -65,20 +65,20 @@ if __name__ == "__main__":
         genotype_size=genotype_size, 
         evaluation_function=sim.evaluate,
         performance_objective=args.perf_obj,
-        fitness_normalization_mode='NONE', # 'NONE', FPS', 'RANK', 'SIGMA' -> NO NORMALIZATION
-        selection_mode='UNIFORM', # 'UNIFORM', 'RWS', 'SUS'
-        reproduce_from_elite=True,
+        fitness_normalization_mode='FPS', # 'NONE', 'FPS', 'RANK', 'SIGMA' -> NO NORMALIZATION
+        selection_mode='RWS', # 'UNIFORM', 'RWS', 'SUS'
+        reproduce_from_elite=False,
         reproduction_mode='GENETIC_ALGORITHM',  # 'HILL_CLIMBING',  'GENETIC_ALGORITHM'
-        mutation_variance=0.1, # mutation noice with variance 0.1
-        elitist_fraction=0.04, # elite fraction of the top 4% solutions
-        mating_fraction=0.96, # the remaining mating fraction
+        mutation_variance=0.05, # mutation noice with variance 0.1
+        elitist_fraction=0.05, # elite fraction of the top 4% solutions
+        mating_fraction=0.95, # the remaining mating fraction
         crossover_probability=0.1,
         crossover_mode='UNIFORM',
         crossover_points= None, #genotype_structure['crossover_points'],
         folder_path=outdir,
         max_generation=args.num_gen,
         termination_function=None,
-        checkpoint_interval=np.ceil(args.num_gen/100),
+        checkpoint_interval=np.ceil(args.num_gen/10),
     )
     evo.run()
 

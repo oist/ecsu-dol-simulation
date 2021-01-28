@@ -23,10 +23,10 @@ class Simulation:
     num_agents: int = 1 # 1 or 2 (2 agents controlling the wheels)
     num_brain_neurons: int = None  # initialized in __post_init__
     brain_step_size: float = 0.1
-    num_trials: int = 4
+    num_trials: int = 6
     trial_duration: int = 80    
-    target_env_width: float = 200 # environemnt width    
-    target_pos_noise: float = 20 # start/border noise
+    target_env_width: float = 400 # environemnt width    
+    target_pos_noise: float = 0 # start/border noise
     num_cores: int = 1
     timeit: bool = False
 
@@ -159,7 +159,8 @@ class Simulation:
             env_width=self.target_env_width, 
             pos_noise=self.target_pos_noise, 
             num_data_points=self.num_data_points, 
-            random_state=self.random_state
+            random_state=self.random_state,
+            trial = t
         )
         
         # init data of trial

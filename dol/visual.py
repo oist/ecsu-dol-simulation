@@ -12,7 +12,7 @@ from pyevolver.evolution import Evolution
 
 CANVAS_WIDTH = 800
 CANVAS_HIGHT = 300
-ZOOM_FACTOR = 3
+ZOOM_FACTOR = 2
 REFRESH_RATE = 50
 
 CANVAS_H_CENTER = CANVAS_WIDTH/2
