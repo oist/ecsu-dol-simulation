@@ -3,7 +3,7 @@ TODO: Missing module docstring
 """
 
 import os
-import numpy as np
+from numpy.random import RandomState
 from dol.simulation import Simulation
 from dol import utils
 
@@ -27,21 +27,22 @@ def run_simulation_from_dir(**kwargs):
     sim = Simulation.load_from_file(sim_json_filepath)
     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
 
-    random_target = kwargs.get('random_target', False)
-    if random_target:
+    random_target_seed = kwargs['random_target_seed']
+    if random_target_seed is not None:
         print("Setting random target")
-        sim.init_random_target()
+        sim.init_target(RandomState(random_target_seed))
 
     data_record = {}
+    # get the indexes of the populations as they were before being sorted by performance
     genotype_idx_unsorted = evo.population_sorted_indexes[genotype_idx]
-    random_seed = evo.pop_eval_random_seeds[genotype_idx_unsorted] 
-
+    random_seed = evo.pop_eval_random_seed
+    
     performance = sim.run_simulation(
         evo.population_unsorted, 
         genotype_idx_unsorted, 
-        random_seed, 
         data_record
     )
+
     print("Performace recomputed: {}".format(performance))
 
     if write_data:        
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     parser.add_argument('--dir', type=str, help='Directory path')    
     parser.add_argument('--generation', type=int, help='Number of generation to load')
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')    
-    parser.add_argument('--random_target', action='store_true', help='Index of agent in population to load')    
+    parser.add_argument('--random_target_seed', type=int, help='Index of agent in population to load')    
     parser.add_argument('--write_data', action='store_true', help='Whether to output data (same directory as input)')
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')

@@ -7,7 +7,6 @@ from typing import Dict, Tuple, List
 import json
 import numpy as np
 from numpy.random import RandomState
-from joblib import Parallel, delayed
 from pyevolver.json_numpy import NumpyListJsonEncoder
 from pyevolver.timing import Timing
 from dol.agent import Agent
@@ -20,22 +19,19 @@ from dol import utils
 @dataclass
 class Simulation:        
     genotype_structure: Dict = field(default_factory=lambda:gen_structure.DEFAULT_GEN_STRUCTURE(2))
+    env_width = 400
     num_agents: int = 1 # 1 or 2 (2 agents controlling the wheels)
     num_brain_neurons: int = None  # initialized in __post_init__
     brain_step_size: float = 0.1
-    num_trials: int = 6
-    trial_duration: int = 80    
+    num_trials: int = 4
+    trial_duration: int = 50    
     num_cores: int = 1
-    timeit: bool = False
+    random_seed: int = 0
+    timeit: bool = False    
 
-    target_env_width = 400
-    target_trial_vel: list = field(default_factory=lambda:[2, -1, -2, 1, -3, 3])
-    target_trial_start_pos: list = field(default_factory=lambda:[-10, 0, 20, -20, 10, 0])
-    target_trial_delta_bnd: list = field(default_factory=lambda:[0, 20, 10, 20, 0, 10])
-    target_random_pos_max_value: float = None # upper bnd of start self.pos and delta bnd
-    target_random_vel_max_value: float = None # upper bnd of start self.pos and delta bnd
+    def __post_init__(self):    
 
-    def __post_init__(self):          
+        self.__check_params__()      
 
         self.num_brain_neurons = gen_structure.get_num_brain_neurons(self.genotype_structure)
         self.num_data_points = int(self.trial_duration / self.brain_step_size)
@@ -53,31 +49,32 @@ class Simulation:
 
         self.init_target()
 
-        self.timing = Timing(self.timeit)        
-
-        self.__check_params__()
+        self.timing = Timing(self.timeit)                
 
     def __check_params__(self):
-        pass
+        assert self.num_agents == 1
 
-    def init_target(self):
-        self.target = Target(
-            num_data_points = self.num_data_points,
-            env_width = self.target_env_width,
-            trial_vel = self.target_trial_vel,
-            trial_start_pos = self.target_trial_start_pos,
-            trial_delta_bnd = self.target_trial_delta_bnd,
-            random_pos_max_value = self.target_random_pos_max_value,
-            random_vel_max_value = self.target_random_vel_max_value
-        )
-
-    def init_random_target(self, pos_max_value=20, vel_max_value=3):
-        self.target_trial_vel = None
-        self.target_trial_start_pos = None
-        self.target_trial_delta_bnd = None
-        self.target_random_pos_max_value = pos_max_value
-        self.target_random_vel_max_value = vel_max_value
-        self.init_target()
+    def init_target(self, random_state=None):
+        if random_state is None:
+            vel_list = np.arange(1, self.num_trials+1)
+            vel_list[vel_list%2==0] *= -1 # 1, -2, 3, -4, ...
+            self.target = Target(
+                num_data_points = self.num_data_points,
+                env_width = self.env_width,
+                trial_vel = vel_list, 
+                trial_start_pos = [0] * self.num_trials,
+                trial_delta_bnd = [0] * self.num_trials
+            )
+        else:
+            max_vel = self.num_trials
+            max_pos = self.env_width/4
+            self.target = Target(
+                num_data_points = self.num_data_points,
+                env_width = self.env_width,
+                trial_vel = random_state.choice([-1,1]) * random_state.uniform(1, max_vel, self.num_trials),
+                trial_start_pos = random_state.uniform(-max_pos, max_pos, self.num_trials),
+                trial_delta_bnd = random_state.uniform(0, max_pos, self.num_trials)
+            )
 
     def save_to_file(self, file_path):
         with open(file_path, 'w') as f_out:
@@ -181,10 +178,7 @@ class Simulation:
         self.tracker_signals_strength = np.zeros(2) # init signal strength 
 
         # initi all positions and velocities of target
-        self.target_positions = self.target.compute_positions(            
-            trial = t,
-            rs = self.random_state
-        )
+        self.target_positions = self.target.compute_positions(trial = t)
         
         # init data of trial
         self.init_data_record_trial(t) 
@@ -202,15 +196,21 @@ class Simulation:
         self.timing.add_time('SIM_prepare_agents_for_trials', self.tim)     
 
     def compute_tracker_signals_strength(self, i):
-        delta = self.target_positions[i] - self.tracker.position        
+        delta = self.target_positions[i] - self.tracker.position
         delta_abs = np.abs(delta)
-        if delta_abs < 1:
+        if delta_abs <= 1:
             # consider tracker and target overlapping -> max signla left and right sensor
             self.tracker_signals_strength = np.ones(2)
+        elif delta_abs >= self.env_width/2:
+            # signals gos to zero if beyond half env_width
+            self.tracker_signals_strength = np.zeros(2)
         else:
             signal_index = 1 if delta > 0 else 0 # right or left
             self.tracker_signals_strength = np.zeros(2)
-            self.tracker_signals_strength[signal_index] = 1/delta_abs
+            # self.tracker_signals_strength[signal_index] = 1/delta_abs
+            # better if signal decreases linearly
+            self.tracker_signals_strength[signal_index] = utils.linmap(
+                delta_abs, [1,self.env_width/2],[1,0])
         # store delta
         self.delta_tracker_target[i] = delta
 
@@ -243,26 +243,19 @@ class Simulation:
     #################
     # MAIN FUNCTION
     #################
-    def run_simulation(self, genotype_population=None, genotype_index=None,
-        rnd_seed=0, data_record=None):
+    def run_simulation(self, genotype_population=None, 
+        genotype_index=None, data_record=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
         '''
 
         self.tim = self.timing.init_tictoc()
 
+        # self.init_target(random_seed)
+
         self.genotype_population = genotype_population
         self.genotype_index = genotype_index
-        self.random_state = RandomState(rnd_seed)
         self.rand_agent_indexes = []
-
-        # fill rand_agent_indexes with n indexes i
-        if self.num_agents == 2:
-            assert False
-            # while len(self.rand_agent_indexes) != self.num_random_pairings:
-            #     next_rand_index = self.random_state.randint(len(self.genotype_population))
-            #     if next_rand_index != self.genotype_index:
-            #         self.rand_agent_indexes.append(next_rand_index)
 
         self.data_record = data_record 
 
@@ -297,7 +290,8 @@ class Simulation:
                 
                 self.save_data_record_step(t, i)             
 
-            performance_t = - np.mean(np.abs(self.delta_tracker_target))
+            # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
+            performance_t = np.mean(np.abs(self.delta_tracker_target))
 
             trial_performances.append(performance_t)
 
@@ -314,28 +308,6 @@ class Simulation:
         
         return exp_perf
 
-    '''
-    POPULATION EVALUATION FUNCTION
-    '''
-    def evaluate(self, population, random_seeds):                
-        population_size = len(population)
-        assert population_size == len(random_seeds)
-
-        if self.num_cores > 1:
-            # run parallel job            
-            sim_array = [Simulation(**asdict(self)) for _ in range(self.num_cores)]
-            performances = Parallel(n_jobs=self.num_cores)( 
-                delayed(sim_array[i%self.num_cores].run_simulation)(population, i, rnd_seed) \
-                for i, (_, rnd_seed) in enumerate(zip(population, random_seeds))
-            )
-        else:
-            # single core
-            performances = [
-                self.run_simulation(population, i, rnd_seed)
-                for i, (_, rnd_seed) in enumerate(zip(population, random_seeds))
-             ]
-
-        return performances
 
 # TEST
 
@@ -350,7 +322,6 @@ def get_simulation_data_from_random_agent():
     perf = sim.run_simulation(
         genotype_population=[random_genotype], 
         genotype_index=0,
-        rnd_seed=0, 
         data_record=data_record
     )
     print("Performance: ", perf)

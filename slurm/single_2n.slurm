@@ -32,7 +32,7 @@ python -m dol.main \
 --seed ${seed} \
 --num_neurons 2 \
 --popsize 96 \
---num_gen 5000 \
+--max_gen 5000 \
 --trial_duration 80
 
 # copy our result back to Bucket. We use "scp" to copy the data 

@@ -33,7 +33,7 @@ python -m dyadic_interaction.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --num_neurons 2 \
 --popsize 96 \
---num_gen 2000 \
+--max_gen 2000 \
 --trial_duration 200
 
 # copy our result back to Bucket. We use "scp" to copy the data 

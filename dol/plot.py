@@ -102,7 +102,7 @@ def plot_genotype_similarity(evo, sim):
 def plot_results(evo, sim, data_record):
     
     if evo is not None:
-        plot_performances(evo)    
+        plot_performances(evo, log=True)    
     
     # scatter agents
     # plot_data_scatter(data_record, key='agents_brain_output')
