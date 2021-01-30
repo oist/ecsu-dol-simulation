@@ -1,11 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=compute
 #SBATCH --time=4:00:00
-#SBATCH --job-name=dyadic_exp
+#SBATCH --job-name=dot
 #SBATCH --mem=500G
 #SBATCH --cpus-per-task=128
-##SBATCH --mail-type=ALL
-##SBATCH --mail-user=federico.sangati2@oist.jp
 
 # load python module
 # module load ruse
@@ -23,7 +21,7 @@ mkdir ${tempdir}
 # Start 'myprog' with input from bucket,
 # and output to our temporary directory
 cd ~/Code/dol-simulation
-source .env/bin/activate
+source env/bin/activate
 
 # ruse
 python -m dol.main \
@@ -31,9 +29,9 @@ python -m dol.main \
 --cores 120 \
 --seed ${seed} \
 --num_neurons 2 \
---popsize 96 \
+--popsize 100 \
 --max_gen 5000 \
---trial_duration 80
+--trial_duration 50
 
 # copy our result back to Bucket. We use "scp" to copy the data 
 # back  as bucket isn't writable directly from the compute nodes.

@@ -58,11 +58,14 @@ def plot_data_time(data_record, key, log=False):
                 if log: ax.set_yscale('log')            
                 agent_trial_data = trial_data[a]
                 for n in range(agent_trial_data.shape[1]):
-                    ax.plot(agent_trial_data[:, n], label='Output of n{}'.format(n+1))                    
+                    ax.plot(agent_trial_data[:, n], label='data {}'.format(n+1))                    
+                    handles, labels = ax.get_legend_handles_labels()
+                    fig.legend(handles, labels, loc='upper right')
         else:
             ax = fig.add_subplot(1, num_trials, t+1)
             if log: ax.set_yscale('log')            
             ax.plot(trial_data)                    
+    
     plt.show()
 
 def plot_data_time_multi_keys(data_record, keys, title, log=False):    

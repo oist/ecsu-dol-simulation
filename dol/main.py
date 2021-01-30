@@ -19,7 +19,17 @@ if __name__ == "__main__":
         description='Run the Division of Labor Simulation'
     )
 
+    # evolution arguments
     parser.add_argument('--seed', type=int, default=0, help='Random seed')     
+    parser.add_argument('--dir', type=str, default=None, help='Output directory')
+    parser.add_argument('--perf_obj', default='MIN', help='Performance objective') # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
+    parser.add_argument('--popsize', type=int, default=100, help='Population size')    
+    parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')    
+
+    # simulation arguments    
+    parser.add_argument('--num_neurons', type=int, default=2, help='Number of neurons in agent')          
+    parser.add_argument('--num_trials', type=int, default=4, help='Number of trials')        
+    parser.add_argument('--trial_duration', type=int, default=50, help='Trial duration')        
     parser.add_argument('--num_random_pairings', type=int, default=None, help= \
         'None -> agents are alone in the simulation (default). '
         '0    -> agents are evolved in pairs: a genotype contains a pair of agents. '
@@ -28,14 +38,9 @@ if __name__ == "__main__":
         'when num_agents is 2 this decides whether the two agents switch control of L/R motors'
         'in different trials (mix=True) or not (mix=False) in which case the first agent'
         'always control the left motor and the second the right')
-    parser.add_argument('--dir', type=str, default=None, help='Output directory')
-    parser.add_argument('--cores', type=int, default=1, help='Number of cores')        
-    parser.add_argument('--num_trials', type=int, default=4, help='Number of trials')    
-    parser.add_argument('--num_neurons', type=int, default=2, help='Number of neurons in agent')    
-    parser.add_argument('--popsize', type=int, default=100, help='Population size')    
-    parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')    
-    parser.add_argument('--trial_duration', type=int, default=50, help='Trial duration')    
-    parser.add_argument('--perf_obj', default='MIN', help='Performance objective') # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
+    parser.add_argument('--exclusive_motors', type=bool, default=False, help = \
+        'prevent motors to run at the same time')
+    parser.add_argument('--cores', type=int, default=1, help='Number of cores')          
 
     args = parser.parse_args()
 
@@ -53,6 +58,8 @@ if __name__ == "__main__":
                 subdir += '_rp-{}'.format(args.num_random_pairings)
             if args.mix_agents_motor_control:
                 subdir += '_mix'
+            if args.exclusive_motors:
+                subdir += '_exc'
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
             outdir = os.path.join(args.dir,subdir,seed_dir)            
         else:
@@ -67,9 +74,10 @@ if __name__ == "__main__":
     sim = Simulation(        
         genotype_structure = genotype_structure,        
         num_trials = args.num_trials,
+        trial_duration = args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
         num_random_pairings = args.num_random_pairings,
         mix_agents_motor_control = args.mix_agents_motor_control,
-        trial_duration = args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
+        exclusive_motors = args.exclusive_motors,        
         num_cores = args.cores
     )
 

@@ -36,7 +36,7 @@ class Simulation:
     # in different trials (mix=True) or not (mix=False) in which case the first agent
     # always control the left motor and the second the right
 
-    exclusive_motors = True
+    exclusive_motors:bool = False
 
     env_width = 400
     brain_step_size: float = 0.1
@@ -75,8 +75,9 @@ class Simulation:
 
     def init_target(self, random_state=None):
         if random_state is None:
-            vel_list = np.arange(1, self.num_trials+1)
-            vel_list[vel_list%2==0] *= -1 # 1, -2, 3, -4, ...
+            # vel_list = np.arange(1, self.num_trials+1) # 1, 2, 3, 4
+            vel_list = np.repeat(np.arange(1,self.num_trials/2+1),2)[:self.num_trials] # 1, 1, 2, 2
+            vel_list[1::2] *= -1 # +, -, +, -, ...
             self.target = Target(
                 num_data_points = self.num_data_points,
                 env_width = self.env_width,
@@ -293,7 +294,7 @@ class Simulation:
         if self.exclusive_motors:
             threshold = 0.5
             if len(np.where(motors>threshold)[0]) == 2:
-                # when both 
+                # when both are more than threshold freeze
                 motors = np.zeros(2)
         self.tracker.wheels = motors
         self.tracker.move_one_step()

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=compute
-#SBATCH --time=24:00:00
-#SBATCH --job-name=dyadic_exp
+#SBATCH --time=4:00:00
+#SBATCH --job-name=dot
 #SBATCH --output=slurm_%A-%a.out
 #SBATCH --mem=500G
 #SBATCH --cpus-per-task=120
@@ -18,24 +18,21 @@ mkdir ${tempdir}
 
 # Start 'myprog' with input from bucket,
 # and output to our temporary directory
-cd ~/Code/dyadic_interaction
+cd ~/Code/dol-simulation
 source env/bin/activate
 
 # ruse
-python -m dyadic_interaction.main \
+python -m dol.main \
+--seed ${seed} \
 --dir $tempdir \
---num_random_pairings 3 \
---entropy_type shannon-dd \
---entropy_target_value neural \
---concatenate off \
---isolation off \
---collision_type edge \
---cores 96 \
---seed ${SLURM_ARRAY_TASK_ID} \
+--popsize 100 \
+--max_gen 5000 \
 --num_neurons 2 \
---popsize 96 \
---max_gen 2000 \
---trial_duration 200
+--num_trials 4 \
+--num_random_pairings 0 \
+--mix_agents_motor_control True \
+--exclusive_motors True
+--cores 120
 
 # copy our result back to Bucket. We use "scp" to copy the data 
 # back  as bucket isn't writable directly from the compute nodes.
