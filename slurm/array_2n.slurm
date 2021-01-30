@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=compute
-#SBATCH --time=8:00:00
+#SBATCH --time=10:00:00
 #SBATCH --job-name=dot
 #SBATCH --output=slurm_%A-%a.out
 #SBATCH --mem=500G
@@ -26,7 +26,7 @@ python -m dol.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --dir $tempdir \
 --popsize 100 \
---max_gen 5000 \
+--max_gen 10000 \
 --num_neurons 2 \
 --num_trials 4 \
 --num_random_pairings 3 \
