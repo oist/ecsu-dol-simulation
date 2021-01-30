@@ -3,3 +3,6 @@ python -m dol.main --dir ./data/tmp --cores 7 --seed 1 --num_neurons 2 --popsize
 
 # run from data
 python -m dol.run_from_dir --dir ./data/tmp/2n/seed_001 --generation=10 --visualize_trial 1 --plot
+
+# rsync from fede only specific patters
+rsync -av --include="*/" --include="simulation.json" --include="evo_5000.json" --exclude="*" deigo-ext:/bucket/FroeseU/fede/dol-simulation/ ./data/

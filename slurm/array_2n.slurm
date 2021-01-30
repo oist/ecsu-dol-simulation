@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --partition=compute
-#SBATCH --time=4:00:00
+#SBATCH --time=8:00:00
 #SBATCH --job-name=dot
 #SBATCH --output=slurm_%A-%a.out
 #SBATCH --mem=500G
-#SBATCH --cpus-per-task=120
+#SBATCH --cpus-per-task=128
 #SBATCH --array=1-20%10
 
 # load python module
@@ -29,14 +29,14 @@ python -m dol.main \
 --max_gen 5000 \
 --num_neurons 2 \
 --num_trials 4 \
---num_random_pairings 0 \
+--num_random_pairings 3 \
 --mix_agents_motor_control True \
 --exclusive_motors True \
 --cores 120
 
 # copy our result back to Bucket. We use "scp" to copy the data 
 # back  as bucket isn't writable directly from the compute nodes.
-rsync -avq $tempdir/* deigo:/bucket/FroeseU/fede/dyadic_interaction
+rsync -avq $tempdir/* deigo:/bucket/FroeseU/fede/dol-simulation
 
 # Clean up by removing our temporary directory
 rm -r $tempdir

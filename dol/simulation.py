@@ -312,13 +312,11 @@ class Simulation:
 
         self.tim = self.timing.init_tictoc()
 
-        self.random_state = RandomState(random_seed)
-
-        self.fill_rand_agent_indexes() # rand_agent_indexes
-
         self.genotype_population = genotype_population
-        self.genotype_index = genotype_index
-        self.rand_agent_indexes = []
+        self.genotype_index = genotype_index        
+        self.random_state = RandomState(random_seed)
+        
+        self.fill_rand_agent_indexes() # rand_agent_indexes
 
         num_simulations = 1 if self.rand_agent_indexes is None \
             else max(1, len(self.rand_agent_indexes))
