@@ -32,7 +32,7 @@ def run_simulation_from_dir(**kwargs):
         print("Setting random target")
         sim.init_target(RandomState(random_target_seed))
 
-    data_record = {}
+    data_record_list = []
     # get the indexes of the populations as they were before being sorted by performance
     genotype_idx_unsorted = evo.population_sorted_indexes[genotype_idx]
     random_seed = evo.pop_eval_random_seed
@@ -40,25 +40,29 @@ def run_simulation_from_dir(**kwargs):
     performance = sim.run_simulation(
         evo.population_unsorted, 
         genotype_idx_unsorted, 
-        data_record
+        random_seed,
+        data_record_list
     )
 
     print("Performace recomputed: {}".format(performance))
 
     if write_data:        
-        outdir = os.path.join(dir, 'data')
-        utils.make_dir_if_not_exists_or_replace(outdir)        
-        for k,v in data_record.items():
-            if type(v) is dict: 
-                # summary
-                outfile = os.path.join(outdir, '{}.json'.format(k))
-                utils.save_json_numpy_data(v, outfile)
+        for s, data_record in enumerate(data_record_list,1):
+            if len(data_record_list)>1:                
+                outdir = os.path.join(dir, 'data' , 'sim_{}'.format(s))
             else:
-                outfile = os.path.join(outdir, '{}.json'.format(k))
-                utils.save_json_numpy_data(v, outfile)
-                        
+                outdir = os.path.join(dir, 'data')
+            utils.make_dir_if_not_exists_or_replace(outdir)        
+            for k,v in data_record.items():
+                if type(v) is dict: 
+                    # summary
+                    outfile = os.path.join(outdir, '{}.json'.format(k))
+                    utils.save_json_numpy_data(v, outfile)
+                else:
+                    outfile = os.path.join(outdir, '{}.json'.format(k))
+                    utils.save_json_numpy_data(v, outfile)                        
 
-    return evo, sim, data_record
+    return evo, sim, data_record_list
 
 if __name__ == "__main__":
     import argparse
@@ -74,15 +78,19 @@ if __name__ == "__main__":
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')    
     parser.add_argument('--random_target_seed', type=int, help='Index of agent in population to load')    
     parser.add_argument('--write_data', action='store_true', help='Whether to output data (same directory as input)')
+    parser.add_argument('--select_sim', type=int, default=1, help='Which simulation to select for visualization and plot')
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
     
     args = parser.parse_args()
     
-    evo, sim, data_record = run_simulation_from_dir(**vars(args))
+    evo, sim, data_record_list = run_simulation_from_dir(**vars(args))
     
-    if args.visualize_trial > 0:
-        vis = Visualization(sim)
+    single_simulation = len(data_record_list)==1
+    data_record = data_record_list[args.select_sim-1] 
+
+    if args.visualize_trial > 0:            
+        vis = Visualization(sim)                
         vis.start_simulation_from_data(args.visualize_trial-1, data_record)
     if args.plot:
         plot.plot_results(evo, sim, data_record)

@@ -3,14 +3,14 @@ TODO: Missing module docstring
 """
 
 import os
-from dol import gen_structure
-from dol.evaluator import Evaluator
-from dol import utils
-from pyevolver.evolution import Evolution
-import numpy as np
-
 import argparse
 from pytictoc import TicToc
+import numpy as np
+from pyevolver.evolution import Evolution
+from dol import gen_structure
+from dol import utils
+from dol.simulation import Simulation
+
 
 
 if __name__ == "__main__":
@@ -20,6 +20,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('--seed', type=int, default=0, help='Random seed')     
+    parser.add_argument('--num_random_pairings', type=int, default=None, help= \
+        'None -> agents are alone in the simulation (default). '
+        '0    -> agents are evolved in pairs: a genotype contains a pair of agents. '
+        'n>0  -> each agent will go though a simulation with N other agents (randomly chosen).')        
+    parser.add_argument('--mix_agents_motor_control', type=bool, default=False, help= \
+        'when num_agents is 2 this decides whether the two agents switch control of L/R motors'
+        'in different trials (mix=True) or not (mix=False) in which case the first agent'
+        'always control the left motor and the second the right')
     parser.add_argument('--dir', type=str, default=None, help='Output directory')
     parser.add_argument('--cores', type=int, default=1, help='Number of cores')        
     parser.add_argument('--num_neurons', type=int, default=2, help='Number of neurons in agent')    
@@ -40,6 +48,10 @@ if __name__ == "__main__":
         # create default path if it specified dir already exists
         if os.path.isdir(args.dir):
             subdir = '{}n'.format(args.num_neurons)
+            if args.num_random_pairings is not None:
+                subdir += '_rp-{}'.format(args.num_random_pairings)
+            if args.mix_agents_motor_control:
+                subdir += '_mix'
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
             outdir = os.path.join(args.dir,subdir,seed_dir)            
         else:
@@ -51,18 +63,26 @@ if __name__ == "__main__":
 
     checkpoint_interval=np.ceil(args.max_gen/10)
 
-    eval = Evaluator(
+    sim = Simulation(        
         genotype_structure = genotype_structure,        
+        num_random_pairings = args.num_random_pairings,
+        mix_agents_motor_control = args.mix_agents_motor_control,
         trial_duration = args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
-        num_cores = args.cores,    
-        outdir = outdir
+        num_cores = args.cores
     )
+
+    if outdir is not None:      
+        sim_config_json = os.path.join(outdir, 'simulation.json')  
+        sim.save_to_file(sim_config_json)
+
+    if args.num_random_pairings==0:
+        genotype_size *= 2 # two agents per genotype
     
     evo = Evolution(
         random_seed=args.seed,
         population_size=args.popsize,
         genotype_size=genotype_size, 
-        evaluation_function=eval.evaluate,
+        evaluation_function=sim.evaluate,
         performance_objective=args.perf_obj,
         fitness_normalization_mode='FPS', # 'NONE', 'FPS', 'RANK', 'SIGMA' -> NO NORMALIZATION
         selection_mode='RWS', # 'UNIFORM', 'RWS', 'SUS'

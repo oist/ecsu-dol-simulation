@@ -105,14 +105,15 @@ def plot_results(evo, sim, data_record):
         plot_performances(evo, log=True)    
     
     # scatter agents
-    # plot_data_scatter(data_record, key='agents_brain_output')
-    # plot_data_scatter(data_record, key='agents_brain_state')    
+    plot_data_scatter(data_record, key='agents_brain_output')
+    plot_data_scatter(data_record, key='agents_brain_state')    
     
     # time agents
     plot_data_time(data_record, key='agents_brain_input')
-    # plot_data_time(data_record, key='agents_brain_output')
+    plot_data_time(data_record, key='agents_brain_output')
     # plot_data_time(data_record, key='agents_brain_state')
     # plot_data_time(data_record, key='agents_derivatives')
+    plot_data_time(data_record, key='agents_motors')
 
     # time tracker
     # plot_data_time(data_record, key='tracker_wheels')

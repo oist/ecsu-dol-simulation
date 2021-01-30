@@ -7,6 +7,7 @@ from typing import Dict, Tuple, List
 import json
 import numpy as np
 from numpy.random import RandomState
+from joblib import Parallel, delayed
 from pyevolver.json_numpy import NumpyListJsonEncoder
 from pyevolver.timing import Timing
 from dol.agent import Agent
@@ -14,14 +15,30 @@ from dol.tracker import Tracker
 from dol.target import Target
 from dol import gen_structure
 from dol import utils
+
 # from dol.utils import assert_string_in_values
 
 @dataclass
-class Simulation:        
-    genotype_structure: Dict = field(default_factory=lambda:gen_structure.DEFAULT_GEN_STRUCTURE(2))
+class Simulation:   
+
+    # the genotype structure  
+    genotype_structure: Dict = field(default_factory = \
+        lambda:gen_structure.DEFAULT_GEN_STRUCTURE(2))  
+
+    # random pairings
+    num_random_pairings: int = None
+    # None -> agents are alone in the simulation (default)
+    # 0    -> agents are evolved in pairs: a genotype contains a pair of agents
+    # N>0  -> each agent will go though a simulation with N other agents (randomly chosen)    
+
+    mix_agents_motor_control: bool = False  
+    # when num_agents is 2 this decides whether the two agents switch control of L/R motors 
+    # in different trials (mix=True) or not (mix=False) in which case the first agent
+    # always control the left motor and the second the right
+
+    exclusive_motors = True
+
     env_width = 400
-    num_agents: int = 1 # 1 or 2 (2 agents controlling the wheels)
-    num_brain_neurons: int = None  # initialized in __post_init__
     brain_step_size: float = 0.1
     num_trials: int = 4
     trial_duration: int = 50    
@@ -31,7 +48,9 @@ class Simulation:
 
     def __post_init__(self):    
 
-        self.__check_params__()      
+        self.__check_params__()   
+
+        self.num_agents = 1 if self.num_random_pairings is None else 2 
 
         self.num_brain_neurons = gen_structure.get_num_brain_neurons(self.genotype_structure)
         self.num_data_points = int(self.trial_duration / self.brain_step_size)
@@ -52,7 +71,7 @@ class Simulation:
         self.timing = Timing(self.timeit)                
 
     def __check_params__(self):
-        assert self.num_agents == 1
+        assert self.num_random_pairings is None or self.num_random_pairings>=0
 
     def init_target(self, random_state=None):
         if random_state is None:
@@ -98,22 +117,43 @@ class Simulation:
         # (with n being the num of agents)
         return [None  for _ in range(self.num_agents)]
 
+    def fill_rand_agent_indexes(self):    
+        if self.num_random_pairings in [None, 0]:
+            self.rand_agent_indexes = None
+            return
+        
+        self.rand_agent_indexes = []
+        # fill rand_agent_indexes with n indexes i
+        while len(self.rand_agent_indexes) != self.num_random_pairings:
+            next_rand_index = self.random_state.randint(len(self.genotype_population))
+            if next_rand_index not in self.rand_agent_indexes:
+                self.rand_agent_indexes.append(next_rand_index)
+
+
     def set_agents_genotype_phenotype(self):
         '''
         Split genotype and set phenotype of the two agents
         :param np.ndarray genotypes_pair: sequence with two genotypes (one after the other)
-        '''                
-        genotypes = [self.genotype_population[self.genotype_index]]
+        '''             
+        genome_index = self.genotype_population[self.genotype_index]
         if self.num_agents == 2:
-            genotypes.append(
-                self.genotype_population[self.rand_agent_indexes[self.sim_index]], 
-            )        
+            if self.num_random_pairings == 0:
+                # double genotype
+                genotypes_pair = genome_index
+                genotypes = np.array_split(genotypes_pair, 2)                                                 
+            else:
+                genotypes = [
+                    genome_index,
+                    self.genotype_population[self.rand_agent_indexes[self.sim_index]], 
+                ]
+        else:
+            genotypes = [genome_index]
         if self.data_record is not None:
             phenotypes = [{}  for _ in range(self.num_agents)]
             self.data_record['genotypes'] = genotypes
             self.data_record['phenotypes'] = phenotypes
         else:
-            phenotypes = self.nn()
+            phenotypes = self.nn() # None, None
         for a,o in enumerate(self.agents):
             o.genotype_to_phenotype(
                 genotypes[a], 
@@ -123,7 +163,7 @@ class Simulation:
 
     def init_data_record(self):
         if self.data_record is  None:                       
-            return            
+            return                                
         self.data_record['delta_tracker_target'] = [None for _ in range(self.num_trials)]
         self.data_record['target_position'] = [None for _ in range(self.num_trials)]
         self.data_record['target_velocity'] = [None for _ in range(self.num_trials)]
@@ -131,15 +171,17 @@ class Simulation:
         self.data_record['tracker_wheels'] = [None for _ in range(self.num_trials)]
         self.data_record['tracker_velocity'] = [None for _ in range(self.num_trials)]
         self.data_record['tracker_signals'] = [None for _ in range(self.num_trials)]
+        self.data_record['agents_motors_control_indexes'] = [None for _ in range(self.num_trials)]
         self.data_record['agents_brain_input'] = [self.nn() for _ in range(self.num_trials)]
         self.data_record['agents_brain_state'] = [self.nn() for _ in range(self.num_trials)]
         self.data_record['agents_derivatives'] = [self.nn() for _ in range(self.num_trials)]
         self.data_record['agents_brain_output'] = [self.nn() for _ in range(self.num_trials)]        
+        self.data_record['agents_motors'] = [self.nn() for _ in range(self.num_trials)]        
         self.timing.add_time('SIM_init_data', self.tim)
 
     def init_data_record_trial(self, t):
         if self.data_record is None:            
-            return
+            return        
         self.data_record['delta_tracker_target'][t] = self.delta_tracker_target  # presaved
         self.data_record['target_position'][t] = self.target_positions           # presaved
         self.data_record['target_velocity'][t] = np.diff(self.target_positions) # presaved
@@ -147,11 +189,13 @@ class Simulation:
         self.data_record['tracker_wheels'][t] = np.zeros((self.num_data_points, 2))
         self.data_record['tracker_velocity'][t] = np.zeros(self.num_data_points) 
         self.data_record['tracker_signals'][t] = np.zeros((self.num_data_points, 2)) 
+        self.data_record['agents_motors_control_indexes'][t] = self.agents_motors_control_indexes
         for a in range(self.num_agents):            
             self.data_record['agents_brain_input'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_brain_state'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_derivatives'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_brain_output'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))        
+            self.data_record['agents_motors'][t][a] = np.zeros((self.num_data_points, 2))        
         self.timing.add_time('SIM_init_trial_data', self.tim)            
 
     def save_data_record_step(self, t, i):
@@ -166,10 +210,20 @@ class Simulation:
             self.data_record['agents_brain_state'][t][a][i] = o.brain.states
             self.data_record['agents_derivatives'][t][a][i] = o.brain.dy_dt
             self.data_record['agents_brain_output'][t][a][i] = o.brain.output
+            self.data_record['agents_motors'][t][a][i] = o.motors
             self.timing.add_time('SIM_save_data', self.tim)                            
 
 
     def prepare_trial(self, t):
+
+        # init motor controllers
+        self.agents_motors_control_indexes = None
+        if self.num_agents == 2:
+            if self.mix_agents_motor_control and t % 2 == 1:
+                # invert controller in mix mode on odd trials
+                self.agents_motors_control_indexes = [1,0] 
+            else:
+                self.agents_motors_control_indexes = [0,1] 
 
         # init deltas
         self.delta_tracker_target = np.zeros(self.num_data_points)        
@@ -215,13 +269,8 @@ class Simulation:
         self.delta_tracker_target[i] = delta
 
     def compute_brain_input_agents(self):                
-        if self.num_agents == 1:
-            self.agents[0].compute_brain_input(self.tracker_signals_strength)
-        else:
-            for a,o in enumerate(self.agents):
-                signal_strength = np.zeros(2)
-                signal_strength[a] = self.tracker_signals_strength[a]
-                o.compute_brain_input(signal_strength)
+        for o in self.agents:
+            o.compute_brain_input(self.tracker_signals_strength)
         self.timing.add_time('SIM_compute_brain_input', self.tim)
 
     def compute_brain_euler_step_agents(self):          
@@ -233,9 +282,20 @@ class Simulation:
         for o in self.agents:
             o.compute_motor_outputs() # compute wheels from motor output        
         if self.num_agents == 1:
-            self.tracker.wheels = np.copy(self.agents[0].motors)
+            motors = np.copy(self.agents[0].motors)
         else:
-            self.tracker.wheels = np.array([self.agents[0].motors[0],self.agents[1].motors[1]])        
+            motors = np.array(
+                [
+                    self.agents[a].motors[i]
+                    for i,a in enumerate(self.agents_motors_control_indexes)
+                ]
+            )
+        if self.exclusive_motors:
+            threshold = 0.5
+            if len(np.where(motors>threshold)[0]) == 2:
+                # when both 
+                motors = np.zeros(2)
+        self.tracker.wheels = motors
         self.tracker.move_one_step()
         self.timing.add_time('SIM_move_one_step', self.tim)  
 
@@ -244,70 +304,115 @@ class Simulation:
     # MAIN FUNCTION
     #################
     def run_simulation(self, genotype_population=None, 
-        genotype_index=None, data_record=None):
+        genotype_index=None, random_seed=None, data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
         '''
 
         self.tim = self.timing.init_tictoc()
 
-        # self.init_target(random_seed)
+        self.random_state = RandomState(random_seed)
+
+        self.fill_rand_agent_indexes() # rand_agent_indexes
 
         self.genotype_population = genotype_population
         self.genotype_index = genotype_index
         self.rand_agent_indexes = []
 
-        self.data_record = data_record 
-
-        if self.genotype_population is not None:            
-            self.set_agents_genotype_phenotype()    
-            self.timing.add_time('SIM_init_agent_phenotypes', self.tim)    
-
-        trial_performances = []        
-
-        # INITIALIZE DATA RECORD
-        self.init_data_record()        
-
-        # EXPERIMENT START
-        for t in range(self.num_trials):
-
-            # setup trial
-            self.prepare_trial(t)            
-                        
-            for i in range(1, self.num_data_points):                
-
-                # 1) Agent senses strength of emitter from the two sensors
-                self.compute_tracker_signals_strength(i) # computes self.tracker_signals_strength
-
-                # 2) compute brain input
-                self.compute_brain_input_agents()
-
-                # 3) Update agent's neural system
-                self.compute_brain_euler_step_agents()
-
-                # 4) Move one step  agents
-                self.move_tracker_one_step()
-                
-                self.save_data_record_step(t, i)             
-
-            # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
-            performance_t = np.mean(np.abs(self.delta_tracker_target))
-
-            trial_performances.append(performance_t)
-
-        # EXPERIMENT END
-
-        # returning mean performances between all trials
-        exp_perf = np.mean(trial_performances)
-        if self.data_record:
-            self.data_record['summary'] = {
-                'rand_agent_indexes': self.rand_agent_indexes,
-                'trials_performances': trial_performances,
-                'experiment_performance': exp_perf
-            }
+        num_simulations = 1 if self.rand_agent_indexes is None \
+            else max(1, len(self.rand_agent_indexes))
         
-        return exp_perf
+        sim_performances = []
 
+        # SIMULATIONS START
+
+        for self.sim_index in range(num_simulations):
+
+            self.data_record = None 
+            if data_record_list is not None: 
+                self.data_record = {}
+                data_record_list.append(self.data_record)
+
+            if self.genotype_population is not None:            
+                self.set_agents_genotype_phenotype()    
+                self.timing.add_time('SIM_init_agent_phenotypes', self.tim)    
+
+            trial_performances = []        
+
+            # INITIALIZE DATA RECORD
+            self.init_data_record()        
+
+            # TRIALS START
+            for t in range(self.num_trials):
+
+                # setup trial
+                self.prepare_trial(t)            
+                            
+                for i in range(1, self.num_data_points):                
+
+                    # 1) Agent senses strength of emitter from the two sensors
+                    self.compute_tracker_signals_strength(i) # computes self.tracker_signals_strength
+
+                    # 2) compute brain input
+                    self.compute_brain_input_agents()
+
+                    # 3) Update agent's neural system
+                    self.compute_brain_euler_step_agents()
+
+                    # 4) Move one step  agents
+                    self.move_tracker_one_step()
+                    
+                    self.save_data_record_step(t, i)             
+
+                # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
+                performance_t = np.mean(np.abs(self.delta_tracker_target))
+
+                trial_performances.append(performance_t)
+
+            # TRIALS END
+
+            # returning mean performances between all trials
+            exp_perf = np.mean(trial_performances)
+            if self.data_record:
+                self.data_record['summary'] = {
+                    'rand_agent_indexes': self.rand_agent_indexes,
+                    'trials_performances': trial_performances,
+                    'experiment_performance': exp_perf
+                }
+            
+            sim_performances.append(exp_perf)
+
+        # SIMULATIONS END
+        
+        return np.mean(sim_performances)
+
+
+    ##################
+    # EVAL FUNCTION
+    ##################
+
+    def evaluate(self, population, random_seed):                
+        
+        population_size = len(population)
+
+        if self.num_cores > 1:
+            # run parallel job            
+            sim_array = [Simulation(**asdict(self)) for _ in range(self.num_cores)]
+            performances = Parallel(n_jobs=self.num_cores)( 
+                delayed(sim_array[i%self.num_cores].run_simulation)(population, i, random_seed) \
+                for i in range(population_size)
+            )
+        else:
+            # single core
+            performances = [
+                self.run_simulation(population, i, random_seed)
+                for i in range(population_size)
+            ]
+
+
+        return performances
+
+# --- END OF SIMULATION CLASS
 
 # TEST
 
