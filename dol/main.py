@@ -30,6 +30,7 @@ if __name__ == "__main__":
         'always control the left motor and the second the right')
     parser.add_argument('--dir', type=str, default=None, help='Output directory')
     parser.add_argument('--cores', type=int, default=1, help='Number of cores')        
+    parser.add_argument('--num_trials', type=int, default=4, help='Number of trials')    
     parser.add_argument('--num_neurons', type=int, default=2, help='Number of neurons in agent')    
     parser.add_argument('--popsize', type=int, default=100, help='Population size')    
     parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')    
@@ -65,6 +66,7 @@ if __name__ == "__main__":
 
     sim = Simulation(        
         genotype_structure = genotype_structure,        
+        num_trials = args.num_trials,
         num_random_pairings = args.num_random_pairings,
         mix_agents_motor_control = args.mix_agents_motor_control,
         trial_duration = args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
