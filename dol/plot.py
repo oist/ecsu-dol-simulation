@@ -81,7 +81,6 @@ def plot_data_time_multi_keys(data_record, keys, title, log=False):
             ax.plot(trial_data)                    
     plt.show()
 
-'''
 def plot_genotype_similarity(evo, sim):
     from sklearn.metrics.pairwise import pairwise_distances
     population = evo.population
@@ -100,12 +99,12 @@ def plot_genotype_similarity(evo, sim):
         plt.imshow(similarity)
         plt.colorbar()
         plt.show()            
-'''
 
 def plot_results(evo, sim, data_record):
     
     if evo is not None:
         plot_performances(evo, log=True)    
+        plot_genotype_similarity(evo, sim)
     
     # scatter agents
     plot_data_scatter(data_record, key='agents_brain_output')

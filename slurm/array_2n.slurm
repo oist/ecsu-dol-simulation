@@ -31,7 +31,7 @@ python -m dol.main \
 --num_trials 4 \
 --num_random_pairings 3 \
 --mix_agents_motor_control True \
---exclusive_motors True \
+--exclusive_motors_threshold 0.1 \
 --cores 120
 
 # copy our result back to Bucket. We use "scp" to copy the data 

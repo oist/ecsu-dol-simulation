@@ -36,7 +36,7 @@ class Simulation:
     # in different trials (mix=True) or not (mix=False) in which case the first agent
     # always control the left motor and the second the right
 
-    exclusive_motors:bool = False
+    exclusive_motors_threshold:float = None
 
     env_width = 400
     brain_step_size: float = 0.1
@@ -96,6 +96,11 @@ class Simulation:
                 trial_delta_bnd = random_state.uniform(0, max_pos, self.num_trials)
             )
 
+    def get_genotypes_similarity(self):
+        if self.num_agents == 1:
+            return None
+        return 1 - np.linalg.norm(np.subtract(self.genotypes[0],self.genotypes[1]))
+
     def save_to_file(self, file_path):
         with open(file_path, 'w') as f_out:
             obj_dict = asdict(self)
@@ -136,29 +141,28 @@ class Simulation:
         Split genotype and set phenotype of the two agents
         :param np.ndarray genotypes_pair: sequence with two genotypes (one after the other)
         '''             
-        genome_index = self.genotype_population[self.genotype_index]
+        first_agent_genotype = self.genotype_population[self.genotype_index]
         if self.num_agents == 2:
             if self.num_random_pairings == 0:
                 # double genotype
-                genotypes_pair = genome_index
-                genotypes = np.array_split(genotypes_pair, 2)                                                 
+                genotypes_pair = first_agent_genotype
+                self.genotypes = np.array_split(genotypes_pair, 2)                                                 
             else:
-                genotypes = [
-                    genome_index,
+                self.genotypes = [
+                    first_agent_genotype,
                     self.genotype_population[self.rand_agent_indexes[self.sim_index]], 
                 ]
         else:
-            genotypes = [genome_index]
-        if self.data_record is not None:
-            phenotypes = [{}  for _ in range(self.num_agents)]
-            self.data_record['genotypes'] = genotypes
-            self.data_record['phenotypes'] = phenotypes
-        else:
-            phenotypes = self.nn() # None, None
+            self.genotypes = [first_agent_genotype]
+        
+        self.phenotypes = [{}  for _ in range(self.num_agents)]
+        if self.data_record is not None:            
+            self.data_record['genotypes'] = self.genotypes
+            self.data_record['phenotypes'] = self.phenotypes
         for a,o in enumerate(self.agents):
             o.genotype_to_phenotype(
-                genotypes[a], 
-                phenotype_dict=phenotypes[a]
+                self.genotypes[a], 
+                phenotype_dict=self.phenotypes[a]
             )
         
 
@@ -291,9 +295,8 @@ class Simulation:
                     for i,a in enumerate(self.agents_motors_control_indexes)
                 ]
             )
-        if self.exclusive_motors:
-            threshold = 0.5
-            if len(np.where(motors>threshold)[0]) == 2:
+        if self.exclusive_motors_threshold is not None:
+            if len(np.where(motors>self.exclusive_motors_threshold)[0]) == 2:
                 # when both are more than threshold freeze
                 motors = np.zeros(2)
         self.tracker.wheels = motors
@@ -324,6 +327,8 @@ class Simulation:
         sim_performances = []
 
         # SIMULATIONS START
+
+        self.agents_similarity = [None for _ in range(num_simulations)]
 
         for self.sim_index in range(num_simulations):
 
@@ -372,11 +377,15 @@ class Simulation:
 
             # returning mean performances between all trials
             exp_perf = np.mean(trial_performances)
+
+            self.agents_similarity[self.sim_index] = self.get_genotypes_similarity()
+
             if self.data_record:
                 self.data_record['summary'] = {
-                    'rand_agent_indexes': self.rand_agent_indexes,
+                    'rand_agent_index': self.rand_agent_indexes[self.sim_index],
+                    'genotype_similarity': self.agents_similarity[self.sim_index],
                     'trials_performances': trial_performances,
-                    'experiment_performance': exp_perf
+                    'experiment_performance': exp_perf,                    
                 }
             
             sim_performances.append(exp_perf)

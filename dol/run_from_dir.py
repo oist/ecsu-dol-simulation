@@ -15,6 +15,7 @@ def run_simulation_from_dir(**kwargs):
     dir = kwargs['dir']
     generation = kwargs['generation']
     genotype_idx = kwargs['genotype_idx']
+    sim_index = kwargs['select_sim'] - 1
     write_data = kwargs['write_data']
 
     from pyevolver.evolution import Evolution
@@ -45,6 +46,8 @@ def run_simulation_from_dir(**kwargs):
     )
 
     print("Performace recomputed: {}".format(performance))
+    if sim.num_agents == 2:
+        print("Sim agents similarity: ", sim.agents_similarity[sim_index])
 
     if write_data:        
         for s, data_record in enumerate(data_record_list,1):

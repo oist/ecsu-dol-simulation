@@ -38,7 +38,7 @@ if __name__ == "__main__":
         'when num_agents is 2 this decides whether the two agents switch control of L/R motors'
         'in different trials (mix=True) or not (mix=False) in which case the first agent'
         'always control the left motor and the second the right')
-    parser.add_argument('--exclusive_motors', type=bool, default=False, help = \
+    parser.add_argument('--exclusive_motors_threshold', type=float, default=None, help = \
         'prevent motors to run at the same time')
     parser.add_argument('--cores', type=int, default=1, help='Number of cores')          
 
@@ -58,8 +58,8 @@ if __name__ == "__main__":
                 subdir += '_rp-{}'.format(args.num_random_pairings)
             if args.mix_agents_motor_control:
                 subdir += '_mix'
-            if args.exclusive_motors:
-                subdir += '_exc'
+            if args.exclusive_motors_threshold is not None:
+                subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
             outdir = os.path.join(args.dir,subdir,seed_dir)            
         else:
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         trial_duration = args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
         num_random_pairings = args.num_random_pairings,
         mix_agents_motor_control = args.mix_agents_motor_control,
-        exclusive_motors = args.exclusive_motors,        
+        exclusive_motors_threshold = args.exclusive_motors_threshold,        
         num_cores = args.cores
     )
 
