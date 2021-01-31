@@ -86,8 +86,8 @@ class Simulation:
                 trial_delta_bnd = [0] * self.num_trials
             )
         else:
-            max_vel = self.num_trials
-            max_pos = self.env_width/4
+            max_vel = np.ceil(self.num_trials/2)
+            max_pos = self.env_width/8
             self.target = Target(
                 num_data_points = self.num_data_points,
                 env_width = self.env_width,
