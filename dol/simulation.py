@@ -381,7 +381,7 @@ class Simulation:
             self.agents_similarity[self.sim_index] = self.get_genotypes_similarity()
 
             if self.data_record:
-                self.data_record['summary'] = {
+                self.data_record['info'] = {
                     'rand_agent_index': self.rand_agent_indexes[self.sim_index],
                     'genotype_similarity': self.agents_similarity[self.sim_index],
                     'trials_performances': trial_performances,

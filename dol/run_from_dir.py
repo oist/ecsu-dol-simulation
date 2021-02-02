@@ -81,15 +81,16 @@ if __name__ == "__main__":
         description='Rerun simulation'
     )
 
-    parser.add_argument('--dir', type=str, help='Directory path')    
+    parser.add_argument('--dir', type=str, help='Directory path')
     parser.add_argument('--generation', type=int, help='Number of generation to load')
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')    
-    parser.add_argument('--random_target_seed', type=int, help='Seed if you want to rerun simulation with random target')    
-    parser.add_argument('--random_pairing_seed', type=int, help='Seed if you want to rerun simulation with random pairing')    
+    parser.add_argument('--random_target_seed', type=int, help='Seed to re-run simulation with random target')    
+    parser.add_argument('--random_pairing_seed', type=int, help='Seed to re-run simulation with random pairing')    
     parser.add_argument('--write_data', action='store_true', help='Whether to output data (same directory as input)')
     parser.add_argument('--select_sim', type=int, default=1, help='Which simulation to select for visualization and plot')
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
+    parser.add_argument('--plot_trial', type=int, help='Whether to plot a specif trial')
     
     args = parser.parse_args()
     
@@ -102,4 +103,4 @@ if __name__ == "__main__":
         vis = Visualization(sim)                
         vis.start_simulation_from_data(args.visualize_trial-1, data_record)
     if args.plot:
-        plot.plot_results(evo, sim, data_record)
+        plot.plot_results(evo, sim, args.plot_trial, data_record)

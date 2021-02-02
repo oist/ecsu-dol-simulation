@@ -43,14 +43,14 @@ def plot_data_scatter(data_record, key, log=False):
             ax.plot(agent_trial_data[:, 0], agent_trial_data[:, 1], zorder=0)
     plt.show()    
 
-def plot_data_time(data_record, key, log=False):
+def plot_data_time(data_record, key, trial='all', log=False):
     exp_data = data_record[key]
-    num_trials = len(exp_data)
+    num_trials = len(exp_data) if trial == 'all' else 1
     fig = plt.figure(figsize=(10, 6))
     title = key.replace('_',' ').title() + " (Time)"
     fig.suptitle(title)
     for t in range(num_trials):
-        trial_data = exp_data[t]          
+        trial_data = exp_data[t] if trial == 'all' else exp_data[trial-1]
         if type(trial_data) is list:
             num_agents = len(trial_data)   
             for a in range(num_agents):
@@ -59,6 +59,36 @@ def plot_data_time(data_record, key, log=False):
                 agent_trial_data = trial_data[a]
                 for n in range(agent_trial_data.shape[1]):
                     ax.plot(agent_trial_data[:, n], label='data {}'.format(n+1))                    
+                    handles, labels = ax.get_legend_handles_labels()
+                    fig.legend(handles, labels, loc='upper right')
+        else:
+            ax = fig.add_subplot(1, num_trials, t+1)
+            if log: ax.set_yscale('log')            
+            ax.plot(trial_data)                    
+    
+    plt.show()
+
+def plot_motor_time(sim, data_record, key, trial='all', log=False):
+    exp_data = data_record[key]
+    num_trials = len(exp_data) if trial == 'all' else 1
+    fig = plt.figure(figsize=(10, 6))
+    title = key.replace('_',' ').title() + " (Time)"
+    fig.suptitle(title)
+    for t in range(num_trials):
+        trial_index = t if trial == 'all' else trial-1
+        trial_data = exp_data[trial_index]
+        if type(trial_data) is list:
+            num_agents = len(trial_data)   
+            for a in range(num_agents):
+                ax = fig.add_subplot(num_agents, num_trials, (a*num_trials)+t+1)
+                if log: ax.set_yscale('log')            
+                agent_trial_data = trial_data[a]
+                for n in range(agent_trial_data.shape[1]):
+                    color= ['blue', 'orange'][n]
+                    if sim.exclusive_motors_threshold is not None and data_record['agents_motors_control_indexes'][trial_index][n]!=a: 
+                        # discard motor if not wired
+                        continue
+                    ax.plot(agent_trial_data[:, n], label='data {}'.format(n+1),color=color)                    
                     handles, labels = ax.get_legend_handles_labels()
                     fig.legend(handles, labels, loc='upper right')
         else:
@@ -100,30 +130,33 @@ def plot_genotype_similarity(evo, sim):
         plt.colorbar()
         plt.show()            
 
-def plot_results(evo, sim, data_record):
+def plot_results(evo, sim, trial, data_record):
+
+    if trial is None:
+        trial = 'all'
     
     if evo is not None:
         plot_performances(evo, log=True)    
         plot_genotype_similarity(evo, sim)
     
     # scatter agents
-    plot_data_scatter(data_record, key='agents_brain_output')
-    plot_data_scatter(data_record, key='agents_brain_state')    
+    plot_data_scatter(data_record, 'agents_brain_output')
+    plot_data_scatter(data_record, 'agents_brain_state')    
     
     # time agents
-    plot_data_time(data_record, key='agents_brain_input')
-    plot_data_time(data_record, key='agents_brain_output')
-    # plot_data_time(data_record, key='agents_brain_state')
-    # plot_data_time(data_record, key='agents_derivatives')
-    plot_data_time(data_record, key='agents_motors')
+    plot_data_time(data_record, 'agents_brain_input', trial)
+    plot_data_time(data_record, 'agents_brain_output', trial)
+    # plot_data_time(data_record, 'agents_brain_state', trial)
+    # plot_data_time(data_record, 'agents_derivatives', trial)
+    plot_motor_time(sim, data_record, 'agents_motors', trial)
 
     # time tracker
-    # plot_data_time(data_record, key='tracker_wheels')
-    # plot_data_time(data_record, key='tracker_velocity')
-    plot_data_time(data_record, key='tracker_signals')
+    # plot_data_time(data_record, 'tracker_wheels', trial)
+    # plot_data_time(data_record, 'tracker_velocity', trial)
+    plot_data_time(data_record, 'tracker_signals', trial)
 
     # time target
-    # plot_data_time(data_record, key='target_velocity')    
+    # plot_data_time(data_record, 'target_velocity', trial)    
 
     # time tracker & target
     plot_data_time_multi_keys(
@@ -133,7 +166,7 @@ def plot_results(evo, sim, data_record):
     )
 
     # delta tracker target (distances)
-    plot_data_time(data_record, key='delta_tracker_target')    
+    plot_data_time(data_record, 'delta_tracker_target', trial)    
 
     # plot_genotype_similarity(evo, sim)
 
