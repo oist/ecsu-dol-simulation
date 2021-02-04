@@ -4,7 +4,7 @@
 #SBATCH --job-name=dot
 #SBATCH --output=slurm_%A-%a.out
 #SBATCH --mem=50G
-#SBATCH --cpus-per-task=80
+#SBATCH --cpus-per-task=50
 #SBATCH --array=1-20%20
 
 # load python module
@@ -32,7 +32,7 @@ python -m dol.main \
 --num_random_pairings 3 \
 --exclusive_motors_threshold 0.1 \
 --dual_population True \
---cores 120
+--cores 48
 
 # copy our result back to Bucket. We use "scp" to copy the data 
 # back  as bucket isn't writable directly from the compute nodes.
