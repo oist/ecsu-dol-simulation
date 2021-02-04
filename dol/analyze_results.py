@@ -3,6 +3,7 @@ import json
 import matplotlib.pyplot as plt
 from scipy import stats
 import sys
+import numpy as np
 
 def get_last_entropies_runs(base_dir, plot=True):    
     # base_dir = 'data/transfer_entropy/MAX'
@@ -29,16 +30,26 @@ def get_last_entropies_runs(base_dir, plot=True):
             
             # make sure it's monotonic increasing(otherwise there is a bug)
             # assert all(gen_best_perf[i] <= gen_best_perf[i+1] for i in range(len(gen_best_perf)-1))
+
+            print_stats = lambda a : '|'.join(['{:.5f}'.format(x) for x in a])
             
             last_best_performance = gen_best_perf[-1]
-            print('{} {:.3f}'.format(exp, last_best_performance))
+            print('{} {}'.format(exp, print_stats(last_best_performance)))
             best_exp_performance.append(last_best_performance)
     print(stats.describe(best_exp_performance))
     if plot:
-        plt.bar(seeds, best_exp_performance)
+        print("seeds:",seeds)
+        fig, ax = plt.subplots()
+        ind = np.arange(len(seeds))
+        width = 0.35
+        for p in range(len(best_exp_performance[0])):
+            p_series = [b[p] for b in best_exp_performance]
+            x_pos = ind + p * width
+            ax.bar(x_pos, p_series, width)
+        ax.set_xticks(ind + width / 2)
+        ax.set_xticklabels(seeds)
         plt.xlabel('Seeds')
         plt.ylabel('Performance')
-        plt.xticks(seeds)
         plt.show()
     return dict(zip(seeds, best_exp_performance))
 
