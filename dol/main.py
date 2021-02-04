@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0, help='Random seed')     
     parser.add_argument('--dir', type=str, default=None, help='Output directory')
     parser.add_argument('--perf_obj', default='MIN', help='Performance objective') # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
-    parser.add_argument('--popsize', type=int, default=100, help='Population size')    
+    parser.add_argument('--popsize', type=int, default=96, help='Population size')    
     parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')    
 
     # simulation arguments    
