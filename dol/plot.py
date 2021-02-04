@@ -85,9 +85,9 @@ def plot_motor_time(sim, data_record, key, trial='all', log=False):
                 agent_trial_data = trial_data[a]
                 for n in range(agent_trial_data.shape[1]):
                     color= ['blue', 'orange'][n]
-                    if sim.exclusive_motors_threshold is not None and data_record['agents_motors_control_indexes'][trial_index][n]!=a: 
-                        # discard motor if not wired
-                        continue
+                    # if sim.exclusive_motors_threshold is not None and data_record['agents_motors_control_indexes'][trial_index][n]!=a: 
+                    #     # discard motor if not wired
+                    #     continue
                     ax.plot(agent_trial_data[:, n], label='data {}'.format(n+1),color=color)                    
                     handles, labels = ax.get_legend_handles_labels()
                     fig.legend(handles, labels, loc='upper right')

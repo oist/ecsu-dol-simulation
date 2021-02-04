@@ -29,7 +29,7 @@ class Simulation:
     num_random_pairings: int = None
     # None -> agents are alone in the simulation (default)
     # 0    -> agents are evolved in pairs: a genotype contains a pair of agents
-    # N>0  -> each agent will go though a simulation with N other agents (randomly chosen)    
+    # N>0  -> each agent will go though a simulation with N other agents
 
     mix_agents_motor_control: bool = False  
     # when num_agents is 2 this decides whether the two agents switch control of L/R motors 
@@ -37,6 +37,8 @@ class Simulation:
     # always control the left motor and the second the right
 
     exclusive_motors_threshold:float = None
+
+    dual_population:float = False
 
     env_width = 400
     brain_step_size: float = 0.1
@@ -71,7 +73,11 @@ class Simulation:
         self.timing = Timing(self.timeit)                
 
     def __check_params__(self):
-        assert self.num_random_pairings is None or self.num_random_pairings>=0
+        assert self.num_random_pairings is None or self.num_random_pairings>=0, \
+            "num_random_pairings must be None or >= 0"
+        
+        assert not self.dual_population or self.num_random_pairings > 0, \
+            "In dual position num_random_pairings must be > 0"
 
     def init_target(self, random_state=None):
         if random_state is None:
@@ -125,15 +131,28 @@ class Simulation:
 
     def fill_rand_agent_indexes(self):    
         if self.num_random_pairings in [None, 0]:
-            self.rand_agent_indexes = None
+            self.random_agent_indexes = None
             return
         
-        self.rand_agent_indexes = []
-        # fill rand_agent_indexes with n indexes i
-        while len(self.rand_agent_indexes) != self.num_random_pairings:
-            next_rand_index = self.random_state.randint(len(self.genotype_population))
-            if next_rand_index not in self.rand_agent_indexes:
-                self.rand_agent_indexes.append(next_rand_index)
+        self.random_agent_indexes = []
+        pos_size = len(self.genotype_population[0])
+
+        if self.dual_population:
+            # populations have been already shuffled
+            # so we take an agent in pop A with corresponding indexes in pop B
+            # and rotate on the population B for following simulations
+            # 0 -> 0, 0 -> 1, 0 -> 2, .... 1 -> 1, 1 -> 2, 1 -> 3, ...
+            pop_size = len(self.genotype_population[1])
+            self.random_agent_indexes = [
+                (self.genotype_index + s) % pop_size
+                for s in range(self.num_random_pairings)
+            ]
+        else:        
+            # fill random_agent_indexes with n indexes i
+            while len(self.random_agent_indexes) != self.num_random_pairings:
+                next_rand_index = self.random_state.randint(pos_size)
+                if next_rand_index not in self.random_agent_indexes:
+                    self.random_agent_indexes.append(next_rand_index)
 
 
     def set_agents_genotype_phenotype(self):
@@ -141,16 +160,18 @@ class Simulation:
         Split genotype and set phenotype of the two agents
         :param np.ndarray genotypes_pair: sequence with two genotypes (one after the other)
         '''             
-        first_agent_genotype = self.genotype_population[self.genotype_index]
+        first_agent_genotype = self.genotype_population[0][self.genotype_index]
+        self.rand_agent_idx = None # index of second agent (if present)        
         if self.num_agents == 2:
             if self.num_random_pairings == 0:
                 # double genotype
                 genotypes_pair = first_agent_genotype
                 self.genotypes = np.array_split(genotypes_pair, 2)                                                 
             else:
+                self.rand_agent_idx = self.random_agent_indexes[self.sim_index]
                 self.genotypes = [
                     first_agent_genotype,
-                    self.genotype_population[self.rand_agent_indexes[self.sim_index]], 
+                    self.genotype_population[1][self.rand_agent_idx], 
                 ]
         else:
             self.genotypes = [first_agent_genotype]
@@ -307,8 +328,8 @@ class Simulation:
     #################
     # MAIN FUNCTION
     #################
-    def run_simulation(self, genotype_population=None, 
-        genotype_index=None, random_seed=None, data_record_list=None):
+    def run_simulation(self, genotype_population, 
+        genotype_index, random_seed, data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
         '''
@@ -319,10 +340,10 @@ class Simulation:
         self.genotype_index = genotype_index        
         self.random_state = RandomState(random_seed)
         
-        self.fill_rand_agent_indexes() # rand_agent_indexes
+        self.fill_rand_agent_indexes() # random_agent_indexes
 
-        num_simulations = 1 if self.rand_agent_indexes is None \
-            else max(1, len(self.rand_agent_indexes))
+        num_simulations = 1 if self.random_agent_indexes is None \
+            else max(1, len(self.random_agent_indexes))
         
         sim_performances = []
 
@@ -382,7 +403,7 @@ class Simulation:
 
             if self.data_record:
                 self.data_record['info'] = {
-                    'rand_agent_index': self.rand_agent_indexes[self.sim_index],
+                    'rand_agent_index': self.rand_agent_idx,
                     'genotype_similarity': self.agents_similarity[self.sim_index],
                     'trials_performances': trial_performances,
                     'experiment_performance': exp_perf,                    
@@ -392,35 +413,49 @@ class Simulation:
 
         # SIMULATIONS END
         
-        return np.mean(sim_performances)
+        total_performance = np.mean(sim_performances)
+        return total_performance, sim_performances, self.random_agent_indexes
 
 
     ##################
     # EVAL FUNCTION
     ##################
 
-    def evaluate(self, population, random_seed):                
-        
-        population_size = len(population)
+    def evaluate(self, populations, random_seed):    
+
+        population_size = len(populations[0])        
 
         if self.num_cores > 1:
             # run parallel job            
             sim_array = [Simulation(**asdict(self)) for _ in range(self.num_cores)]
-            performances = Parallel(n_jobs=self.num_cores)( 
-                delayed(sim_array[i%self.num_cores].run_simulation)(population, i, random_seed) \
+            run_result = Parallel(n_jobs=self.num_cores)( 
+                delayed(sim_array[i%self.num_cores].run_simulation)(populations, i, random_seed) \
                 for i in range(population_size)
             )
         else:
             # single core
-            performances = [
-                self.run_simulation(population, i, random_seed)
+            run_result = [
+                self.run_simulation(populations, i, random_seed)
                 for i in range(population_size)
             ]
 
+        if self.dual_population:
+            # compute performance of the second population
+            performances = np.zeros(populations.shape[:-1])
+            for i, r in enumerate(run_result):
+                perf_tot, perf_sim_list, rand_idx_list = r
+                performances[0][i] = perf_tot # average of per of the first agent paired with n other agents
+                for perf_sim, rand_idx in zip(perf_sim_list, rand_idx_list):
+                    performances[1][rand_idx] += perf_sim # adding single sim performance to second agent
+            performances[1] = performances[1] / self.num_random_pairings # average performances on second population
+        else:
+            performances = np.array([r[0] for r in run_result])
 
+        # todo: return array of performances based on number of populations
         return performances
 
 # --- END OF SIMULATION CLASS
+
 
 # TEST
 

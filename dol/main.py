@@ -35,11 +35,14 @@ if __name__ == "__main__":
         '0    -> agents are evolved in pairs: a genotype contains a pair of agents. '
         'n>0  -> each agent will go though a simulation with N other agents (randomly chosen).')        
     parser.add_argument('--mix_agents_motor_control', type=bool, default=False, help= \
-        'when num_agents is 2 this decides whether the two agents switch control of L/R motors'
-        'in different trials (mix=True) or not (mix=False) in which case the first agent'
+        'when num_agents is 2 this decides whether the two agents switch control of L/R motors '
+        'in different trials (mix=True) or not (mix=False) in which case the first agent '
         'always control the left motor and the second the right')
     parser.add_argument('--exclusive_motors_threshold', type=float, default=None, help = \
         'prevent motors to run at the same time')
+    parser.add_argument('--dual_population', type=bool, default=False, help= \
+        'If to evolve two separate populations, one always controlling the left '
+        'motor and the other the right')        
     parser.add_argument('--cores', type=int, default=1, help='Number of cores')          
 
     args = parser.parse_args()
@@ -60,6 +63,8 @@ if __name__ == "__main__":
                 subdir += '_mix'
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
+            if args.dual_population:
+                subdir += '_dual'.format(args.exclusive_motors_threshold)
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
             outdir = os.path.join(args.dir,subdir,seed_dir)            
         else:
@@ -78,6 +83,7 @@ if __name__ == "__main__":
         num_random_pairings = args.num_random_pairings,
         mix_agents_motor_control = args.mix_agents_motor_control,
         exclusive_motors_threshold = args.exclusive_motors_threshold,        
+        dual_population = args.dual_population,
         num_cores = args.cores
     )
 
@@ -90,6 +96,7 @@ if __name__ == "__main__":
     
     evo = Evolution(
         random_seed=args.seed,
+        num_populations= 2 if args.dual_population else 1,
         population_size=args.popsize,
         genotype_size=genotype_size, 
         evaluation_function=sim.evaluate,
@@ -100,7 +107,7 @@ if __name__ == "__main__":
         reproduction_mode='GENETIC_ALGORITHM',  # 'HILL_CLIMBING',  'GENETIC_ALGORITHM'
         mutation_variance=0.05, # mutation noice with variance 0.1
         elitist_fraction=0.05, # elite fraction of the top 4% solutions
-        mating_fraction=0.95, # the remaining mating fraction
+        mating_fraction=0.94, # the remaining mating fraction (consider leaving something for random fill)
         crossover_probability=0.1,
         crossover_mode='UNIFORM',
         crossover_points= None, #genotype_structure['crossover_points'],

@@ -5,6 +5,7 @@ TODO: Missing module docstring
 import os
 from numpy.random import RandomState
 from dol.simulation import Simulation
+from pyevolver.evolution import Evolution
 from dol import utils
 
 
@@ -19,8 +20,7 @@ def run_simulation_from_dir(**kwargs):
     write_data = kwargs['write_data']
     random_target_seed = kwargs['random_target_seed']
     random_pairing_seed = kwargs['random_pairing_seed']
-
-    from pyevolver.evolution import Evolution
+    
     evo_files = [f for f in os.listdir(dir) if f.startswith('evo_')]
     assert len(evo_files)>0, "Can't find evo files in dir {}".format(dir)
     file_num_zfill = len(evo_files[0].split('_')[1].split('.')[0])
@@ -31,8 +31,7 @@ def run_simulation_from_dir(**kwargs):
     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
 
     data_record_list = []
-    # get the indexes of the populations as they were before being sorted by performance
-    genotype_idx_unsorted = evo.population_sorted_indexes[genotype_idx]
+    
     random_seed = evo.pop_eval_random_seed
 
     # overwriting simulaiton
@@ -43,9 +42,15 @@ def run_simulation_from_dir(**kwargs):
         print("Setting random pairing with seed ", random_pairing_seed)
         random_seed =random_pairing_seed
 
-    performance = sim.run_simulation(
-        evo.population_unsorted, 
-        genotype_idx_unsorted, 
+    original_populations = evo.population_unsorted
+    
+    # get the indexes of the populations as they were before being sorted by performance
+    # we only need to do this for the first population (index 0)
+    original_genotype_idx = evo.population_sorted_indexes[0][genotype_idx]
+
+    performance, _, _ = sim.run_simulation(
+        original_populations, 
+        original_genotype_idx, 
         random_seed,
         data_record_list
     )
