@@ -169,9 +169,10 @@ class Simulation:
                 self.genotypes = np.array_split(genotypes_pair, 2)                                                 
             else:
                 self.rand_agent_idx = self.random_agent_indexes[self.sim_index]
+                pop_index = 1 if self.dual_population else 0
                 self.genotypes = [
                     first_agent_genotype,
-                    self.genotype_population[1][self.rand_agent_idx], 
+                    self.genotype_population[pop_index][self.rand_agent_idx], 
                 ]
         else:
             self.genotypes = [first_agent_genotype]
