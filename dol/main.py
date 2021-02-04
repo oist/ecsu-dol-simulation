@@ -107,7 +107,7 @@ if __name__ == "__main__":
         reproduction_mode='GENETIC_ALGORITHM',  # 'HILL_CLIMBING',  'GENETIC_ALGORITHM'
         mutation_variance=0.05, # mutation noice with variance 0.1
         elitist_fraction=0.05, # elite fraction of the top 4% solutions
-        mating_fraction=0.90, # the remaining mating fraction (consider leaving something for random fill)
+        mating_fraction=0.95, # the remaining mating fraction (consider leaving something for random fill)
         crossover_probability=0.1,
         crossover_mode='UNIFORM',
         crossover_points= None, #genotype_structure['crossover_points'],
