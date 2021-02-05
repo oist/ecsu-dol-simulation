@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # evolution arguments
     parser.add_argument('--seed', type=int, default=0, help='Random seed')     
     parser.add_argument('--dir', type=str, default=None, help='Output directory')
-    parser.add_argument('--perf_obj', default='MIN', help='Performance objective') # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
+    parser.add_argument('--perf_obj', default='MAX', help='Performance objective') # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
     parser.add_argument('--popsize', type=int, default=96, help='Population size')    
     parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')    
 
@@ -116,6 +116,8 @@ if __name__ == "__main__":
         termination_function=None,
         checkpoint_interval=checkpoint_interval 
     )
+    print('Output path: ', outdir)
+    print('n_elite, n_mating, n_filling: ', evo.n_elite, evo.n_mating, evo.n_fillup)
     evo.run()
 
     print('Ellapsed time: {}'.format(t.tocvalue()))
