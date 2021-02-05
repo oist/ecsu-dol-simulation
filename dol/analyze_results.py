@@ -48,6 +48,7 @@ def get_last_entropies_runs(base_dir, plot=True):
             ax.bar(x_pos, p_series, width)
         ax.set_xticks(ind + width / 2)
         ax.set_xticklabels(seeds)
+        plt.ylim(4500, 5000)
         plt.xlabel('Seeds')
         plt.ylabel('Performance')
         plt.show()

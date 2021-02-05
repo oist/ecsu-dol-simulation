@@ -12,15 +12,18 @@ from numpy.random import RandomState
 from pyevolver.evolution import Evolution
 
 
-def plot_performances(evo, log=False):
+def plot_performances(evo, log=False, only_best=False):
     fig = plt.figure(figsize=(10, 6))
     fig.suptitle("Agent Performances")
     ax = fig.add_subplot(1,1,1)
     if log:
         ax.set_yscale('log')
-    ax.plot(evo.best_performances, label='Best')
-    ax.plot(evo.avg_performances, label='Avg')
-    ax.plot(evo.worst_performances, label='Worst')    
+    if only_best:
+        ax.plot(evo.best_performances, label='Best')
+    else:
+        ax.plot(evo.best_performances, label='Best')
+        ax.plot(evo.avg_performances, label='Avg')
+        ax.plot(evo.worst_performances, label='Worst')    
     plt.legend()
     plt.show()
 
@@ -139,7 +142,8 @@ def plot_results(evo, sim, trial, data_record):
         trial = 'all'
     
     if evo is not None:
-        plot_performances(evo, log=True)   
+        plot_performances(evo, log=False)   
+        plot_performances(evo, log=False, only_best=True)   
         plot_genotype_similarity(evo, sim)
     
     # scatter agents
