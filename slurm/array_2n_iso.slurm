@@ -30,7 +30,7 @@ python -m dol.main \
 --num_neurons 2 \
 --num_trials 4 \
 --num_random_pairings 3 \
---mix_agents_motor_control True \
+--switch_agents_motor_control True \
 --exclusive_motors_threshold 0.1 \
 --cores 48
 

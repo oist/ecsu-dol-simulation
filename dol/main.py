@@ -34,7 +34,7 @@ if __name__ == "__main__":
         'None -> agents are alone in the simulation (default). '
         '0    -> agents are evolved in pairs: a genotype contains a pair of agents. '
         'n>0  -> each agent will go though a simulation with N other agents (randomly chosen).')        
-    parser.add_argument('--mix_agents_motor_control', type=bool, default=False, help= \
+    parser.add_argument('--switch_agents_motor_control', type=bool, default=False, help= \
         'when num_agents is 2 this decides whether the two agents switch control of L/R motors '
         'in different trials (mix=True) or not (mix=False) in which case the first agent '
         'always control the left motor and the second the right')
@@ -59,7 +59,7 @@ if __name__ == "__main__":
             subdir = '{}n'.format(args.num_neurons)
             if args.num_random_pairings is not None:
                 subdir += '_rp-{}'.format(args.num_random_pairings)
-            if args.mix_agents_motor_control:
+            if args.switch_agents_motor_control:
                 subdir += '_mix'
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         num_trials = args.num_trials,
         trial_duration = args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
         num_random_pairings = args.num_random_pairings,
-        mix_agents_motor_control = args.mix_agents_motor_control,
+        switch_agents_motor_control = args.switch_agents_motor_control,
         exclusive_motors_threshold = args.exclusive_motors_threshold,        
         dual_population = args.dual_population,
         num_cores = args.cores

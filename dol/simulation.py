@@ -34,7 +34,7 @@ class Simulation:
     # 0    -> agents are evolved in pairs: a genotype contains a pair of agents
     # N>0  -> each agent will go though a simulation with N other agents
 
-    mix_agents_motor_control: bool = False  
+    switch_agents_motor_control: bool = False  
     # when num_agents is 2 this decides whether the two agents switch control of L/R motors 
     # in different trials (mix=True) or not (mix=False) in which case the first agent
     # always control the left motor and the second the right
@@ -244,9 +244,11 @@ class Simulation:
     def prepare_trial(self, t):
 
         # init motor controllers
+        # agents_motors_control_indexes[0]: which agent's left output is controlling the left motor
+        # agents_motors_control_indexes[1]: which agent's right output is controlling the right motor
         self.agents_motors_control_indexes = None
         if self.num_agents == 2:
-            if self.mix_agents_motor_control and t % 2 == 1:
+            if self.switch_agents_motor_control and t % 2 == 1:
                 # invert controller in mix mode on odd trials
                 self.agents_motors_control_indexes = [1,0] 
             else:
