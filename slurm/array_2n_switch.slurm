@@ -25,13 +25,13 @@ source env/bin/activate
 python -m dol.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --dir $tempdir \
---popsize 48 \
+--popsize 96 \
 --max_gen 2000 \
 --num_neurons 2 \
 --num_trials 4 \
 --num_random_pairings 3 \
 --exclusive_motors_threshold 0.1 \
---dual_population True \
+--switch_agents_motor_control True \
 --cores 48
 
 # copy our result back to Bucket. We use "scp" to copy the data 

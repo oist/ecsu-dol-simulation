@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=compute
-#SBATCH --time=5:00:00
+#SBATCH --time=3:00:00
 #SBATCH --job-name=dot
 #SBATCH --output=slurm_%A-%a.out
 #SBATCH --mem=50G
@@ -29,8 +29,6 @@ python -m dol.main \
 --max_gen 5000 \
 --num_neurons 2 \
 --num_trials 4 \
---num_random_pairings 3 \
---switch_agents_motor_control True \
 --exclusive_motors_threshold 0.1 \
 --cores 48
 

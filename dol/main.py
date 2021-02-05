@@ -36,7 +36,7 @@ if __name__ == "__main__":
         'n>0  -> each agent will go though a simulation with N other agents (randomly chosen).')        
     parser.add_argument('--switch_agents_motor_control', type=bool, default=False, help= \
         'when num_agents is 2 this decides whether the two agents switch control of L/R motors '
-        'in different trials (mix=True) or not (mix=False) in which case the first agent '
+        'in different trials (switch=True) or not (switch=False) in which case the first agent '
         'always control the left motor and the second the right')
     parser.add_argument('--exclusive_motors_threshold', type=float, default=None, help = \
         'prevent motors to run at the same time')
@@ -60,7 +60,7 @@ if __name__ == "__main__":
             if args.num_random_pairings is not None:
                 subdir += '_rp-{}'.format(args.num_random_pairings)
             if args.switch_agents_motor_control:
-                subdir += '_mix'
+                subdir += '_switch'
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             if args.dual_population:
