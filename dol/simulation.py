@@ -84,7 +84,9 @@ class Simulation:
 
     def split_population(self):
         # when population will be split in two for computing random pairs matching
-        not self.dual_population and self.num_random_pairings!=None and self.num_random_pairings>0
+        return not self.dual_population and \
+        self.num_random_pairings is not None and \
+        self.num_random_pairings>0
 
     def init_target(self, random_state=None):
         if random_state is None:
