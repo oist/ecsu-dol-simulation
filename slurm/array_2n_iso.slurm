@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --partition=compute
-#SBATCH --time=10:00:00
+#SBATCH --time=5:00:00
 #SBATCH --job-name=dot
 #SBATCH --output=slurm_%A-%a.out
-#SBATCH --mem=500G
-#SBATCH --cpus-per-task=128
-#SBATCH --array=1-20%10
+#SBATCH --mem=50G
+#SBATCH --cpus-per-task=55
+#SBATCH --array=1-20%20
 
 # load python module
 module load python/3.7.3
@@ -25,14 +25,14 @@ source env/bin/activate
 python -m dol.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --dir $tempdir \
---popsize 100 \
---max_gen 10000 \
+--popsize 48 \
+--max_gen 5000 \
 --num_neurons 2 \
 --num_trials 4 \
 --num_random_pairings 3 \
 --mix_agents_motor_control True \
 --exclusive_motors_threshold 0.1 \
---cores 120
+--cores 48
 
 # copy our result back to Bucket. We use "scp" to copy the data 
 # back  as bucket isn't writable directly from the compute nodes.

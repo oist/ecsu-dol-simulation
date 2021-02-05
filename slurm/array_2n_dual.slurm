@@ -26,7 +26,7 @@ python -m dol.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --dir $tempdir \
 --popsize 48 \
---max_gen 10000 \
+--max_gen 5000 \
 --num_neurons 2 \
 --num_trials 4 \
 --num_random_pairings 3 \

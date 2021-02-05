@@ -18,6 +18,8 @@ from dol import utils
 
 # from dol.utils import assert_string_in_values
 
+WORST_PERF = 10000
+
 @dataclass
 class Simulation:   
 
@@ -135,24 +137,18 @@ class Simulation:
             return
         
         self.random_agent_indexes = []
-        pos_size = len(self.genotype_population[0])
-
-        if self.dual_population:
-            # populations have been already shuffled
-            # so we take an agent in pop A with corresponding indexes in pop B
-            # and rotate on the population B for following simulations
-            # 0 -> 0, 0 -> 1, 0 -> 2, .... 1 -> 1, 1 -> 2, 1 -> 3, ...
-            pop_size = len(self.genotype_population[1])
-            self.random_agent_indexes = [
-                (self.genotype_index + s) % pop_size
-                for s in range(self.num_random_pairings)
-            ]
-        else:        
-            # fill random_agent_indexes with n indexes i
-            while len(self.random_agent_indexes) != self.num_random_pairings:
-                next_rand_index = self.random_state.randint(pos_size)
-                if next_rand_index not in self.random_agent_indexes:
-                    self.random_agent_indexes.append(next_rand_index)
+        
+        # populations have been already shuffled
+        # so we take an agent in pop A with corresponding indexes in pop B
+        # and rotate on the population B for following simulations
+        # 0 -> 0, 0 -> 1, 0 -> 2, .... 1 -> 1, 1 -> 2, 1 -> 3, ...
+        # this work also in non dual population because in this case
+        # population is split in half
+        pop_size = len(self.genotype_population[0])
+        self.random_agent_indexes = [
+            (self.genotype_index + s) % pop_size
+            for s in range(self.num_random_pairings)
+        ]
 
 
     def set_agents_genotype_phenotype(self):
@@ -169,10 +165,9 @@ class Simulation:
                 self.genotypes = np.array_split(genotypes_pair, 2)                                                 
             else:
                 self.rand_agent_idx = self.random_agent_indexes[self.sim_index]
-                pop_index = 1 if self.dual_population else 0
                 self.genotypes = [
                     first_agent_genotype,
-                    self.genotype_population[pop_index][self.rand_agent_idx], 
+                    self.genotype_population[1][self.rand_agent_idx], 
                 ]
         else:
             self.genotypes = [first_agent_genotype]
@@ -338,6 +333,10 @@ class Simulation:
         self.tim = self.timing.init_tictoc()
 
         self.genotype_population = genotype_population
+        if not self.dual_population and self.num_random_pairings!=None and self.num_random_pairings>0:    
+            # split pop in two (to allow for pair matching)
+            self.genotype_population = np.split(self.genotype_population[0], 2)
+
         self.genotype_index = genotype_index        
         self.random_state = RandomState(random_seed)
         
@@ -359,9 +358,8 @@ class Simulation:
                 self.data_record = {}
                 data_record_list.append(self.data_record)
 
-            if self.genotype_population is not None:            
-                self.set_agents_genotype_phenotype()    
-                self.timing.add_time('SIM_init_agent_phenotypes', self.tim)    
+            self.set_agents_genotype_phenotype()    
+            self.timing.add_time('SIM_init_agent_phenotypes', self.tim)    
 
             trial_performances = []        
 
@@ -391,7 +389,7 @@ class Simulation:
                     self.save_data_record_step(t, i)             
 
                 # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
-                performance_t = np.mean(np.abs(self.delta_tracker_target))
+                performance_t = WORST_PERF - np.mean(np.abs(self.delta_tracker_target))
 
                 trial_performances.append(performance_t)
 
@@ -425,6 +423,11 @@ class Simulation:
     def evaluate(self, populations, random_seed):    
 
         population_size = len(populations[0])        
+        
+        if not self.dual_population and self.num_random_pairings!=None and self.num_random_pairings>0:     
+            assert population_size % 2 == 0
+            # we only run the first half (because of matched pairs)
+            population_size = int(population_size/2)
 
         if self.num_cores > 1:
             # run parallel job            
@@ -439,18 +442,22 @@ class Simulation:
                 self.run_simulation(populations, i, random_seed)
                 for i in range(population_size)
             ]
-
-        if self.dual_population:
-            # compute performance of the second population
-            performances = np.zeros(populations.shape[:-1])
+        
+        if self.num_random_pairings!=None and self.num_random_pairings>0:
+            # compute performance of the second (half of the) population
+            performances = np.zeros((2,population_size))
             for i, r in enumerate(run_result):
                 perf_tot, perf_sim_list, rand_idx_list = r
                 performances[0][i] = perf_tot # average of per of the first agent paired with n other agents
                 for perf_sim, rand_idx in zip(perf_sim_list, rand_idx_list):
                     performances[1][rand_idx] += perf_sim # adding single sim performance to second agent
             performances[1] = performances[1] / self.num_random_pairings # average performances on second population
+            if not self.dual_population:
+                # joined thw two half performances in one
+                performances = np.concatenate(performances)
         else:
-            performances = np.array([r[0] for r in run_result])
+            performances = [p[0] for p in run_result]
+        
 
         # todo: return array of performances based on number of populations
         return performances
@@ -460,25 +467,43 @@ class Simulation:
 
 # TEST
 
-def get_simulation_data_from_random_agent():
-    from pyevolver.evolution import Evolution
-    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)
-    gen_size = gen_structure.get_genotype_size(default_gen_structure)
-    random_genotype = Evolution.get_random_genotype(RandomState(None), gen_size)    
+def get_simulation_data_from_random_agent(gen_str, rs):
+    from pyevolver.evolution import Evolution    
+    gen_size = gen_structure.get_genotype_size(gen_str)
+    random_genotype = Evolution.get_random_genotype(rs, gen_size)    
     
-    sim = Simulation()
-    data_record = {}
-    perf = sim.run_simulation(
-        genotype_population=[random_genotype], 
-        genotype_index=0,
-        data_record=data_record
+    sim = Simulation(
+        genotype_structure=gen_str
     )
-    print("Performance: ", perf)
-    return sim, data_record
+    data_record_list = []
+    run_result = sim.run_simulation(        
+        genotype_population=[[random_genotype]], 
+        genotype_index=0,
+        data_record_list=data_record_list,
+        random_seed=utils.random_int(rs)
+    )    
+    return run_result, sim, data_record_list
 
 def test_simulation():
-    _, data_record = get_simulation_data_from_random_agent()
-    utils.save_json_numpy_data(data_record, 'data/simulation.json')    
+    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)
+    rs = RandomState(None)
+    run_result, _, data_record_list = get_simulation_data_from_random_agent(default_gen_structure, rs)    
+    perf = run_result[0]
+    print("Performance: ", perf)
+    utils.save_json_numpy_data(data_record_list, 'data/simulation.json')    
+
+def ger_worst_performance(num_iter):
+    worst = 0
+    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)    
+    rs = RandomState(None)
+    for _ in range(num_iter):
+        run_result, _, _ = get_simulation_data_from_random_agent(default_gen_structure, rs)
+        perf = run_result[0]
+        if perf > worst:
+            worst = perf
+    print('Worst perf: ', worst)
+    
 
 if __name__ == "__main__":
-    test_simulation()
+    # test_simulation()
+    ger_worst_performance(100)
