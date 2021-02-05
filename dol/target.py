@@ -78,7 +78,22 @@ def test_target_standard_trials():
     )    
     print(t.compute_positions(0))
 
+def test_max_distance():
+    t = Target(        
+        num_data_points = 500,
+        env_width = 400,
+        trial_vel = [-2],
+        trial_start_pos = [0],
+        trial_delta_bnd = [0],
+    )    
+    target_pos = t.compute_positions(0)
+    tracker_vel = 20
+    tracker_pos = np.arange(500)*tracker_vel
+    delta_mean = np.mean(np.abs(tracker_pos-target_pos))
+    print('Max delta:', delta_mean)
+    
 
 if __name__ == "__main__":
     test_target_constant()
     test_target_standard_trials()
+    test_max_distance()

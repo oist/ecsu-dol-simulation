@@ -16,9 +16,10 @@ from dol.target import Target
 from dol import gen_structure
 from dol import utils
 
-# from dol.utils import assert_string_in_values
 
-WORST_PERF = 10000
+# max mean distance from target with v=-2 is 5009.8 
+# (see target.test_max_distance)
+MAX_MEAN_DISTANCE = 5000
 
 @dataclass
 class Simulation:   
@@ -80,6 +81,10 @@ class Simulation:
         
         assert not self.dual_population or self.num_random_pairings > 0, \
             "In dual position num_random_pairings must be > 0"
+
+    def split_population(self):
+        # when population will be split in two for computing random pairs matching
+        not self.dual_population and self.num_random_pairings!=None and self.num_random_pairings>0
 
     def init_target(self, random_state=None):
         if random_state is None:
@@ -333,7 +338,7 @@ class Simulation:
         self.tim = self.timing.init_tictoc()
 
         self.genotype_population = genotype_population
-        if not self.dual_population and self.num_random_pairings!=None and self.num_random_pairings>0:    
+        if self.split_population():    
             # split pop in two (to allow for pair matching)
             self.genotype_population = np.split(self.genotype_population[0], 2)
 
@@ -389,7 +394,7 @@ class Simulation:
                     self.save_data_record_step(t, i)             
 
                 # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
-                performance_t = WORST_PERF - np.mean(np.abs(self.delta_tracker_target))
+                performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.delta_tracker_target))
 
                 trial_performances.append(performance_t)
 
@@ -424,7 +429,7 @@ class Simulation:
 
         population_size = len(populations[0])        
         
-        if not self.dual_population and self.num_random_pairings!=None and self.num_random_pairings>0:     
+        if self.split_population():     
             assert population_size % 2 == 0
             # we only run the first half (because of matched pairs)
             population_size = int(population_size/2)
@@ -493,17 +498,17 @@ def test_simulation():
     utils.save_json_numpy_data(data_record_list, 'data/simulation.json')    
 
 def ger_worst_performance(num_iter):
-    worst = 0
+    worst = MAX_MEAN_DISTANCE
     default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)    
     rs = RandomState(None)
     for _ in range(num_iter):
         run_result, _, _ = get_simulation_data_from_random_agent(default_gen_structure, rs)
         perf = run_result[0]
-        if perf > worst:
+        if perf < worst:
             worst = perf
-    print('Worst perf: ', worst)
+            print('Worst perf: ', worst)
     
 
 if __name__ == "__main__":
-    # test_simulation()
+    test_simulation()
     ger_worst_performance(100)
