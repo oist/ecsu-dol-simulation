@@ -74,7 +74,7 @@ if __name__ == "__main__":
     else:
         outdir = None
 
-    checkpoint_interval=np.ceil(args.max_gen/10)
+    checkpoint_interval=int(np.ceil(args.max_gen/10))
 
     sim = Simulation(        
         genotype_structure = genotype_structure,        
