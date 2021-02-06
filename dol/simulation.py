@@ -150,33 +150,45 @@ class Simulation:
         # and rotate on the population B for following simulations
         # 0 -> 0, 0 -> 1, 0 -> 2, .... 1 -> 1, 1 -> 2, 1 -> 3, ...
         # this work also in non dual population because in this case
-        # population is split in half
-        pop_size = len(self.genotype_population[0])
-        self.random_agent_indexes = [
-            (self.genotype_index + s) % pop_size
-            for s in range(self.num_random_pairings)
-        ]
+        # population is split in half        
+        if self.genotype_index < self.population_size:
+            self.random_agent_indexes = [
+                (self.genotype_index + s) % self.population_size
+                for s in range(self.num_random_pairings)
+            ]
+        else:
+            # the way around
+            self.random_agent_indexes = [
+                (self.genotype_index - self.population_size - s) % self.population_size
+                for s in range(self.num_random_pairings)
+            ]
+        
 
 
     def set_agents_genotype_phenotype(self):
         '''
         Split genotype and set phenotype of the two agents
         :param np.ndarray genotypes_pair: sequence with two genotypes (one after the other)
-        '''             
-        first_agent_genotype = self.genotype_population[0][self.genotype_index]
+        '''                     
         self.rand_agent_idx = None # index of second agent (if present)        
         if self.num_agents == 2:
             if self.num_random_pairings == 0:
                 # double genotype
+                first_agent_genotype = self.genotype_population[0][self.genotype_index]
                 genotypes_pair = first_agent_genotype
                 self.genotypes = np.array_split(genotypes_pair, 2)                                                 
             else:
+                new_genotype_index = self.genotype_index \
+                    if self.genotype_index < self.population_size \
+                    else self.genotype_index - self.population_size
+                first_agent_genotype = self.genotype_population[0][new_genotype_index]
                 self.rand_agent_idx = self.random_agent_indexes[self.sim_index]
                 self.genotypes = [
                     first_agent_genotype,
                     self.genotype_population[1][self.rand_agent_idx], 
                 ]
         else:
+            first_agent_genotype = self.genotype_population[0][self.genotype_index]
             self.genotypes = [first_agent_genotype]
         
         self.phenotypes = [{}  for _ in range(self.num_agents)]
@@ -345,6 +357,7 @@ class Simulation:
         if self.split_population():    
             # split pop in two (to allow for pair matching)
             self.genotype_population = np.split(self.genotype_population[0], 2)
+        self.population_size = len(self.genotype_population[0])
 
         self.genotype_index = genotype_index        
         self.random_state = RandomState(random_seed)

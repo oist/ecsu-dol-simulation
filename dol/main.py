@@ -57,12 +57,12 @@ if __name__ == "__main__":
         # create default path if it specified dir already exists
         if os.path.isdir(args.dir):
             subdir = '{}n'.format(args.num_neurons)
+            if args.exclusive_motors_threshold is not None:
+                subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             if args.num_random_pairings is not None:
                 subdir += '_rp-{}'.format(args.num_random_pairings)
             if args.switch_agents_motor_control:
                 subdir += '_switch'
-            if args.exclusive_motors_threshold is not None:
-                subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             if args.dual_population:
                 subdir += '_dual'.format(args.exclusive_motors_threshold)
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
