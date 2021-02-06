@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import sys
 import numpy as np
+from dol.simulation import MAX_MEAN_DISTANCE
 
 def get_last_entropies_runs(base_dir, plot=True):    
     # base_dir = 'data/transfer_entropy/MAX'
@@ -26,7 +27,8 @@ def get_last_entropies_runs(base_dir, plot=True):
         with open(evo_file) as f_in:
             exp_evo_data = json.load(f_in)
             seeds.append(exp_evo_data['random_seed'])
-            gen_best_perf = exp_evo_data['best_performances']
+            gen_best_perf = np.array(exp_evo_data['best_performances'])
+            gen_best_perf = MAX_MEAN_DISTANCE - gen_best_perf
             
             # make sure it's monotonic increasing(otherwise there is a bug)
             # assert all(gen_best_perf[i] <= gen_best_perf[i+1] for i in range(len(gen_best_perf)-1))
@@ -48,7 +50,7 @@ def get_last_entropies_runs(base_dir, plot=True):
             ax.bar(x_pos, p_series, width)
         ax.set_xticks(ind + width / 2)
         ax.set_xticklabels(seeds)
-        plt.ylim(4500, 5000)
+        # plt.ylim(4500, 5000)
         plt.xlabel('Seeds')
         plt.ylabel('Performance')
         plt.show()
