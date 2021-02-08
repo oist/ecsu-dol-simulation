@@ -39,8 +39,7 @@ def get_last_performance_runs(base_dir, plot=True, print_values=True):
             if print_values:
                 print('{} {}'.format(exp, print_stats(last_best_performance)))
             best_exp_performance.append(last_best_performance)
-    if print_values:
-        print(stats.describe(best_exp_performance))
+    print(stats.describe(best_exp_performance))
     if plot:
         print("seeds:",seeds)
         fig, ax = plt.subplots()
