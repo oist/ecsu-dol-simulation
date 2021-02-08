@@ -41,7 +41,7 @@ def get_last_performance_runs(base_dir, plot=True, print_values=True):
             best_exp_performance.append(last_best_performance)
     print(stats.describe(best_exp_performance))
     if plot:
-        print("seeds:",seeds)
+        # print("seeds:",seeds)
         fig, ax = plt.subplots()
         ind = np.arange(len(seeds))
         width = 0.35
