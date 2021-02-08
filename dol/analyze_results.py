@@ -6,7 +6,7 @@ import sys
 import numpy as np
 from dol.simulation import MAX_MEAN_DISTANCE
 
-def get_last_performance_runs(base_dir, plot=True):    
+def get_last_performance_runs(base_dir, plot=True, print_values=True):    
     # base_dir = 'data/transfer_entropy/MAX'
     exp_dirs = sorted(os.listdir(base_dir))
     best_exp_performance = []
@@ -36,17 +36,22 @@ def get_last_performance_runs(base_dir, plot=True):
             print_stats = lambda a : '|'.join(['{:.5f}'.format(x) for x in a])
             
             last_best_performance = gen_best_perf[-1]
-            print('{} {}'.format(exp, print_stats(last_best_performance)))
+            if print_values:
+                print('{} {}'.format(exp, print_stats(last_best_performance)))
             best_exp_performance.append(last_best_performance)
-    print(stats.describe(best_exp_performance))
+    if print_values:
+        print(stats.describe(best_exp_performance))
     if plot:
         print("seeds:",seeds)
         fig, ax = plt.subplots()
         ind = np.arange(len(seeds))
         width = 0.35
-        for p in range(len(best_exp_performance[0])):
+        num_bars = len(best_exp_performance[0])
+        for p in range(num_bars):
             p_series = [b[p] for b in best_exp_performance]
             x_pos = ind + p * width
+            if num_bars == 1:
+                x_pos = x_pos + width/2 # center bar on ticks if there is only one bar
             ax.bar(x_pos, p_series, width)
         ax.set_xticks(ind + width / 2)
         ax.set_xticklabels(seeds)
@@ -54,7 +59,7 @@ def get_last_performance_runs(base_dir, plot=True):
         plt.xlabel('Seeds')
         plt.ylabel('Performance')
         plt.show()
-    return dict(zip(seeds, best_exp_performance))
+    # return dict(zip(seeds, best_exp_performance))
 
 if __name__ == "__main__":
     assert len(sys.argv)==2, "You need to specify the directory with the various runs to analyze"    
