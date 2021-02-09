@@ -22,7 +22,7 @@ cd ~/Code/dol-simulation
 source env/bin/activate
 
 # ruse
-python -m dol.main \
+python3 -m dol.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --dir $tempdir \
 --popsize 48 \

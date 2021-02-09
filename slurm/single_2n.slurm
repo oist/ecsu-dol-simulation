@@ -24,7 +24,7 @@ cd ~/Code/dol-simulation
 source env/bin/activate
 
 # ruse
-python -m dol.main \
+python3 -m dol.main \
 --dir $tempdir \
 --cores 120 \
 --seed ${seed} \
