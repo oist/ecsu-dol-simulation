@@ -85,8 +85,8 @@ class Simulation:
     def split_population(self):
         # when population will be split in two for computing random pairs matching
         return not self.dual_population and \
-        self.num_random_pairings is not None and \
-        self.num_random_pairings>0
+            self.num_random_pairings is not None and \
+            self.num_random_pairings>0
 
     def init_target(self, random_state=None):
         if random_state is None:
@@ -262,8 +262,11 @@ class Simulation:
         # agents_motors_control_indexes[1]: which agent's right output is controlling the right motor
         self.agents_motors_control_indexes = None
         if self.num_agents == 2:
-            if self.switch_agents_motor_control and t % 2 == 1:
-                # invert controller in mix mode on odd trials
+            if self.isolation_idx is not None:
+                # forcing control by one agents
+                self.agents_motors_control_indexes = [self.isolation_idx] * 2 # [0,0] or [1,1] 
+            elif self.switch_agents_motor_control and t % 2 == 1:
+                # invert controller in switch mode on odd trials
                 self.agents_motors_control_indexes = [1,0] 
             else:
                 self.agents_motors_control_indexes = [0,1] 
@@ -346,7 +349,7 @@ class Simulation:
     # MAIN FUNCTION
     #################
     def run_simulation(self, genotype_population, 
-        genotype_index, random_seed, data_record_list=None):
+        genotype_index, random_seed, isolation_idx=None, data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
         '''
@@ -361,6 +364,11 @@ class Simulation:
 
         self.genotype_index = genotype_index        
         self.random_state = RandomState(random_seed)
+        
+        self.isolation_idx = isolation_idx
+        if self.isolation_idx is not None:
+            assert self.num_agents==2, \
+                'can only force isolation if simulatin is run with 2 agents'
         
         self.fill_rand_agent_indexes() # random_agent_indexes
 

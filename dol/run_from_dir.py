@@ -4,22 +4,18 @@ TODO: Missing module docstring
 
 import os
 from numpy.random import RandomState
-from dol.simulation import Simulation
+from dol.simulation import Simulation, MAX_MEAN_DISTANCE
 from pyevolver.evolution import Evolution
 from dol import utils
 
 
-def run_simulation_from_dir(**kwargs):    
+def run_simulation_from_dir(dir, generation, genotype_idx=0, select_sim=0, 
+    random_target_seed=None, random_pairing_seed=None, isolation_idx=None, 
+    write_data=False, **kwargs):    
     ''' 
     utitity function to get data from a simulation
     '''    
-    dir = kwargs['dir']
-    generation = kwargs['generation']
-    genotype_idx = kwargs['genotype_idx']
-    sim_index = kwargs['select_sim'] - 1
-    write_data = kwargs['write_data']
-    random_target_seed = kwargs['random_target_seed']
-    random_pairing_seed = kwargs['random_pairing_seed']
+    sim_index = select_sim -1
     
     evo_files = [f for f in os.listdir(dir) if f.startswith('evo_')]
     assert len(evo_files)>0, "Can't find evo files in dir {}".format(dir)
@@ -52,9 +48,11 @@ def run_simulation_from_dir(**kwargs):
         original_populations, 
         original_genotype_idx, 
         random_seed,
+        isolation_idx,
         data_record_list
     )
 
+    performance = MAX_MEAN_DISTANCE - performance
     print("Performace recomputed: {}".format(performance))
     if sim.num_agents == 2:
         print("Sim agents similarity: ", sim.agents_similarity[sim_index])
@@ -86,13 +84,18 @@ if __name__ == "__main__":
         description='Rerun simulation'
     )
 
+    # args for run_simulation_from_dir
     parser.add_argument('--dir', type=str, help='Directory path')
     parser.add_argument('--generation', type=int, help='Number of generation to load')
-    parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')    
-    parser.add_argument('--random_target_seed', type=int, help='Seed to re-run simulation with random target')    
-    parser.add_argument('--random_pairing_seed', type=int, help='Seed to re-run simulation with random pairing')    
+    parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')
+    parser.add_argument('--select_sim', type=int, default=1, help='Which simulation to select for visualization and plot (1-based)')
+    parser.add_argument('--random_target_seed', type=int, help='Seed to re-run simulation with random target (None to obtain same results)')
+    parser.add_argument('--random_pairing_seed', type=int, help='Seed to re-run simulation with random pairing (None to obtain same results)')
+    parser.add_argument('--isolation_idx', type=int, help='To force the first (0) or second (1) agent to run in isolation (None otherwise)')
     parser.add_argument('--write_data', action='store_true', help='Whether to output data (same directory as input)')
-    parser.add_argument('--select_sim', type=int, default=1, help='Which simulation to select for visualization and plot')
+    
+
+    # additional args
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
     parser.add_argument('--plot_trial', type=int, help='Whether to plot a specif trial')
