@@ -497,8 +497,12 @@ class Simulation:
 
 # TEST
 
-def get_simulation_data_from_random_agent(gen_str, rs):
+def get_simulation_data_from_random_agent(gen_str=None, rs=None):    
     from pyevolver.evolution import Evolution    
+    if gen_str is None:
+        gen_str = gen_structure.DEFAULT_GEN_STRUCTURE(2)
+    if rs is None:
+        rs = RandomState(None)
     gen_size = gen_structure.get_genotype_size(gen_str)
     random_genotype = Evolution.get_random_genotype(rs, gen_size)    
     

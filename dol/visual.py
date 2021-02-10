@@ -114,9 +114,9 @@ def draw_line(surface, x1y1, theta, length):
 
 def test_visual():
     from dol import simulation    
-    sim, data_record = simulation.get_simulation_data_from_random_agent()
+    run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent()
     vis = Visualization(sim)
-    vis.start_simulation_from_data(trial_index=0, data_record=data_record)
+    vis.start_simulation_from_data(trial_index=0, data_record=data_record_list[0])
 
 
 if __name__ == "__main__":
