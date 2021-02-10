@@ -20,9 +20,9 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, select_sim=0,
     evo_files = [f for f in os.listdir(dir) if f.startswith('evo_')]
     assert len(evo_files)>0, "Can't find evo files in dir {}".format(dir)
     file_num_zfill = len(evo_files[0].split('_')[1].split('.')[0])
-    generation = str(generation).zfill(file_num_zfill)
+    generation_str = str(generation).zfill(file_num_zfill)
     sim_json_filepath = os.path.join(dir, 'simulation.json')
-    evo_json_filepath = os.path.join(dir, 'evo_{}.json'.format(generation))
+    evo_json_filepath = os.path.join(dir, 'evo_{}.json'.format(generation_str))
     sim = Simulation.load_from_file(sim_json_filepath)
     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
 
@@ -52,6 +52,10 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, select_sim=0,
         data_record_list
     )
 
+    if genotype_idx==0:
+        perf_orig = evo.best_performances[generation][0]
+        perf_orig = MAX_MEAN_DISTANCE - perf_orig
+        print("Performace original: {}".format(perf_orig))    
     performance = MAX_MEAN_DISTANCE - performance
     print("Performace recomputed: {}".format(performance))
     if sim.num_agents == 2:
