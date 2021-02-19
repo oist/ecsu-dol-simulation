@@ -213,6 +213,7 @@ class Simulation:
         self.data_record['tracker_velocity'] = [None for _ in range(self.num_trials)]
         self.data_record['tracker_signals'] = [None for _ in range(self.num_trials)]
         self.data_record['agents_motors_control_indexes'] = [None for _ in range(self.num_trials)]
+        self.data_record['agents_sensors'] = [self.nn() for _ in range(self.num_trials)]        
         self.data_record['agents_brain_input'] = [self.nn() for _ in range(self.num_trials)]
         self.data_record['agents_brain_state'] = [self.nn() for _ in range(self.num_trials)]
         self.data_record['agents_derivatives'] = [self.nn() for _ in range(self.num_trials)]
@@ -232,11 +233,12 @@ class Simulation:
         self.data_record['tracker_signals'][t] = np.zeros((self.num_data_points, 2)) 
         self.data_record['agents_motors_control_indexes'][t] = self.agents_motors_control_indexes
         for a in range(self.num_agents):            
+            self.data_record['agents_sensors'][t][a] = np.zeros((self.num_data_points, 2)) # two sensors
             self.data_record['agents_brain_input'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_brain_state'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_derivatives'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_brain_output'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))        
-            self.data_record['agents_motors'][t][a] = np.zeros((self.num_data_points, 2))        
+            self.data_record['agents_motors'][t][a] = np.zeros((self.num_data_points, 2)) # two motors  
         self.timing.add_time('SIM_init_trial_data', self.tim)            
 
     def save_data_record_step(self, t, i):
@@ -246,7 +248,8 @@ class Simulation:
         self.data_record['tracker_wheels'][t][i] = self.tracker.wheels
         self.data_record['tracker_velocity'][t][i] = self.tracker.velocity
         self.data_record['tracker_signals'][t][i] = self.tracker_signals_strength
-        for a,o in enumerate(self.agents):            
+        for a,o in enumerate(self.agents):    
+            self.data_record['agents_sensors'][t][a][i] = o.sensors
             self.data_record['agents_brain_input'][t][a][i] = o.brain.input                    
             self.data_record['agents_brain_state'][t][a][i] = o.brain.states
             self.data_record['agents_derivatives'][t][a][i] = o.brain.dy_dt

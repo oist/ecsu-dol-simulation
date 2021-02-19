@@ -69,6 +69,7 @@ class Agent:
     def init_params(self):
         self.brain.states = np.zeros(self.num_brain_neurons)
         self.position = 0
+        self.sensors = np.array([0., 0.])      
         self.motors = np.array([0., 0.])      
         self.brain.compute_output() # for firt computation of euler step
 
@@ -135,8 +136,8 @@ class Agent:
         # sensor_weights shape is (2, n): [[W11,W12, ..., W1n],[W21,W22, ..., W2n]]
         # np.dot(sensor_output, sensor_weights) returns a vector of shape (n,): (2,)·(2,n) = (n,)
         # [O1·W11+O2·W21, O1·W12+O2·W22, ..., O1·W1n+O2·W2n]        
-        sensor_outputs = np.multiply(self.sensor_gains, expit(signal_strength + self.sensor_biases))  # [o1, o2]
-        self.brain.input = np.dot(sensor_outputs, self.sensor_weights)          
+        self.sensors = np.multiply(self.sensor_gains, expit(signal_strength + self.sensor_biases))  # [o1, o2]
+        self.brain.input = np.dot(self.sensors, self.sensor_weights)          
 
     def compute_motor_outputs(self):
         # let n be the number of neurons in the brain
