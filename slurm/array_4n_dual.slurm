@@ -27,7 +27,7 @@ python3 -m dol.main \
 --dir $tempdir \
 --popsize 48 \
 --max_gen 2000 \
---num_neurons 2 \
+--num_neurons 4 \
 --num_trials 4 \
 --num_random_pairings 3 \
 --exclusive_motors_threshold 0.1 \
