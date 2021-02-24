@@ -151,13 +151,22 @@ class Simulation:
         # 0 -> 0, 0 -> 1, 0 -> 2, .... 1 -> 1, 1 -> 2, 1 -> 3, ...
         # this work also in non dual population because in this case
         # population is split in half        
-        if self.genotype_index < self.population_size:
+        if self.dual_population and self.population_index == 1:
+            # the way around (dual population)
+            # only applies if we want to rerun a simulation focusing on second population
+            self.random_agent_indexes = [
+                (self.genotype_index - s) % self.population_size
+                for s in range(self.num_random_pairings)
+            ]
+        elif self.genotype_index < self.population_size:
+            # stardard case
+            # also applies in dual population if population_index == 0
             self.random_agent_indexes = [
                 (self.genotype_index + s) % self.population_size
                 for s in range(self.num_random_pairings)
             ]
         else:
-            # the way around
+            # the way around (not dual population)
             self.random_agent_indexes = [
                 (self.genotype_index - self.population_size - s) % self.population_size
                 for s in range(self.num_random_pairings)
@@ -177,7 +186,8 @@ class Simulation:
                 first_agent_genotype = self.genotype_population[0][self.genotype_index]
                 genotypes_pair = first_agent_genotype
                 self.genotypes = np.array_split(genotypes_pair, 2)                                                 
-            else:
+            elif self.population_index == 0:
+                # standard case
                 new_genotype_index = self.genotype_index \
                     if self.genotype_index < self.population_size \
                     else self.genotype_index - self.population_size
@@ -186,6 +196,16 @@ class Simulation:
                 self.genotypes = [
                     first_agent_genotype,
                     self.genotype_population[1][self.rand_agent_idx], 
+                ]
+            else:
+                # dual population focusing on second population 
+                assert self.population_index == 1
+                new_genotype_index = self.genotype_index
+                second_agent_genotype = self.genotype_population[1][new_genotype_index]
+                self.rand_agent_idx = self.random_agent_indexes[self.sim_index]
+                self.genotypes = [
+                    self.genotype_population[0][self.rand_agent_idx], 
+                    second_agent_genotype,                    
                 ]
         else:
             first_agent_genotype = self.genotype_population[0][self.genotype_index]
@@ -352,10 +372,13 @@ class Simulation:
     # MAIN FUNCTION
     #################
     def run_simulation(self, genotype_population, 
-        genotype_index, random_seed, isolation_idx=None, data_record_list=None):
+        genotype_index, population_index, random_seed, isolation_idx=None, data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
         '''
+        
+        assert population_index==0 or (population_index==1 and self.dual_population), \
+            'population_index can be 1 only in dual population mode' 
 
         self.tim = self.timing.init_tictoc()
 
@@ -365,7 +388,8 @@ class Simulation:
             self.genotype_population = np.split(self.genotype_population[0], 2)
         self.population_size = len(self.genotype_population[0])
 
-        self.genotype_index = genotype_index        
+        self.genotype_index = genotype_index  
+        self.population_index = population_index      
         self.random_state = RandomState(random_seed)
         
         self.isolation_idx = isolation_idx
@@ -516,6 +540,7 @@ def get_simulation_data_from_random_agent(gen_str=None, rs=None):
     run_result = sim.run_simulation(        
         genotype_population=[[random_genotype]], 
         genotype_index=0,
+        population_index=0,
         data_record_list=data_record_list,
         random_seed=utils.random_int(rs)
     )    

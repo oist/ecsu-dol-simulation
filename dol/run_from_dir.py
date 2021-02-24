@@ -9,7 +9,7 @@ from pyevolver.evolution import Evolution
 from dol import utils
 
 
-def run_simulation_from_dir(dir, generation, genotype_idx=0, select_sim=0, 
+def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, select_sim=0, 
     random_target_seed=None, random_pairing_seed=None, isolation_idx=None, 
     write_data=False, **kwargs):    
     ''' 
@@ -42,18 +42,19 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, select_sim=0,
     
     # get the indexes of the populations as they were before being sorted by performance
     # we only need to do this for the first population (index 0)
-    original_genotype_idx = evo.population_sorted_indexes[0][genotype_idx]
+    original_genotype_idx = evo.population_sorted_indexes[population_idx][genotype_idx]
 
     performance, _, _ = sim.run_simulation(
         original_populations, 
         original_genotype_idx, 
+        population_idx,
         random_seed,
         isolation_idx,
         data_record_list
     )
 
     if genotype_idx==0:
-        perf_orig = evo.best_performances[generation][0]
+        perf_orig = evo.best_performances[generation][population_idx]
         perf_orig = MAX_MEAN_DISTANCE - perf_orig
         print("Performace original: {}".format(perf_orig))    
     performance = MAX_MEAN_DISTANCE - performance
@@ -92,6 +93,7 @@ if __name__ == "__main__":
     parser.add_argument('--dir', type=str, help='Directory path')
     parser.add_argument('--generation', type=int, help='Number of generation to load')
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')
+    parser.add_argument('--population_idx', type=int, default=0, help='Index of the population, usually 0 can be 1 in dual populations')    
     parser.add_argument('--select_sim', type=int, default=1, help='Which simulation to select for visualization and plot (1-based)')
     parser.add_argument('--random_target_seed', type=int, help='Seed to re-run simulation with random target (None to obtain same results)')
     parser.add_argument('--random_pairing_seed', type=int, help='Seed to re-run simulation with random pairing (None to obtain same results)')
