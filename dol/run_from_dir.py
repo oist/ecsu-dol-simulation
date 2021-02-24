@@ -53,14 +53,16 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
         data_record_list
     )
 
-    if genotype_idx==0:
-        perf_orig = evo.best_performances[generation][population_idx]
-        perf_orig = MAX_MEAN_DISTANCE - perf_orig
-        print("Performace original: {}".format(perf_orig))    
     performance = MAX_MEAN_DISTANCE - performance
-    print("Performace recomputed: {}".format(performance))
-    if sim.num_agents == 2:
-        print("Sim agents similarity: ", sim.agents_similarity[sim_index])
+
+    if not kwargs.get('quiet',False):
+        if genotype_idx==0:
+            perf_orig = evo.best_performances[generation][population_idx]
+            perf_orig = MAX_MEAN_DISTANCE - perf_orig
+            print("Performace original: {}".format(perf_orig))            
+        print("Performace recomputed: {}".format(performance))
+        if sim.num_agents == 2:
+            print("Sim agents similarity: ", sim.agents_similarity[sim_index])
 
     if write_data:        
         for s, data_record in enumerate(data_record_list,1):
@@ -78,7 +80,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
                     outfile = os.path.join(outdir, '{}.json'.format(k))
                     utils.save_json_numpy_data(v, outfile)                        
 
-    return evo, sim, data_record_list
+    return performance, evo, sim, data_record_list
 
 if __name__ == "__main__":
     import argparse
@@ -108,7 +110,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    evo, sim, data_record_list = run_simulation_from_dir(**vars(args))
+    perf, evo, sim, data_record_list = run_simulation_from_dir(**vars(args))
     
     single_simulation = len(data_record_list)==1
     data_record = data_record_list[args.select_sim-1] 

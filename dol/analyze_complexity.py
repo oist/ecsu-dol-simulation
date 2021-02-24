@@ -1,5 +1,7 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from dol.run_from_dir import run_simulation_from_dir    
 from dol.shannon_entropy import get_shannon_entropy_2d, get_shannon_entropy_dd, get_shannon_entropy_dd_simplified
 from dol.neural_complexity import compute_neural_complexity
@@ -47,30 +49,30 @@ def get_test_data():
     }
     return data_record
 
-def main_single_agent(analyze_sensors=True, analyze_brain=True, analyze_motors=True):    
 
-    fig = plt.figure(figsize=(10, 6))
+def get_seeds_generations_complexities(dir, analyze_sensors=True, 
+    analyze_brain=True, analyze_motors=True,
+    pop_index=0, only_last_generation=False, filter_performance_threshold = None): 
 
-    for seed_num in range(1,21): 
+    print('dir', dir, 'pop_idx', pop_index)   
 
-        # if seed_num in [1,7,8,9,14,15]:
-        # if seed_num in [5, 10, 12, 13, 19]:
-        #     continue
+    seed_num_list = sorted([
+        int(f.split('_')[1]) for f in os.listdir(dir)
+        if f.startswith('seed_')
+    ])
 
-        ax = fig.add_subplot(4, 5, seed_num) # projection='3d'
+    GEN, NC, H = [], [], []
+    skp_seeds = []
 
-        print('\nseed', seed_num)
+    for seed_num in tqdm(seed_num_list): 
+
+        # print('seed', seed_num)
 
         seed_num_zero = str(seed_num).zfill(3)
-        # dir = './data/2n_exc-0.1/seed_{}'.format(seed_num_zero)
-        dir = './data/4n_exc-0.1/seed_{}'.format(seed_num_zero)
-        max_gen = 2000
-        # step = 500    
-        step = 200    
+        seed_dir = os.path.join(dir, 'seed_{}'.format(seed_num_zero))
 
-        data_keys = []
-        # data elements on which complexity is analyzed
-        # trials x 1/2 agents x 500 data points x 2 dim        
+        data_keys = []  # data elements on which complexity is analyzed
+                        # trials x 1/2 agents x 500 data points x 2 dim                
         
         if analyze_sensors:
             data_keys.append('agents_sensors') # dim = num sensor = 2
@@ -79,13 +81,21 @@ def main_single_agent(analyze_sensors=True, analyze_brain=True, analyze_motors=T
         if analyze_motors:
             data_keys.append('agents_motors') # dim = num motors = 2
 
-        num_generations_list = list(range(0,max_gen+step,step)) # 0, 500, ...
-        nc_generations = np.zeros(len(num_generations_list))
-        h_generations = np.zeros(len(num_generations_list))
+        num_generations_list = sorted([
+            int(f.split('_')[1].split('.')[0]) 
+            for f in os.listdir(seed_dir) if f.startswith('evo')
+        ])
 
-        for g, generation in enumerate(num_generations_list):
-            print("generation:",generation)
-            evo, sim, data_record_list = run_simulation_from_dir(dir, generation)
+        if only_last_generation:
+            num_generations_list = num_generations_list[-1:]
+
+        nc_seed = []
+        h_seed = []
+
+        for generation in num_generations_list:
+            # print("generation:",generation)
+            perf, evo, sim, data_record_list = run_simulation_from_dir(
+                seed_dir, generation, population_idx=pop_index, quiet=True)
             num_trials = sim.num_trials
             num_agents = sim.num_agents
             num_data_points = sim.num_data_points
@@ -100,10 +110,10 @@ def main_single_agent(analyze_sensors=True, analyze_brain=True, analyze_motors=T
 
             data = [ 
                 np.moveaxis(np.array(data_record[k]), 3, 0)     # moving last dim (num_sensors/num_neurons/num_mot) first
-                for k in data_keys                              # (num_trials, num_data_points, num_agents, num_neurons) -> 
-            ]                                                   # (num_neurons, num_trials, num_data_points, num_agents)                                        
+                for k in data_keys                              # (num_trials, num_agents, num_data_points, num_neurons) -> 
+            ]                                                   # (num_neurons, num_trials, num_agents, num_data_points)                                        
                 
-            # assert sim.num_brain_neurons == num_sensors            
+            assert sim.num_brain_neurons == num_neurons            
             data = np.stack([r for d in data for r in d ]) # stacking all rows together            
             assert data.shape == (
                 num_rows, 
@@ -125,139 +135,80 @@ def main_single_agent(analyze_sensors=True, analyze_brain=True, analyze_motors=T
                 h_trials[t] = get_shannon_entropy_dd_simplified(np.transpose(trial_data_agent))
             nc_avg = np.mean(nc_trials)
             h_avg = np.mean(h_trials)
-            print("nc_avg:",nc_avg)
-            print("h_avg:",h_avg)
-            nc_generations[g] = nc_avg
-            h_generations[g] = h_avg
-        ax.plot(num_generations_list, nc_generations) # , label=str(seed_num)
-        # ax.plot(num_generations_list, h_generations)
-        
-
-    # plt.legend()
-    plt.show()
-        
-    #     break
-
-    #     assert len(data_record['agents_sensors']) == sim.num_trials        
-    #     for t, trial_data in enumerate(data_record):            
-    #         assert len(trial_data) == sim.num_agents            
-    #         for a in range(sim.num_agents):
-    #             agent_data = trial_data[a]
-    #             data = np.row_stack(
-    #                 [agent_data[k] for k in data_keys]
-    #             )
-    #             print(data.shape)
+            # print("nc_avg:",nc_avg)
+            # print("h_avg:",h_avg)
+            nc_seed.append(nc_avg)
+            h_seed.append(h_avg)      
+            converged = filter_performance_threshold is None or perf < filter_performance_threshold
     
-    # sim_json_filepath = os.path.join(dir, 'simulation.json')
-    # sim = Simulation.load_from_file(sim_json_filepath)
-    # evo_file_list = [f for f in sorted(os.listdir(dir)) if f.startswith('evo_')]
-    # assert len(evo_file_list)>0, "Can't find evo files in dir {}".format(dir)
-    # for evo_file in evo_file_list:
-    #     gen_num = int(evo_file.split('_')[1].split('.')[0])        
-    #     evo_json_filepath = os.path.join(dir, evo_file)
-    #     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
+        if converged:
+            GEN.append(num_generations_list)
+            NC.append(nc_seed)
+            H.append(h_seed)
+        else:
+            GEN.append([])
+            NC.append([])
+            H.append([])
+            skp_seeds.append(seed_num_zero)
+    
+    if len(skp_seeds)>0:
+        print("Skipped seed", skp_seeds)
 
-def main_multi_agent():    
-    import matplotlib.pyplot as plt
-    from dol.run_from_dir import run_simulation_from_dir    
-    from dol.shannon_entropy import get_shannon_entropy_2d
+    return GEN, NC, H
 
+def plot_generations_complexities(dir, analyze_sensors, 
+    analyze_brain, analyze_motors, filter_performance_threshold):
+    GEN, NC, H = get_seeds_generations_complexities(dir, analyze_sensors, 
+        analyze_brain, analyze_motors, only_last_generation=False, 
+        filter_performance_threshold=filter_performance_threshold)
     fig = plt.figure(figsize=(10, 6))
-    ax = fig.add_subplot(1,1,1)
-
-    for seed_num in range(1,21):
-
-        if seed_num in [5]:
-            continue
-
-        print('\nseed', seed_num)
-
-        seed_num_zero = str(seed_num).zfill(3)
-        dir = './data/2n_exc-0.1_rp-3_dual/seed_{}'.format(seed_num_zero)
-        max_gen = 2000
-        step = 500    
-
-        # data elements on which complexity is analyzed
-        # trials x 1/2 agents x 500 data points x 2 dim
-        data_keys = [
-            'agents_sensors', # dim = num sensor = 2
-            'agents_brain_output', # dim = num neurons = 2
-            'agents_motors' # dim = num motors = 2
-        ]    
-
-        num_generations_list = list(range(0,max_gen+step,step)) # 0, 500, ...
-        nc_generations = np.zeros(len(num_generations_list))
-        h_generations = np.zeros(len(num_generations_list))
-
-        for g, generation in enumerate(num_generations_list):
-            print("generation:",generation)
-            evo, sim, data_record_list = run_simulation_from_dir(dir, generation)
-            data_record = data_record_list[0]   
-            data = np.array([ data_record[k] for k in data_keys])
-            assert data.shape == (len(data_keys), sim.num_trials, sim.num_agents, sim.num_data_points, 2)
-            nc_trials = np.zeros(sim.num_trials)
-            h_trials = np.zeros(sim.num_trials)
-            for t in range(sim.num_trials):
-                # print("trial:",t+1)
-                trial_data = data[:,t,:,:,:]
-                # trial_data.shape == (3, 1, 500, 2)
-                a = 0 # assume only one agent
-                trial_data_agent = trial_data[:,a,:,:] 
-                # trial_data_agent.shape == (3, 500, 2)
-                trial_data_agent = np.moveaxis(trial_data_agent, 2, 1)
-                trial_data_agent = trial_data_agent.reshape((6,-1))
-                # second_brain_neuron = trial_data_agent[3,:]
-                # check = data_record['agents_brain_output'][t][a][:,1]
-                # assert (second_brain_neuron==check).all
-                brain_trial_data_agent = trial_data_agent[[2,3],:] # only brain
-                # trial_data_agent = trial_data_agent[[0,1,2,3],:] # only sensors and brain
-                nc = compute_neural_complexity(brain_trial_data_agent) 
-                # print("nc:",nc)
-                nc_trials[t] = nc
-                h_trials[t] = get_shannon_entropy_2d(np.transpose(brain_trial_data_agent))
-            nc_avg = np.mean(nc_trials)
-            h_avg = np.mean(h_trials)
-            print("nc_avg:",nc_avg)
-            print("h_avg:",h_avg)
-            nc_generations[g] = nc_avg
-            h_generations[g] = h_avg
-        ax.plot(num_generations_list, nc_generations)
-        # ax.plot(num_generations_list, h_generations)
-        
-        # if nc_generations[-1] > nc_generations[0]:
-        #     print('seed --> ', seed_num)
-
+    num_plots = len(GEN)
+    num_plot_cols = 5
+    num_plot_rows = int(num_plots / num_plot_cols)
+    if num_plots % num_plot_cols > 0:
+        num_plot_cols += 1
+    for seed_num, (num_gen_list, nc_seed, h_seed) in enumerate(zip(GEN, NC, H), 1):
+        ax = fig.add_subplot(num_plot_rows, num_plot_cols, seed_num) 
+        ax.plot(num_gen_list, nc_seed) # , label=str(seed_num)
+        # ax.plot(num_generations_list, h_seed)
+        # plt.legend()
     plt.show()
-        
-    #     break
 
-    #     assert len(data_record['agents_sensors']) == sim.num_trials        
-    #     for t, trial_data in enumerate(data_record):            
-    #         assert len(trial_data) == sim.num_agents            
-    #         for a in range(sim.num_agents):
-    #             agent_data = trial_data[a]
-    #             data = np.row_stack(
-    #                 [agent_data[k] for k in data_keys]
-    #             )
-    #             print(data.shape)
-    
-    # sim_json_filepath = os.path.join(dir, 'simulation.json')
-    # sim = Simulation.load_from_file(sim_json_filepath)
-    # evo_file_list = [f for f in sorted(os.listdir(dir)) if f.startswith('evo_')]
-    # assert len(evo_file_list)>0, "Can't find evo files in dir {}".format(dir)
-    # for evo_file in evo_file_list:
-    #     gen_num = int(evo_file.split('_')[1].split('.')[0])        
-    #     evo_json_filepath = os.path.join(dir, evo_file)
-    #     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
+def main_line_plot():    
+    analyze_sensors = True
+    analyze_brain = True 
+    analyze_motors = False
+    dir = 'data/2n_exc-0.1/'
+    plot_generations_complexities(
+        dir, analyze_sensors, analyze_brain, analyze_motors,
+        filter_performance_threshold=20.0)
+
+def main_candle_plot():
+    analyze_sensors = True
+    analyze_brain = True 
+    analyze_motors = False    
+    all_NC = []
+    for dir, pop_index in [
+        ('data/2n_exc-0.1/', 0), 
+        ('data/2n_exc-0.1_rp-3_switch', 0), 
+        ('data/2n_exc-0.1_rp-3_dual', 0),
+        ('data/2n_exc-0.1_rp-3_dual', 1)]:                
+        _, NC, _ = get_seeds_generations_complexities(
+            dir, analyze_sensors, analyze_brain, analyze_motors, 
+            pop_index, only_last_generation=True, filter_performance_threshold=20.0)
+        NC = np.squeeze(NC)
+        # print(NC)
+        # print(NC.shape)
+        all_NC.append(NC)
+    x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
+    plt.boxplot(all_NC, labels=x_labels)
+    plt.show()
+
 
 
 if __name__ == "__main__":    
-    main_single_agent(
-        analyze_sensors=False, 
-        analyze_brain=True, 
-        analyze_motors=False
-    )
-    # main_multi_agent()
+    # main_line_plot()
+    main_candle_plot()
     
     
     
