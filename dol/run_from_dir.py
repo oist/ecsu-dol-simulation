@@ -9,13 +9,13 @@ from pyevolver.evolution import Evolution
 from dol import utils
 
 
-def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, select_sim=0, 
+def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, select_sim=1, 
     random_target_seed=None, random_pairing_seed=None, isolation_idx=None, 
     write_data=False, **kwargs):    
     ''' 
     utitity function to get data from a simulation
     '''    
-    sim_index = select_sim -1
+    sim_index = select_sim - 1
     
     evo_files = [f for f in os.listdir(dir) if f.startswith('evo_')]
     assert len(evo_files)>0, "Can't find evo files in dir {}".format(dir)
@@ -44,7 +44,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
     # we only need to do this for the first population (index 0)
     original_genotype_idx = evo.population_sorted_indexes[population_idx][genotype_idx]
 
-    performance, _, _ = sim.run_simulation(
+    performance, sim_perfs, _ = sim.run_simulation(
         original_populations, 
         original_genotype_idx,         
         random_seed,
@@ -53,12 +53,12 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
         data_record_list
     )
 
-    performance = MAX_MEAN_DISTANCE - performance
+    performance = sim.normalize_performance(performance)
 
     if not kwargs.get('quiet',False):
         if genotype_idx==0:
             perf_orig = evo.best_performances[generation][population_idx]
-            perf_orig = MAX_MEAN_DISTANCE - perf_orig
+            perf_orig = sim.normalize_performance(perf_orig)
             print("Performace original: {}".format(perf_orig))            
         print("Performace recomputed: {}".format(performance))
         if sim.num_agents == 2:
@@ -80,7 +80,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
                     outfile = os.path.join(outdir, '{}.json'.format(k))
                     utils.save_json_numpy_data(v, outfile)                        
 
-    return performance, evo, sim, data_record_list
+    return performance, sim_perfs, evo, sim, data_record_list
 
 if __name__ == "__main__":
     import argparse
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    perf, evo, sim, data_record_list = run_simulation_from_dir(**vars(args))
+    perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(**vars(args))
     
     single_simulation = len(data_record_list)==1
     data_record = data_record_list[args.select_sim-1] 

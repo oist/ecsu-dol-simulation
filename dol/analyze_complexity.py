@@ -93,15 +93,18 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
         h_seed = []
 
         for generation in num_generations_list:
+            
             # print("generation:",generation)
-            perf, evo, sim, data_record_list = run_simulation_from_dir(
+            perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
                 seed_dir, generation, population_idx=pop_index, quiet=True)
+
+            best_sim_idx = np.argmax(sim_perfs)
+            
             num_trials = sim.num_trials
             num_agents = sim.num_agents
             num_data_points = sim.num_data_points
-            data_record = data_record_list[0]   
-            # data_record = get_test_data()
-            
+            data_record = data_record_list[best_sim_idx]   
+            # data_record = get_test_data()            
             
             num_sensors = np.array(data_record['agents_sensors']).shape[-1] if analyze_sensors else 0
             num_neurons = np.array(data_record['agents_brain_output']).shape[-1] if analyze_brain else 0

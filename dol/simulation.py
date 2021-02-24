@@ -519,6 +519,15 @@ class Simulation:
         # todo: return array of performances based on number of populations
         return performances
 
+
+    def normalize_performance(self, performance):
+        '''
+        Returns the normalized performance
+        such that best performance == 0
+        '''
+        return MAX_MEAN_DISTANCE - performance
+
+
 # --- END OF SIMULATION CLASS
 
 
