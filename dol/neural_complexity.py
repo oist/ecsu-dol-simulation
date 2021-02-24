@@ -112,8 +112,7 @@ def generate_correlated_data(num_data_points, cov, rs):
     rnd = rs.normal(0.0, 1.0, size=(num_data_points, 2))
 
     result = rnd @ upper_chol
-    corr_0_1 , _ = pearsonr(result[:,0], result[:,1])
-
+    # corr_0_1 , _ = pearsonr(result[:,0], result[:,1])
     # print(result.shape)
     # print(corr_0_1)
     
