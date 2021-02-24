@@ -146,9 +146,10 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
             NC.append(nc_seed)
             H.append(h_seed)
         else:
-            GEN.append([])
-            NC.append([])
-            H.append([])
+            if not only_last_generation:
+                GEN.append([])
+                NC.append([])
+                H.append([])
             skp_seeds.append(seed_num_zero)
     
     if len(skp_seeds)>0:
@@ -183,7 +184,7 @@ def main_line_plot():
         dir, analyze_sensors, analyze_brain, analyze_motors,
         filter_performance_threshold=20.0)
 
-def main_candle_plot():
+def main_box_plot():
     analyze_sensors = True
     analyze_brain = True 
     analyze_motors = False    
@@ -196,6 +197,7 @@ def main_candle_plot():
         _, NC, _ = get_seeds_generations_complexities(
             dir, analyze_sensors, analyze_brain, analyze_motors, 
             pop_index, only_last_generation=True, filter_performance_threshold=20.0)
+        
         NC = np.squeeze(NC)
         # print(NC)
         # print(NC.shape)
@@ -204,11 +206,13 @@ def main_candle_plot():
     plt.boxplot(all_NC, labels=x_labels)
     plt.show()
 
-
+# TODO: from a given seed, look at the last generation, 
+# and compute the neural complexity for all agents
+# plot correlation between fitness and complexity
 
 if __name__ == "__main__":    
     # main_line_plot()
-    main_candle_plot()
+    main_box_plot()
     
     
     

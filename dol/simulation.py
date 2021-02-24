@@ -371,8 +371,8 @@ class Simulation:
     #################
     # MAIN FUNCTION
     #################
-    def run_simulation(self, genotype_population, 
-        genotype_index, population_index, random_seed, isolation_idx=None, data_record_list=None):
+    def run_simulation(self, genotype_population, genotype_index, random_seed, 
+        population_index=0, isolation_idx=None, data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
         '''
@@ -540,9 +540,9 @@ def get_simulation_data_from_random_agent(gen_str=None, rs=None):
     run_result = sim.run_simulation(        
         genotype_population=[[random_genotype]], 
         genotype_index=0,
+        random_seed=utils.random_int(rs),
         population_index=0,
-        data_record_list=data_record_list,
-        random_seed=utils.random_int(rs)
+        data_record_list=data_record_list,        
     )    
     return run_result, sim, data_record_list
 

@@ -46,9 +46,9 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
 
     performance, _, _ = sim.run_simulation(
         original_populations, 
-        original_genotype_idx, 
-        population_idx,
+        original_genotype_idx,         
         random_seed,
+        population_idx,
         isolation_idx,
         data_record_list
     )
