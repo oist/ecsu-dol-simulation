@@ -1,59 +1,63 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from dol.run_from_dir import run_simulation_from_dir    
+from dol.shannon_entropy import get_shannon_entropy_2d, get_shannon_entropy_dd, get_shannon_entropy_dd_simplified
+from dol.neural_complexity import compute_neural_complexity
 
-num_sensors = 2
-num_motors = 2
-num_neurons = 4
-num_agents = 1
-num_data_points = 500
-num_trials = 4
 
-data_record = {
-    'agents_sensors': [
-        [
-            [ 
-                ['t{}_a{}_p{}_sens{}'.format(t,a,p,s) for s in range(num_sensors)] 
-                for p in range(num_data_points)    
+def get_test_data():
+    num_sensors = 2
+    num_motors = 2
+    num_neurons = 4
+    num_agents = 1
+    num_data_points = 500
+    num_trials = 4
+
+    data_record = {
+        'agents_sensors': [
+            [
+                [ 
+                    ['t{}_a{}_p{}_sens{}'.format(t,a,p,s) for s in range(num_sensors)] 
+                    for p in range(num_data_points)    
+                ] 
+                for a in range(num_agents)            
             ] 
-            for a in range(num_agents)            
-        ] 
-        for t in range(num_trials)
-    ],
-    'agents_brain_output': [
-        [
-            [ 
-                ['t{}_a{}_p{}_brain{}'.format(t,a,p,n) for n in range(num_neurons)] 
-                for p in range(num_data_points)
+            for t in range(num_trials)
+        ],
+        'agents_brain_output': [
+            [
+                [ 
+                    ['t{}_a{}_p{}_brain{}'.format(t,a,p,n) for n in range(num_neurons)] 
+                    for p in range(num_data_points)
+                ] 
+                for a in range(num_agents)            
             ] 
-            for a in range(num_agents)            
-        ] 
-        for t in range(num_trials)
-    ],
-    'agents_motors': [
-        [
-            [ 
-                ['t{}_a{}_p{}_mot{}'.format(t,a,p,m) for m in range(num_motors)]                 
-                for p in range(num_data_points)
+            for t in range(num_trials)
+        ],
+        'agents_motors': [
+            [
+                [ 
+                    ['t{}_a{}_p{}_mot{}'.format(t,a,p,m) for m in range(num_motors)]                 
+                    for p in range(num_data_points)
+                ] 
+                for a in range(num_agents)            
             ] 
-            for a in range(num_agents)            
-        ] 
-        for t in range(num_trials)
-    ],
-}
+            for t in range(num_trials)
+        ],
+    }
+    return data_record
 
-def main_single_agent(only_brain=False):    
-    import matplotlib.pyplot as plt
-    from dol.run_from_dir import run_simulation_from_dir    
-    from dol.shannon_entropy import get_shannon_entropy_2d, get_shannon_entropy_dd, get_shannon_entropy_dd_simplified
+def main_single_agent(analyze_sensors=True, analyze_brain=True, analyze_motors=True):    
 
-    # fig = plt.figure(figsize=(10, 6))
-    # ax = fig.add_subplot(1,1,1)
+    fig = plt.figure(figsize=(10, 6))
 
-    for seed_num in range(1,2): # ,21
+    for seed_num in range(1,21): 
 
         # if seed_num in [1,7,8,9,14,15]:
         # if seed_num in [5, 10, 12, 13, 19]:
         #     continue
 
-        # ax = fig.add_subplot(4, 5, seed_num) # projection='3d'
+        ax = fig.add_subplot(4, 5, seed_num) # projection='3d'
 
         print('\nseed', seed_num)
 
@@ -64,18 +68,16 @@ def main_single_agent(only_brain=False):
         # step = 500    
         step = 200    
 
-        if only_brain:
-            data_keys = [
-                'agents_brain_output' # dim = num neurons = 2/4
-            ]
-        else:
-            # data elements on which complexity is analyzed
-            # trials x 1/2 agents x 500 data points x 2 dim        
-            data_keys = [
-                'agents_sensors', # dim = num sensor = 2
-                'agents_brain_output', # dim = num neurons = 2/4
-                'agents_motors' # dim = num motors = 2
-            ]    
+        data_keys = []
+        # data elements on which complexity is analyzed
+        # trials x 1/2 agents x 500 data points x 2 dim        
+        
+        if analyze_sensors:
+            data_keys.append('agents_sensors') # dim = num sensor = 2
+        if analyze_brain:
+            data_keys.append('agents_brain_output') # dim = num neurons = 2/4
+        if analyze_motors:
+            data_keys.append('agents_motors') # dim = num motors = 2
 
         num_generations_list = list(range(0,max_gen+step,step)) # 0, 500, ...
         nc_generations = np.zeros(len(num_generations_list))
@@ -83,24 +85,24 @@ def main_single_agent(only_brain=False):
 
         for g, generation in enumerate(num_generations_list):
             print("generation:",generation)
-            # evo, sim, data_record_list = run_simulation_from_dir(dir, generation)
-            # num_trials = sim.num_trials
-            # num_agents = sim.num_agents
-            # num_data_points = sim.num_data_points
-            # data_record = data_record_list[0]   
-
-            # (num_trials, num_data_points, num_agents, num_neurons) -> 
-            # (num_neurons, num_trials, num_data_points, num_agents)
+            evo, sim, data_record_list = run_simulation_from_dir(dir, generation)
+            num_trials = sim.num_trials
+            num_agents = sim.num_agents
+            num_data_points = sim.num_data_points
+            data_record = data_record_list[0]   
+            # data_record = get_test_data()
             
+            
+            num_sensors = np.array(data_record['agents_sensors']).shape[-1] if analyze_sensors else 0
+            num_neurons = np.array(data_record['agents_brain_output']).shape[-1] if analyze_brain else 0
+            num_motors = np.array(data_record['agents_motors']).shape[-1] if analyze_motors else 0
+            num_rows = num_sensors + num_neurons + num_motors        
+
             data = [ 
-                np.moveaxis(np.array(data_record[k]), 3, 0) # moving last dim (num_sensors/num_neurons/num_mot) first
-                for k in data_keys
-            ]                
-            if only_brain:
-                num_rows = num_neurons = len(data[0])                
-            else:
-                num_sensors, num_neurons, num_motors = [len(d) for d in data]
-                num_rows = num_sensors + num_neurons + num_motors        
+                np.moveaxis(np.array(data_record[k]), 3, 0)     # moving last dim (num_sensors/num_neurons/num_mot) first
+                for k in data_keys                              # (num_trials, num_data_points, num_agents, num_neurons) -> 
+            ]                                                   # (num_neurons, num_trials, num_data_points, num_agents)                                        
+                
             # assert sim.num_brain_neurons == num_sensors            
             data = np.stack([r for d in data for r in d ]) # stacking all rows together            
             assert data.shape == (
@@ -113,14 +115,10 @@ def main_single_agent(only_brain=False):
             nc_trials = np.zeros(num_trials)
             h_trials = np.zeros(num_trials)
             for t in range(num_trials):
-                print("trial:",t+1)
-                trial_data = data[:,t,:,:]
-                assert trial_data.shape == (num_rows, num_data_points, num_agents)
+                # print("trial:",t+1)
                 a = 0 # assume only one agent
-                trial_data_agent = trial_data[:,:,a] 
+                trial_data_agent = data[:,t,a,:] 
                 assert trial_data_agent.shape == (num_rows, num_data_points)                                
-                print(trial_data_agent.shape)
-                print(trial_data_agent)
                 nc = compute_neural_complexity(trial_data_agent) 
                 # print("nc:",nc)
                 nc_trials[t] = nc
@@ -131,14 +129,12 @@ def main_single_agent(only_brain=False):
             print("h_avg:",h_avg)
             nc_generations[g] = nc_avg
             h_generations[g] = h_avg
-        # ax.plot(num_generations_list, nc_generations, label=str(seed_num))
+        ax.plot(num_generations_list, nc_generations) # , label=str(seed_num)
         # ax.plot(num_generations_list, h_generations)
         
-        # if nc_generations[-1] > nc_generations[0]:
-        #     print('seed --> ', seed_num)
 
     # plt.legend()
-    # plt.show()
+    plt.show()
         
     #     break
 
@@ -256,7 +252,11 @@ def main_multi_agent():
 
 
 if __name__ == "__main__":    
-    main_single_agent(only_brain=False)
+    main_single_agent(
+        analyze_sensors=False, 
+        analyze_brain=True, 
+        analyze_motors=False
+    )
     # main_multi_agent()
     
     
