@@ -508,13 +508,15 @@ class Simulation:
         
         if self.num_random_pairings!=None and self.num_random_pairings>0:
             # compute performance of the second (half of the) population
-            performances = np.zeros((2,population_size))
+            first_half_performances = np.zeros((population_size))
+            second_half_performances = np.zeros((self.num_random_pairings, population_size)) # stor individual performnaces with each pairing and then compute mean
             for i, r in enumerate(run_result):
                 perf_tot, perf_sim_list, rand_idx_list = r
-                performances[0][i] = perf_tot # average of perf of the i-th agent of first population paired with n other agents of the second population
-                for perf_sim, rand_idx in zip(perf_sim_list, rand_idx_list):
-                    performances[1][rand_idx] += perf_sim # adding single sim performance to second agent
-            performances[1] = performances[1] / self.num_random_pairings # average performances on second population
+                first_half_performances[i] = perf_tot # average of perf of the i-th agent of first population paired with n other agents of the second population
+                for j, (perf_sim, rand_idx) in enumerate(zip(perf_sim_list, rand_idx_list)):
+                    second_half_performances[j][rand_idx] = perf_sim # adding single sim performance to second agent
+            second_half_performances = np.mean(second_half_performances, axis=0) # average performances on second population
+            performances = np.array([first_half_performances, second_half_performances])
             if not self.dual_population:
                 # joined thw two half performances in one
                 performances = np.concatenate(performances)
