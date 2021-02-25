@@ -5,7 +5,7 @@ from tqdm import tqdm
 from dol.run_from_dir import run_simulation_from_dir    
 from dol.shannon_entropy import get_shannon_entropy_2d, get_shannon_entropy_dd, get_shannon_entropy_dd_simplified
 from dol.neural_complexity import compute_neural_complexity
-
+import pandas as pd 
 
 def get_test_data():
     num_sensors = 2
@@ -52,7 +52,9 @@ def get_test_data():
 
 def get_seeds_generations_complexities(dir, analyze_sensors=True, 
     analyze_brain=True, analyze_motors=True,
-    pop_index=0, only_last_generation=False, filter_performance_threshold = None): 
+    pop_index=0, only_last_generation=False, 
+    filter_performance_threshold = None,
+    use_brain_derivative=False): 
 
     print('dir', dir, 'pop_idx', pop_index)   
 
@@ -77,7 +79,8 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
         if analyze_sensors:
             data_keys.append('agents_sensors') # dim = num sensor = 2
         if analyze_brain:
-            data_keys.append('agents_brain_output') # dim = num neurons = 2/4
+            brain_key = 'agents_derivatives' if use_brain_derivative else 'agents_brain_output'
+            data_keys.append(brain_key) # dim = num neurons = 2/4
         if analyze_motors:
             data_keys.append('agents_motors') # dim = num motors = 2
 
@@ -129,7 +132,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
             h_trials = np.zeros(num_trials)
             for t in range(num_trials):
                 # print("trial:",t+1)
-                a = 0 # assume only one agent
+                a = pop_index # use the agent from the selected population
                 trial_data_agent = data[:,t,a,:] 
                 assert trial_data_agent.shape == (num_rows, num_data_points)                                
                 nc = compute_neural_complexity(trial_data_agent) 
@@ -149,10 +152,10 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
             NC.append(nc_seed)
             H.append(h_seed)
         else:
-            if not only_last_generation:
-                GEN.append([])
-                NC.append([])
-                H.append([])
+            fill = [] if not only_last_generation else [np.NaN]
+            GEN.append(fill)
+            NC.append(fill)
+            H.append(fill)
             skp_seeds.append(seed_num_zero)
     
     if len(skp_seeds)>0:
@@ -188,25 +191,47 @@ def main_line_plot():
         filter_performance_threshold=20.0)
 
 def main_box_plot():
-    analyze_sensors = True
+    num_neurons = 4
+    analyze_sensors = False
     analyze_brain = True 
-    analyze_motors = False    
+    analyze_motors = False     
+    use_brain_derivatives = True   
+    selected_nodes_str_list = [ 
+        n
+        for n,b in zip(
+            ['sensors','dbrain' if use_brain_derivatives else 'brain','motors'],
+            [analyze_sensors, analyze_brain, analyze_motors]
+        ) if b
+    ]
     all_NC = []
     for dir, pop_index in [
-        ('data/2n_exc-0.1/', 0), 
-        ('data/2n_exc-0.1_rp-3_switch', 0), 
-        ('data/2n_exc-0.1_rp-3_dual', 0),
-        ('data/2n_exc-0.1_rp-3_dual', 1)]:                
+        (f'data/{num_neurons}n_exc-0.1/', 0),
+        (f'data/{num_neurons}n_exc-0.1_rp-3_switch', 0), 
+        (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 0),
+        (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 1)]:                
         _, NC, _ = get_seeds_generations_complexities(
             dir, analyze_sensors, analyze_brain, analyze_motors, 
-            pop_index, only_last_generation=True, filter_performance_threshold=20.0)
+            pop_index, only_last_generation=True, filter_performance_threshold=20.0,
+            use_brain_derivatives=use_brain_derivatives)
         
         NC = np.squeeze(NC)
         # print(NC)
         # print(NC.shape)
         all_NC.append(NC)
+
+    all_NC = np.array(all_NC) # 4 x 20
+    print(all_NC.shape)
+    selected_nodes_file_str = '_'.join([x[:3] for x in selected_nodes_str_list])
+    f_name = f"data/{num_neurons}n_{selected_nodes_file_str}.csv"
+    print(f_name)
+    # np.savetxt(f_name, all_NC, delimiter=",")
     x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
-    plt.boxplot(all_NC, labels=x_labels)
+    df = pd.DataFrame(np.transpose(all_NC), columns = x_labels) # 20 x 4
+    df.to_csv(f_name)    
+    all_NC_not_NaN = [x[~np.isnan(x)] for x in all_NC]
+    plt.boxplot(all_NC_not_NaN, labels=x_labels)
+    selected_nodes_str = ', '.join(selected_nodes_str_list)
+    plt.title(f'Neural Complexity - {num_neurons}n ({selected_nodes_str})')
     plt.show()
 
 # TODO: from a given seed, look at the last generation, 
