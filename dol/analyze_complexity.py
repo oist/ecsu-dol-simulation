@@ -54,7 +54,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
     analyze_brain=True, analyze_motors=True,
     pop_index=0, only_last_generation=False, 
     filter_performance_threshold = None,
-    use_brain_derivative=False): 
+    use_brain_derivatives=False): 
 
     print('dir', dir, 'pop_idx', pop_index)   
 
@@ -79,7 +79,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
         if analyze_sensors:
             data_keys.append('agents_sensors') # dim = num sensor = 2
         if analyze_brain:
-            brain_key = 'agents_derivatives' if use_brain_derivative else 'agents_brain_output'
+            brain_key = 'agents_derivatives' if use_brain_derivatives else 'agents_brain_output'
             data_keys.append(brain_key) # dim = num neurons = 2/4
         if analyze_motors:
             data_keys.append('agents_motors') # dim = num motors = 2
@@ -99,7 +99,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
             
             # print("generation:",generation)
             perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
-                seed_dir, generation, population_idx=pop_index, quiet=True)
+                seed_dir, generation, population_idx=pop_index, quiet=False)
 
             best_sim_idx = np.argmax(sim_perfs)
             
@@ -132,7 +132,10 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
             h_trials = np.zeros(num_trials)
             for t in range(num_trials):
                 # print("trial:",t+1)
-                a = pop_index # use the agent from the selected population
+
+                a = sim.population_index  # can be 1 in dual mode or in split if 
+                                          # current agent is in the second part of population
+                
                 trial_data_agent = data[:,t,a,:] 
                 assert trial_data_agent.shape == (num_rows, num_data_points)                                
                 nc = compute_neural_complexity(trial_data_agent) 
@@ -165,6 +168,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
 
 def plot_generations_complexities(dir, analyze_sensors, 
     analyze_brain, analyze_motors, filter_performance_threshold):
+    
     GEN, NC, H = get_seeds_generations_complexities(dir, analyze_sensors, 
         analyze_brain, analyze_motors, only_last_generation=False, 
         filter_performance_threshold=filter_performance_threshold)
@@ -197,8 +201,7 @@ def main_box_plot():
     analyze_motors = False     
     use_brain_derivatives = True   
     selected_nodes_str_list = [ 
-        n
-        for n,b in zip(
+        n for n,b in zip(
             ['sensors','dbrain' if use_brain_derivatives else 'brain','motors'],
             [analyze_sensors, analyze_brain, analyze_motors]
         ) if b
