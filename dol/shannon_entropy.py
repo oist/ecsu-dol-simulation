@@ -26,6 +26,7 @@ def get_shannon_entropy_1d(data_1d, min_v=0., max_v=100.):
 
 
 def get_shannon_entropy_2d(brain_output, min_v=0., max_v=1.):
+    # assert data.shape[0] < data.shape[1] # many rows, few columns
     num_data_points = len(brain_output)
     histo, _, _ = np.histogram2d(
         brain_output[:, 0],
@@ -45,6 +46,7 @@ def get_shannon_entropy_2d(brain_output, min_v=0., max_v=1.):
     return norm_entropy
 
 def get_shannon_entropy_dd(data, min_v=0., max_v=1.):
+    # assert data.shape[0] < data.shape[1] # many rows, few columns
     num_data_points = len(data)
     dimensions = data.shape[1]
     histo, _ = np.histogramdd(
@@ -64,6 +66,7 @@ def get_shannon_entropy_dd(data, min_v=0., max_v=1.):
     return norm_entropy
 
 def get_shannon_entropy_dd_simplified(data, min_v=0., max_v=1.):
+    # assert data.shape[0] < data.shape[1] # many rows, few columns
     num_data_points = len(data)
     dimensions = data.shape[1]
     binning_space = np.linspace(min_v, max_v, BINS)

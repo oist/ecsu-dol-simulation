@@ -62,6 +62,8 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
             print("Performace original: {}".format(perf_orig))            
         print("Performace recomputed: {}".format(performance))
         assert abs(perf_orig-performance)<1e-8
+        # if performance == perf_orig:
+        #     print("Exact!!")
         if sim.num_agents == 2:
             print("Sim agents similarity: ", sim.agents_similarity[sim_index])
 

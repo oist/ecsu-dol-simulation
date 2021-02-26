@@ -29,7 +29,9 @@ def get_entropy_using_coveriance(data):
         cov_det = float(cov_matrix) # cov_matrix is a 0-dim array
     else:
         cov_det = np.linalg.det(cov_matrix)
-    entropy = 0.5 * np.log( ((2 * np.pi * np.e) ** num_nodes) * cov_det)
+    log_arg = ((2 * np.pi * np.e) ** num_nodes) * cov_det
+    assert log_arg > 0
+    entropy = 0.5 * np.log( log_arg )
     return entropy
     
 
@@ -42,8 +44,13 @@ def test_bipartitions(n):
     print('Bipartition of {} ({}):'.format(l, num))
     print('\n'.join(str(x) for x in bipart_list))
 
-def compute_neural_complexity(data):
+def compute_neural_complexity(data, rs=None):
     assert data.ndim == 2
+    assert data.shape[0] < data.shape[1] # few rows, many columns
+    if rs is not None:
+        # add noise
+        noise = rs.normal(0, 1e-8, data.shape)
+        data = data + noise
     num_nodes, _ = data.shape    
     h_AB = get_entropy_using_coveriance(data)
     # print('entropy AB: ', h_AB)
@@ -72,23 +79,21 @@ def compute_neural_complexity(data):
 def test_complexity_random_uniform(num_nodes, num_data_points, seed):
     rs = np.random.RandomState(seed)
     data = rs.uniform(-1,1,size=(num_nodes, num_data_points))
-    nc = compute_neural_complexity(data)
+    nc = compute_neural_complexity(data, rs)
     print('Nerual Complexity (Random Uniform)', nc)
 
 
 def test_complexity_random_gaussian(num_nodes, num_data_points, seed):
     rs = np.random.RandomState(seed)
     data = rs.normal(size=(num_nodes, num_data_points))
-    nc = compute_neural_complexity(data)
+    nc = compute_neural_complexity(data, rs)
     print('Nerual Complexity (Random Normal Gaussian)', nc)
 
 
 def test_complexity_constant(num_nodes, num_data_points, seed):
     rs = np.random.RandomState(seed)
     data = np.ones((num_nodes, num_data_points))
-    noise = rs.normal(0, 1e-15, data.shape)
-    data = data + noise
-    nc = compute_neural_complexity(data)
+    nc = compute_neural_complexity(data, rs)
     print('Nerual Complexity (Constat-ones)', nc)
 
 
@@ -132,7 +137,7 @@ def test_complexity_correlated_data(num_nodes, num_data_points, cov, seed):
         ]
     )
     assert data.shape == (num_nodes, num_data_points)
-    nc = compute_neural_complexity(data)
+    nc = compute_neural_complexity(data, rs)
     print('Nerual Complexity (Correlated)', nc)
 
 def compute_mutual_information(AB):    

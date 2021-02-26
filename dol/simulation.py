@@ -541,27 +541,31 @@ class Simulation:
 
 # TEST
 
-def get_simulation_data_from_random_agent(gen_str=None, rs=None):    
-    from pyevolver.evolution import Evolution    
-    if gen_str is None:
-        gen_str = gen_structure.DEFAULT_GEN_STRUCTURE(2)
-    if rs is None:
-        rs = RandomState(None)
-    gen_size = gen_structure.get_genotype_size(gen_str)
-    random_genotype = Evolution.get_random_genotype(rs, gen_size)    
-    
+def get_simulation_data_from_agent(gen_str, genotype, rs):
     sim = Simulation(
         genotype_structure=gen_str
     )
     data_record_list = []
     run_result = sim.run_simulation(        
-        genotype_population=[[random_genotype]], 
+        genotype_population=[[genotype]], 
         genotype_index=0,
         random_seed=utils.random_int(rs),
         population_index=0,
         data_record_list=data_record_list,        
     )    
     return run_result, sim, data_record_list
+
+def get_simulation_data_from_random_agent(gen_str, rs):    
+    from pyevolver.evolution import Evolution    
+    gen_size = gen_structure.get_genotype_size(gen_str)
+    random_genotype = Evolution.get_random_genotype(rs, gen_size)    
+    return get_simulation_data_from_agent(gen_str, random_genotype, rs)
+
+def get_simulation_data_from_filled_agent(gen_str, value, rs):    
+    gen_size = gen_structure.get_genotype_size(gen_str)
+    genotype = np.full(gen_size, value)
+    return get_simulation_data_from_agent(gen_str, genotype, rs)
+    
 
 def test_simulation():
     default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)
@@ -585,4 +589,4 @@ def ger_worst_performance(num_iter):
 
 if __name__ == "__main__":
     test_simulation()
-    ger_worst_performance(100)
+    # ger_worst_performance(100)

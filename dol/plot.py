@@ -176,13 +176,26 @@ def plot_results(evo, sim, trial, data_record):
     # plot_genotype_similarity(evo, sim)
 
 
-def test_plot():
+def test_plot(value='random'):
     from dol import simulation    
-    sim, data_record = simulation.get_simulation_data_from_random_agent()
-    plot_results(None, sim, data_record)
+    from dol import gen_structure
+    from numpy.random import RandomState
+    if value == 'random':
+        run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
+            gen_str = gen_structure.DEFAULT_GEN_STRUCTURE(2),
+            rs = RandomState(None)
+        )
+    else:
+        run_result, sim, data_record_list = simulation.get_simulation_data_from_filled_agent(
+            gen_str = gen_structure.DEFAULT_GEN_STRUCTURE(4),
+            value = value,
+            rs = RandomState(None)
+        )
+    plot_results(None, sim, trial=None, data_record=data_record_list[0])
 
 
 if __name__ == "__main__":
-    test_plot()
+    # test_plot('random')
+    test_plot(0)
 
 
