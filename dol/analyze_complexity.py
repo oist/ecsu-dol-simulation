@@ -7,6 +7,7 @@ from dol.run_from_dir import run_simulation_from_dir
 from dol.shannon_entropy import get_shannon_entropy_2d, get_shannon_entropy_dd, get_shannon_entropy_dd_simplified
 from dol.neural_complexity import compute_neural_complexity
 import pandas as pd 
+from pyevolver.evolution import Evolution
 
 def get_test_data():
     num_sensors = 2
@@ -189,10 +190,18 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
 
     return GEN, BP, NC, H
 
-def plot_generations_complexities(dir, analyze_sensors, 
-    analyze_brain, analyze_motors, filter_performance_threshold, rs):
 
-    pop_index = 0
+def main_line_plot():    
+
+    dir = 'data/2n_exc-0.1_zfill/'
+    pop_index = 0    
+
+    analyze_sensors = True
+    analyze_brain = True 
+    analyze_motors = False
+    filter_performance_threshold = None #20.0
+    
+    rs = RandomState(1)    
     
     GEN, BP, NC, H = get_seeds_generations_complexities(dir, 
         analyze_sensors, analyze_brain, analyze_motors, 
@@ -215,17 +224,6 @@ def plot_generations_complexities(dir, analyze_sensors,
         # ax.plot(num_generations_list, h_seed)
         # plt.legend()
     plt.show()
-
-def main_line_plot():    
-    analyze_sensors = True
-    analyze_brain = True 
-    analyze_motors = False
-    filter_performance_threshold = None #20.0
-    dir = 'data/2n_exc-0.1_zfill/'
-    rs = RandomState(1)
-    plot_generations_complexities(
-        dir, analyze_sensors, analyze_brain, analyze_motors,
-        filter_performance_threshold, rs)
 
 def main_box_plot():
     num_neurons = 4
@@ -274,6 +272,56 @@ def main_box_plot():
     plt.show()
 
 
+def main_scatter_plot():
+    '''
+    from a given seed, look at the last generation, 
+    and compute the neural complexity for all agents
+    plot correlation between fitness and complexity
+    '''
+    seed_dir = 'data/2n_exc-0.1_zfill/seed_001'
+    generation = 5000
+    pop_index = 0    
+
+    analyze_sensors = True
+    analyze_brain = True 
+    analyze_motors = False
+    use_brain_derivatives = False
+    filter_performance_threshold = None #20.0
+    
+    rs = RandomState(1)
+
+    evo_file = sorted([f for f in os.listdir(seed_dir) if 'evo_' in f])[0]
+    evo_json_filepath = os.path.join(seed_dir, evo_file)
+    evo = Evolution.load_from_file(evo_json_filepath, folder_path=None)
+
+    pop_size = len(evo.population[0])
+    print('pop_size', pop_size)
+
+    perf_data = np.zeros(pop_size)
+    nc_data = np.zeros(pop_size)
+
+    for genotype_idx in tqdm(range(pop_size)):
+
+        perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
+            seed_dir, generation, genotype_idx, population_idx=pop_index, quiet=True)
+
+        nc_avg, h_avg = get_sim_agent_complexity(
+            sim_perfs, sim, data_record_list,
+            analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
+            rs
+        )
+
+        perf_data[genotype_idx] = perf
+        nc_data[genotype_idx] = nc_avg
+        
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(1, 1, 1) 
+    ax.scatter(perf_data, nc_data)    
+    plt.xlabel('performance')
+    plt.ylabel('nc')
+    plt.show()
+
+
 def main_single_agent(init_value = 'random'):
     from dol import simulation    
     from dol import gen_structure
@@ -305,15 +353,11 @@ def main_single_agent(init_value = 'random'):
     print('nc', nc)
     print('h', h)
 
-
-# TODO: from a given seed, look at the last generation, 
-# and compute the neural complexity for all agents
-# plot correlation between fitness and complexity
-
 if __name__ == "__main__":    
-    main_line_plot()
+    # main_line_plot()
     # main_box_plot()
     # main_single_agent(0)
+    main_scatter_plot()
     
     
     
