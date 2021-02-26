@@ -25,6 +25,7 @@ source env/bin/activate
 python3 -m dol.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --dir $tempdir \
+--gen_zfill True \
 --popsize 48 \
 --max_gen 2000 \
 --num_neurons 2 \

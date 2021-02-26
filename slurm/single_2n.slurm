@@ -26,6 +26,7 @@ source env/bin/activate
 # ruse
 python3 -m dol.main \
 --dir $tempdir \
+--gen_zfill True \
 --cores 120 \
 --seed ${seed} \
 --num_neurons 2 \
