@@ -53,7 +53,8 @@ def get_test_data():
 
 
 def get_sim_agent_complexity(sim_perfs, sim, data_record_list,
-    analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives, rs):
+    analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives, 
+    combined_complexity, rs):
 
     data_keys = []  # data elements on which complexity is analyzed
                     # trials x 1/2 agents x 500 data points x 2 dim                
@@ -103,13 +104,24 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list,
 
         a = sim.population_index  # can be 1 in dual mode or in split if 
                                 # current agent is in the second part of population
-        
-        trial_data_agent = data[:,t,a,:] 
-        assert trial_data_agent.shape == (num_rows, num_data_points)                                
-        nc = compute_neural_complexity(trial_data_agent, rs) 
+                
+        if combined_complexity:
+            assert num_agents == 2
+            trial_data = np.concatenate(
+                (
+                    data[:,t,a,:],
+                    data[:,t,1-a,:]
+                )
+            )
+            assert trial_data.shape == (2*num_rows, num_data_points)
+        else:
+            trial_data = data[:,t,a,:] 
+            assert trial_data.shape == (num_rows, num_data_points)                                
+
+        nc = compute_neural_complexity(trial_data, rs) 
         # print("nc:",nc)
         nc_trials[t] = nc
-        h_trials[t] = get_shannon_entropy_dd_simplified(np.transpose(trial_data_agent))
+        h_trials[t] = get_shannon_entropy_dd_simplified(np.transpose(trial_data))
     nc_avg = np.mean(nc_trials)
     h_avg = np.mean(h_trials)
     # print("nc_avg:",nc_avg)
@@ -122,6 +134,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
     pop_index=0, only_last_generation=False, 
     filter_performance_threshold = None,
     use_brain_derivatives=False,
+    combined_complexity=False, 
     rs=None): 
 
     print('dir', dir, 'pop_idx', pop_index)   
@@ -161,7 +174,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
             nc_avg, h_avg = get_sim_agent_complexity(
                 sim_perfs, sim, data_record_list,
                 analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
-                rs
+                combined_complexity, rs
             )
 
             nc_seed.append(nc_avg)
@@ -206,7 +219,8 @@ def main_line_plot():
     GEN, BP, NC, H = get_seeds_generations_complexities(dir, 
         analyze_sensors, analyze_brain, analyze_motors, 
         pop_index=pop_index, only_last_generation=False, 
-        filter_performance_threshold=filter_performance_threshold, rs=rs)
+        filter_performance_threshold=filter_performance_threshold, 
+        combined_complexity=False, rs=rs)
     fig = plt.figure(figsize=(10, 6))
     num_plots = len(GEN)
     num_plot_cols = 5
@@ -231,23 +245,40 @@ def main_box_plot():
     analyze_brain = True 
     analyze_motors = False     
     use_brain_derivatives = False  
-    rs = RandomState(2) 
+    combined_complexity = False
+    
+    rs = RandomState(1) 
+    
     selected_nodes_str_list = [ 
         n for n,b in zip(
             ['sensors','dbrain' if use_brain_derivatives else 'brain','motors'],
             [analyze_sensors, analyze_brain, analyze_motors]
         ) if b
     ]
-    all_NC = []
-    for dir, pop_index in [
-        (f'data/{num_neurons}n_exc-0.1/', 0),
-        (f'data/{num_neurons}n_exc-0.1_rp-3_switch', 0),
-        (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 0),
-        (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 1)]:                
+    
+    all_NC = []        
+
+    if combined_complexity:
+        dir_pop_index = [
+            (f'data/{num_neurons}n_exc-0.1/', 0),
+            (f'data/{num_neurons}n_exc-0.1_rp-3_switch', 0),
+            (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 0),
+            (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 1)
+        ]
+        x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
+    else:
+        dir_pop_index = [
+            (f'data/{num_neurons}n_exc-0.1_rp-3_switch', 0),
+            (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 0),
+        ]
+        x_labels = ['gen', 'spec']
+
+    for dir, pop_index in dir_pop_index:                
         _, _, NC, _ = get_seeds_generations_complexities(
             dir, analyze_sensors, analyze_brain, analyze_motors, 
             pop_index, only_last_generation=True, filter_performance_threshold=20.0,
-            use_brain_derivatives=use_brain_derivatives, rs=rs)
+            use_brain_derivatives=use_brain_derivatives, 
+            combined_complexity=combined_complexity, rs=rs)
         
         NC = np.squeeze(NC)
         # print(NC)
@@ -258,8 +289,7 @@ def main_box_plot():
     print(all_NC.shape)
     selected_nodes_file_str = '_'.join([x[:3] for x in selected_nodes_str_list])
     f_name = f"data/{num_neurons}n_{selected_nodes_file_str}.csv"
-    print(f_name)
-    x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
+    print(f_name)    
 
     # save file to csv
     # df = pd.DataFrame(np.transpose(all_NC)) #, columns = x_labels) # 20 x 4
@@ -268,7 +298,10 @@ def main_box_plot():
     all_NC_not_NaN = [x[~np.isnan(x)] for x in all_NC]
     plt.boxplot(all_NC_not_NaN, labels=x_labels)
     selected_nodes_str = ', '.join(selected_nodes_str_list)
-    plt.title(f'Neural Complexity - {num_neurons}n ({selected_nodes_str})')
+    title = f'Neural Complexity - {num_neurons}n ({selected_nodes_str})'
+    if combined_complexity:
+        title += ' (combined)'
+    plt.title(title)
     plt.show()
 
 
@@ -286,8 +319,8 @@ def main_scatter_plot():
     analyze_brain = True 
     analyze_motors = False
     use_brain_derivatives = False
-    filter_performance_threshold = None #20.0
     
+    combined_complexity = False
     rs = RandomState(1)
 
     evo_file = sorted([f for f in os.listdir(seed_dir) if 'evo_' in f])[0]
@@ -308,7 +341,7 @@ def main_scatter_plot():
         nc_avg, h_avg = get_sim_agent_complexity(
             sim_perfs, sim, data_record_list,
             analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
-            rs
+            combined_complexity, rs
         )
 
         perf_data[genotype_idx] = perf
@@ -347,6 +380,7 @@ def main_single_agent(init_value = 'random'):
         analyze_brain=True, 
         analyze_motors=False, 
         use_brain_derivatives=False,
+        combined_complexity=False,
         rs = rs
     )
 
@@ -355,9 +389,9 @@ def main_single_agent(init_value = 'random'):
 
 if __name__ == "__main__":    
     # main_line_plot()
-    # main_box_plot()
+    main_box_plot()
     # main_single_agent(0)
-    main_scatter_plot()
+    # main_scatter_plot()
     
     
     
