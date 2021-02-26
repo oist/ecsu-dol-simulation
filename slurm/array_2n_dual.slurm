@@ -27,7 +27,7 @@ python3 -m dol.main \
 --dir $tempdir \
 --gen_zfill True \
 --popsize 48 \
---max_gen 2000 \
+--max_gen 5000 \
 --num_neurons 2 \
 --num_trials 4 \
 --num_random_pairings 3 \
