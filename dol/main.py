@@ -23,8 +23,9 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=0, help='Random seed')     
     parser.add_argument('--dir', type=str, default=None, help='Output directory')
     parser.add_argument('--perf_obj', default='MAX', help='Performance objective') # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
+    parser.add_argument('--gen_zfill', type=bool, default=False, help='whether to fill geotipes with zeros (True) or random (false - default)')    
     parser.add_argument('--popsize', type=int, default=96, help='Population size')    
-    parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')    
+    parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')
 
     # simulation arguments    
     parser.add_argument('--num_neurons', type=int, default=2, help='Number of neurons in agent')          
@@ -59,6 +60,8 @@ if __name__ == "__main__":
             subdir = '{}n'.format(args.num_neurons)
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
+            if args.gen_zfill:
+                subdir += '_zfill'
             if args.num_random_pairings is not None:
                 subdir += '_rp-{}'.format(args.num_random_pairings)
             if args.switch_agents_motor_control:
@@ -93,10 +96,21 @@ if __name__ == "__main__":
 
     if args.num_random_pairings==0:
         genotype_size *= 2 # two agents per genotype
+
+    num_populations= 2 if args.dual_population else 1
+
+    population = None # by default randomly initialized in evolution
     
+    if args.gen_zfill:
+        # all genotypes initialized with zeros
+        population = np.zeros(
+            (num_populations, args.popsize, genotype_size)
+        )        
+
     evo = Evolution(
         random_seed=args.seed,
-        num_populations= 2 if args.dual_population else 1,
+        population=population,
+        num_populations=num_populations,
         population_size=args.popsize,
         genotype_size=genotype_size, 
         evaluation_function=sim.evaluate,
