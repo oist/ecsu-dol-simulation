@@ -130,7 +130,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
         if f.startswith('seed_')
     ])
 
-    GEN, NC, H = [], [], []
+    GEN, NC, H, BP = [], [], [], []
     skp_seeds = []
 
     for seed_num in tqdm(seed_num_list): 
@@ -168,14 +168,18 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
 
         # check if converged (only usefull for last generation)     
         converged = filter_performance_threshold is None or perf < filter_performance_threshold
-    
+        
+        # get all best performances throught all generations from last evolution        
+
         if converged:
             GEN.append(num_generations_list)
+            BP.append(sim.normalize_performance(np.array(evo.best_performances)))
             NC.append(nc_seed)
             H.append(h_seed)
         else:
             fill = [] if not only_last_generation else [np.NaN]
             GEN.append(fill)
+            BP.append(fill)
             NC.append(fill)
             H.append(fill)
             skp_seeds.append(seed_num_zero)
@@ -183,13 +187,16 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
     if len(skp_seeds)>0:
         print("Skipped seed", skp_seeds)
 
-    return GEN, NC, H
+    return GEN, BP, NC, H
 
 def plot_generations_complexities(dir, analyze_sensors, 
     analyze_brain, analyze_motors, filter_performance_threshold, rs):
+
+    pop_index = 0
     
-    GEN, NC, H = get_seeds_generations_complexities(dir, analyze_sensors, 
-        analyze_brain, analyze_motors, only_last_generation=False, 
+    GEN, BP, NC, H = get_seeds_generations_complexities(dir, 
+        analyze_sensors, analyze_brain, analyze_motors, 
+        pop_index=pop_index, only_last_generation=False, 
         filter_performance_threshold=filter_performance_threshold, rs=rs)
     fig = plt.figure(figsize=(10, 6))
     num_plots = len(GEN)
@@ -197,9 +204,14 @@ def plot_generations_complexities(dir, analyze_sensors,
     num_plot_rows = int(num_plots / num_plot_cols)
     if num_plots % num_plot_cols > 0:
         num_plot_cols += 1
-    for seed_num, (num_gen_list, nc_seed, h_seed) in enumerate(zip(GEN, NC, H), 1):
-        ax = fig.add_subplot(num_plot_rows, num_plot_cols, seed_num) 
-        ax.plot(num_gen_list, nc_seed) # , label=str(seed_num)
+
+    for seed_num, (num_gen_list, best_perfs, nc_seed, h_seed) in enumerate(zip(GEN, BP, NC, H), 1):
+        ax1 = fig.add_subplot(num_plot_rows, num_plot_cols, seed_num) 
+        ax1.plot(num_gen_list, nc_seed) # , label=str(seed_num)
+        ax1.set_ylim(0,3)
+        ax2 = ax1.twinx()
+        ax2.plot(np.arange(len(best_perfs)), best_perfs, color='orange')
+        ax2.set_ylim(0,100)
         # ax.plot(num_generations_list, h_seed)
         # plt.legend()
     plt.show()
@@ -208,11 +220,12 @@ def main_line_plot():
     analyze_sensors = True
     analyze_brain = True 
     analyze_motors = False
-    dir = 'data/2n_exc-0.1/'
+    filter_performance_threshold = None #20.0
+    dir = 'data/2n_exc-0.1_zfill/'
     rs = RandomState(1)
     plot_generations_complexities(
         dir, analyze_sensors, analyze_brain, analyze_motors,
-        filter_performance_threshold=20.0, rs=rs)
+        filter_performance_threshold, rs)
 
 def main_box_plot():
     num_neurons = 4
@@ -233,7 +246,7 @@ def main_box_plot():
         (f'data/{num_neurons}n_exc-0.1_rp-3_switch', 0),
         (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 0),
         (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 1)]:                
-        _, NC, _ = get_seeds_generations_complexities(
+        _, _, NC, _ = get_seeds_generations_complexities(
             dir, analyze_sensors, analyze_brain, analyze_motors, 
             pop_index, only_last_generation=True, filter_performance_threshold=20.0,
             use_brain_derivatives=use_brain_derivatives, rs=rs)
@@ -282,7 +295,7 @@ def main_single_agent(init_value = 'random'):
     
     nc, h = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
-        analyze_sensors=False, 
+        analyze_sensors=True, 
         analyze_brain=True, 
         analyze_motors=False, 
         use_brain_derivatives=False,
@@ -298,9 +311,9 @@ def main_single_agent(init_value = 'random'):
 # plot correlation between fitness and complexity
 
 if __name__ == "__main__":    
-    # main_line_plot()
+    main_line_plot()
     # main_box_plot()
-    main_single_agent(0)
+    # main_single_agent(0)
     
     
     

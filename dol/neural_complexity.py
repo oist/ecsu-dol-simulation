@@ -49,7 +49,7 @@ def compute_neural_complexity(data, rs=None):
     assert data.shape[0] < data.shape[1] # few rows, many columns
     if rs is not None:
         # add noise
-        noise = rs.normal(0, 1e-8, data.shape)
+        noise = rs.normal(0, 1e-5, data.shape)
         data = data + noise
     num_nodes, _ = data.shape    
     h_AB = get_entropy_using_coveriance(data)
