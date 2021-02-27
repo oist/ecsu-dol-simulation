@@ -18,8 +18,8 @@ class Tracker:
     def init_params(self):
         from dol.simulation import ENV_SIZE
         self.half_env_size = ENV_SIZE/2
-        self.position = 0
-        self.velocity = 0
+        self.position = 0.
+        self.velocity = 0.
         self.wheels = np.zeros(2)
         self.signals_strength = np.zeros(2)
 

@@ -457,7 +457,7 @@ class Simulation:
 
                 # performance_t = - np.mean(np.abs(self.tracker.delta_target)) / self.target_env_width
                 performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.tracker.delta_target))
-                assert performance_t >= 0
+                # assert performance_t >= 0
 
                 trial_performances.append(performance_t)
 
@@ -579,7 +579,7 @@ def test_simulation():
     run_result, _, data_record_list = get_simulation_data_from_random_agent(default_gen_structure, rs)    
     perf = run_result[0]
     print("Performance: ", perf)
-    utils.save_json_numpy_data(data_record_list, 'data/simulation.json')    
+    utils.save_json_numpy_data(data_record_list, 'data/simulation_bug.json')    
 
 def ger_worst_performance(num_iter):
     worst = MAX_MEAN_DISTANCE
