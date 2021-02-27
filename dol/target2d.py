@@ -32,7 +32,7 @@ class Target2D:
         self.set_pos_vel(trial)
 
         a = 150
-        t = np.pi/2 + np.arange(self.num_data_points)/80
+        t = 0.1 + 6*np.pi/4 + np.arange(self.num_data_points)/70
         x = a * np.cos(t) / 1 + np.square(np.sin(t))
         y = a * np.sin(t) * np.cos(t) / 1 + np.square(np.sin(t))
 

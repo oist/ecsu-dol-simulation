@@ -30,7 +30,7 @@ class Tracker2D:
         self.position = np.zeros(2)
         self.velocity = 0
         self.wheels = np.zeros(2)
-        self.angle = 0
+        self.angle = -np.pi/4 # 45 degree
         self.signals_strength = np.zeros(2)
         self.__update_sensors_pos()
 
