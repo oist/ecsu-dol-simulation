@@ -28,6 +28,8 @@ class Simulation:
     genotype_structure: Dict = field(default_factory = \
         lambda:gen_structure.DEFAULT_GEN_STRUCTURE(2))  
 
+    num_dim: int = 1 # number of dimensions (1 or 2)
+
     # random pairings
     num_random_pairings: int = None
     # None -> agents are alone in the simulation (default)

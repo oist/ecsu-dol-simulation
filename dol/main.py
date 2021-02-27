@@ -13,7 +13,7 @@ from dol.simulation import Simulation
 
 
 
-if __name__ == "__main__":
+def main(raw_args=None):
 
     parser = argparse.ArgumentParser(
         description='Run the Division of Labor Simulation'
@@ -27,8 +27,9 @@ if __name__ == "__main__":
     parser.add_argument('--popsize', type=int, default=96, help='Population size')    
     parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')
 
-    # simulation arguments    
+    # simulation arguments        
     parser.add_argument('--num_neurons', type=int, default=2, help='Number of neurons in agent')          
+    parser.add_argument('--num_dim', type=int, choices=[1,2], default=1, help='Number of dimensions of the simulation')
     parser.add_argument('--num_trials', type=int, default=4, help='Number of trials')        
     parser.add_argument('--trial_duration', type=int, default=50, help='Trial duration')        
     parser.add_argument('--num_random_pairings', type=int, default=None, help= \
@@ -46,7 +47,8 @@ if __name__ == "__main__":
         'motor and the other the right')        
     parser.add_argument('--cores', type=int, default=1, help='Number of cores')          
 
-    args = parser.parse_args()
+    # Gather the provided arguements as an array.
+    args = parser.parse_args(raw_args)
 
     t = TicToc()
     t.tic()
@@ -58,6 +60,8 @@ if __name__ == "__main__":
         # create default path if it specified dir already exists
         if os.path.isdir(args.dir):
             subdir = '{}n'.format(args.num_neurons)
+            if args.num_dim == 2:
+                subdir += '_2d'
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             if args.gen_zfill:
@@ -80,7 +84,8 @@ if __name__ == "__main__":
     checkpoint_interval=int(np.ceil(args.max_gen/10))
 
     sim = Simulation(        
-        genotype_structure = genotype_structure,        
+        genotype_structure = genotype_structure,  
+        num_dim = args.num_dim,      
         num_trials = args.num_trials,
         trial_duration = args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
         num_random_pairings = args.num_random_pairings,
@@ -135,3 +140,8 @@ if __name__ == "__main__":
     evo.run()
 
     print('Ellapsed time: {}'.format(t.tocvalue()))
+
+    return sim, evo
+
+if __name__ == "__main__":
+    main()
