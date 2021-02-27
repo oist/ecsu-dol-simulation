@@ -32,16 +32,16 @@ class Tracker:
         delta_abs = np.abs(self.delta_target)
         if delta_abs <= 1:
             # consider tracker and target overlapping -> max signla left and right sensor
-            signals_strength = np.ones(2)
+            self.signals_strength = np.ones(2)
         elif delta_abs >= self.half_env_size:
             # signals gos to zero if beyond half env_size
-            signals_strength = np.zeros(2)
+            self.signals_strength = np.zeros(2)
         else:
             signal_index = 1 if self.delta_target > 0 else 0 # right or left
-            signals_strength = np.zeros(2)
+            self.signals_strength = np.zeros(2)
             # signals_strength[signal_index] = 1/delta_abs
             # better if signal decreases linearly
-            signals_strength[signal_index] = linmap(
+            self.signals_strength[signal_index] = linmap(
                 delta_abs, [1,self.half_env_size],[1,0])
 
 def test_tracker():
