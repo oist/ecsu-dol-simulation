@@ -455,8 +455,8 @@ class Simulation:
                     
                     self.save_data_record_step(t, i)             
 
-                # performance_t = - np.mean(np.abs(self.tracker.delta_target)) / self.target_env_width
-                performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.tracker.delta_target))
+                # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
+                performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.delta_tracker_target))
                 # assert performance_t >= 0
 
                 trial_performances.append(performance_t)
