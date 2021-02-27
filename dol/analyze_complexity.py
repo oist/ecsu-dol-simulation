@@ -206,13 +206,14 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
 
 def main_line_plot():    
 
-    dir = 'data/2n_exc-0.1_zfill/'
+    dir = 'data/2n_exc-0.1_zfill_rp-3_switch/'
     pop_index = 0    
 
     analyze_sensors = True
     analyze_brain = True 
     analyze_motors = False
     filter_performance_threshold = None #20.0
+    combined_complexity = False
     
     rs = RandomState(1)    
     
@@ -220,7 +221,8 @@ def main_line_plot():
         analyze_sensors, analyze_brain, analyze_motors, 
         pop_index=pop_index, only_last_generation=False, 
         filter_performance_threshold=filter_performance_threshold, 
-        combined_complexity=False, rs=rs)
+        combined_complexity=combined_complexity, rs=rs)
+
     fig = plt.figure(figsize=(10, 6))
     num_plots = len(GEN)
     num_plot_cols = 5
@@ -240,12 +242,12 @@ def main_line_plot():
     plt.show()
 
 def main_box_plot():
-    num_neurons = 4
+    num_neurons = 2
     analyze_sensors = False
     analyze_brain = True 
     analyze_motors = False     
     use_brain_derivatives = False  
-    combined_complexity = False
+    combined_complexity = True
     
     rs = RandomState(1) 
     
@@ -260,18 +262,18 @@ def main_box_plot():
 
     if combined_complexity:
         dir_pop_index = [
-            (f'data/{num_neurons}n_exc-0.1/', 0),
-            (f'data/{num_neurons}n_exc-0.1_rp-3_switch', 0),
-            (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 0),
-            (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 1)
+            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
+            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
         ]
-        x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
+        x_labels = ['gen', 'spec']        
     else:
         dir_pop_index = [
-            (f'data/{num_neurons}n_exc-0.1_rp-3_switch', 0),
-            (f'data/{num_neurons}n_exc-0.1_rp-3_dual', 0),
+            (f'data/{num_neurons}n_exc-0.1_zfill/', 0),
+            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
+            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
+            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_dual', 1)
         ]
-        x_labels = ['gen', 'spec']
+        x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
 
     for dir, pop_index in dir_pop_index:                
         _, _, NC, _ = get_seeds_generations_complexities(

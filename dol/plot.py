@@ -151,6 +151,7 @@ def plot_results(evo, sim, trial, data_record):
     # time agents
     plot_data_time(data_record, 'agents_brain_input', trial)
     plot_data_time(data_record, 'agents_brain_output', trial)
+    plot_data_time(data_record, 'agents_sensors', trial)
     # plot_data_time(data_record, 'agents_brain_state', trial)
     # plot_data_time(data_record, 'agents_derivatives', trial)
     plot_motor_time(sim, data_record, 'agents_motors', trial)
