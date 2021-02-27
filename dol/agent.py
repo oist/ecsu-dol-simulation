@@ -149,6 +149,7 @@ class Agent:
             self.motor_gains,
             expit(np.dot(self.brain.output, self.motor_weights) + self.motor_biases)
         )
+        assert np.max(self.motors)<10
     
 
 def test_random_genotype():

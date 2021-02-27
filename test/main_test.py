@@ -4,7 +4,7 @@ import numpy as np
 def test_2n_exc():
     sim, evo = main([             
         # '--dir', './data/tmp', 
-        '--cores', '7', 
+        '--cores', '1', 
         '--seed', '1',
         '--num_neurons', '2', 
         '--popsize', '20', 

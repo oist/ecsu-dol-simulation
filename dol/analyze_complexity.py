@@ -365,12 +365,12 @@ def main_single_agent(init_value = 'random'):
     rs = RandomState(1)
     if init_value == 'random':
         run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
-            gen_str = gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
+            gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
             rs = rs
         )
     else:
         run_result, sim, data_record_list = simulation.get_simulation_data_from_filled_agent(
-            gen_str = gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
+            gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
             value = init_value,
             rs = rs
         )

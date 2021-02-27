@@ -4,22 +4,45 @@ TODO: Missing module docstring
 
 from dataclasses import dataclass, field
 import numpy as np
+from dol.utils import linmap
 
 @dataclass
 class Tracker:
 
-    position: float = None     # to be initialized via init_params
-    velocity: float = None     # to be initialized via init_params
-    wheels: np.ndarray = None  # to be initialized via init_params
+    # to be initialized via init_params    
+    position: float = None     
+    velocity: float = None     
+    wheels: np.ndarray = None  
+    signals_strength : np.ndarray = None
     
     def init_params(self):
+        from dol.simulation import ENV_SIZE
+        self.half_env_size = ENV_SIZE/2
         self.position = 0
         self.velocity = 0
         self.wheels = np.zeros(2)
+        self.signals_strength = np.zeros(2)
 
     def move_one_step(self):
-        self.velocity = np.diff(self.wheels) # wheels[1] - wheels[0]
+        self.velocity = self.wheels[1] - self.wheels[0]
         self.position += self.velocity
+
+    def compute_signal_strength_and_delta_target(self, target_position):
+        self.delta_target = target_position - self.position
+        delta_abs = np.abs(self.delta_target)
+        if delta_abs <= 1:
+            # consider tracker and target overlapping -> max signla left and right sensor
+            signals_strength = np.ones(2)
+        elif delta_abs >= self.half_env_size:
+            # signals gos to zero if beyond half env_size
+            signals_strength = np.zeros(2)
+        else:
+            signal_index = 1 if self.delta_target > 0 else 0 # right or left
+            signals_strength = np.zeros(2)
+            # signals_strength[signal_index] = 1/delta_abs
+            # better if signal decreases linearly
+            signals_strength[signal_index] = linmap(
+                delta_abs, [1,self.half_env_size],[1,0])
 
 def test_tracker():
     Tracker(0)

@@ -6,19 +6,17 @@ import numpy as np
 from dataclasses import dataclass, field
 from numpy.random import RandomState
 
-
 @dataclass
 class Target:
     
     num_data_points: int
-    env_width: int = 400    
     trial_vel: list = None
     trial_start_pos: list = None
-    trial_delta_bnd: list = None
+    trial_delta_bnd: list = None # margin from left and right boundaries
 
     def __post_init__(self):
-        self.half_env_width = self.env_width/2
-        
+        from dol.simulation import ENV_SIZE
+        self.half_env_size = ENV_SIZE/2        
 
     def set_pos_vel(self, trial):
         # init pos        
@@ -30,7 +28,7 @@ class Target:
         self.vel = self.start_vel
 
     def get_next_boundary_pos(self, trial):        
-        return self.half_env_width - self.trial_delta_bnd[trial]
+        return self.half_env_size - self.trial_delta_bnd[trial]
 
     def print_start_pos_vel(self):
         print("Start position: ", self.start_pos)
@@ -61,7 +59,6 @@ class Target:
 def test_target_constant():
     t = Target(
         num_data_points = 500,
-        env_width = 100,
         trial_vel = [1],
         trial_start_pos = [0],
         trial_delta_bnd = [0],
@@ -71,7 +68,6 @@ def test_target_constant():
 def test_target_standard_trials():
     t = Target(        
         num_data_points = 500,
-        env_width = 100,
         trial_vel = [-1],
         trial_start_pos = [10],
         trial_delta_bnd = [5],
@@ -81,7 +77,6 @@ def test_target_standard_trials():
 def test_max_distance():
     t = Target(        
         num_data_points = 500,
-        env_width = 400,
         trial_vel = [-2],
         trial_start_pos = [0],
         trial_delta_bnd = [0],
