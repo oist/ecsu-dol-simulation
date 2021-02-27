@@ -5,28 +5,34 @@ TODO: Missing module docstring
 import numpy as np
 from numpy.random import RandomState
 import pygame
+from pyevolver.evolution import Evolution
 from dol.simulation import Simulation
 from dol import gen_structure
 from dol import utils
-from pyevolver.evolution import Evolution
+from dol import target2d
+from dol import tracker2d
 
-CANVAS_WIDTH = 800
-CANVAS_HIGHT = 300
+CANVAS_SIZE = 800
 ZOOM_FACTOR = 2
 REFRESH_RATE = 50
 
-CANVAS_H_CENTER = CANVAS_WIDTH/2
+CANVAS_CENTER = np.full(2, CANVAS_SIZE/2)
+
 SHIFT_CENTER_TO_TARGET = False
 
 black = (0, 0, 0)
 white = (255, 255, 255)
 red = (255, 0, 0)
 blue = (0, 0, 255)
+yellow = (255, 255, 0)
 target_tracker_color = [red, blue]
-target_tracker_vpos = [CANVAS_HIGHT/3*2, CANVAS_HIGHT/3]
-body_radius = 2 * ZOOM_FACTOR
+target_tracker_vpos = [CANVAS_SIZE/3*2, CANVAS_SIZE/3]
+tracker_sensor_color = yellow
 
-class Visualization:
+body_radius = tracker2d.BODY_RADIUS * ZOOM_FACTOR
+tracker_sensor_radius = tracker2d.SENSOR_RADIUS * ZOOM_FACTOR
+
+class Visualization2D:
 
     def __init__(self, simulation):
 
@@ -34,21 +40,21 @@ class Visualization:
 
         pygame.init()
 
-        self.main_surface = pygame.display.set_mode((CANVAS_WIDTH, CANVAS_HIGHT))
+        self.main_surface = pygame.display.set_mode((CANVAS_SIZE, CANVAS_SIZE))
 
 
-    def draw_target_tracker(self, target_h_pos, tracker_h_pos, center_shift):
+    def draw_target_tracker(self, target_pos, tracker_pos, center_shift=0):
 
-        for i,h_pos in enumerate([target_h_pos, tracker_h_pos]):
+        for i, pos in enumerate([target_pos, tracker_pos]):
             color = target_tracker_color[i]
-            v_pos = target_tracker_vpos[i]
-            h_pos = ZOOM_FACTOR * h_pos - ZOOM_FACTOR * center_shift + CANVAS_H_CENTER            
+            pos = ZOOM_FACTOR * pos - ZOOM_FACTOR * center_shift + CANVAS_CENTER
             radius = ZOOM_FACTOR * body_radius
-            pos = [h_pos, v_pos]
-            line_start_pos = [0, v_pos]
-            line_end_pos = [CANVAS_WIDTH, v_pos]
-            pygame.draw.line(self.main_surface, white, line_start_pos, line_end_pos, width=1)
             pygame.draw.circle(self.main_surface, color, pos, radius, width=0)
+
+        # draw eye of the agent
+        for sp in agent.get_abs_sensors_pos():
+            sp = ZOOM_FACTOR * sp - ZOOM_FACTOR * center_shift + CANVAS_CENTER
+            pygame.draw.circle(self.main_surface, tracker_sensor_color, sp, tracker_sensor_radius)
         
 
     
@@ -59,8 +65,8 @@ class Visualization:
         
         duration = self.simulation.num_data_points        
 
-        target_h_positions = data_record['target_position'][trial_index]
-        tracker_h_positions = data_record['tracker_position'][trial_index]
+        target_positions = data_record['target_position'][trial_index]
+        tracker_positions = data_record['tracker_position'][trial_index]
 
         i = 0
 
@@ -77,13 +83,13 @@ class Visualization:
             # reset canvas
             self.main_surface.fill(black)
 
-            target_h_pos = target_h_positions[i]
-            tracker_h_pos = tracker_h_positions[i]
+            target_pos = target_positions[i]
+            tracker_pos = tracker_positions[i]
 
-            center_shift = target_h_pos[i] if SHIFT_CENTER_TO_TARGET else 0
+            center_shift = target_pos[i] if SHIFT_CENTER_TO_TARGET else 0
 
             # draw target and tracker            
-            self.draw_target_tracker(target_h_pos, tracker_h_pos, center_shift)
+            self.draw_target_tracker(target_pos, tracker_pos, center_shift)
 
             # final traformations
             self.final_tranform_main_surface()
@@ -116,9 +122,10 @@ def test_visual():
     from dol import simulation    
     run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
         gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(2),
-        rs = RandomState(None)
+        rs = RandomState(None),
+        num_dim = 2
     )
-    vis = Visualization(sim)
+    vis = Visualization2D(sim)
     vis.start_simulation_from_data(trial_index=0, data_record=data_record_list[0])
 
 

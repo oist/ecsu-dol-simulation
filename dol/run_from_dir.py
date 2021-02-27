@@ -30,13 +30,19 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
     
     random_seed = evo.pop_eval_random_seed
 
+    expect_same_results = True
+
     # overwriting simulaiton
     if random_target_seed is not None:
-        print("Setting random target with seed ", random_target_seed)
-        sim.init_target(RandomState(random_target_seed))
+        print("Using random target")
+        # standard target was initialized in sim.__post_init__
+        # so this is going to overwrite it
+        sim.init_target(RandomState(random_target_seed)) 
+        expect_same_results = False
     if random_pairing_seed is not None:
         print("Setting random pairing with seed ", random_pairing_seed)
         random_seed =random_pairing_seed
+        expect_same_results = False
 
     original_populations = evo.population_unsorted
     
@@ -61,7 +67,8 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
             perf_orig = sim.normalize_performance(perf_orig)
             print("Performace original: {}".format(perf_orig))            
         print("Performace recomputed: {}".format(performance))
-        assert abs(perf_orig-performance)<1e-8
+        if expect_same_results:
+            assert abs(perf_orig-performance)<1e-8
         # if performance == perf_orig:
         #     print("Exact!!")
         if sim.num_agents == 2:
@@ -89,6 +96,7 @@ if __name__ == "__main__":
     import argparse
     from dol import plot
     from dol.visual import Visualization
+    from dol.visual2d import Visualization2D
 
     parser = argparse.ArgumentParser(
         description='Rerun simulation'
@@ -119,7 +127,7 @@ if __name__ == "__main__":
     data_record = data_record_list[args.select_sim-1] 
 
     if args.visualize_trial > 0:            
-        vis = Visualization(sim)                
+        vis = Visualization(sim) if sim.num_dim == 1 else Visualization2D(sim)
         vis.start_simulation_from_data(args.visualize_trial-1, data_record)
     if args.plot:
         plot.plot_results(evo, sim, args.plot_trial, data_record)

@@ -183,12 +183,12 @@ def test_plot(value='random'):
     from numpy.random import RandomState
     if value == 'random':
         run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
-            gen_str = gen_structure.DEFAULT_GEN_STRUCTURE(2),
+            gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(2),
             rs = RandomState(None)
         )
     else:
         run_result, sim, data_record_list = simulation.get_simulation_data_from_filled_agent(
-            gen_str = gen_structure.DEFAULT_GEN_STRUCTURE(4),
+            gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(4),
             value = value,
             rs = RandomState(None)
         )

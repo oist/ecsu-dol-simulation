@@ -13,9 +13,13 @@ from pyevolver.timing import Timing
 from dol.agent import Agent
 from dol.tracker import Tracker
 from dol.target import Target
+from dol.target2d import Target2D
+from dol.tracker2d import Tracker2D
 from dol import gen_structure
 from dol import utils
 
+
+ENV_SIZE = 400
 
 # max mean distance from target with v=-2 is 5009.8 
 # (see target.test_max_distance)
@@ -44,8 +48,7 @@ class Simulation:
     exclusive_motors_threshold:float = None
 
     dual_population:float = False
-
-    env_width = 400
+    
     brain_step_size: float = 0.1
     num_trials: int = 4
     trial_duration: int = 50    
@@ -70,9 +73,9 @@ class Simulation:
             )
             for _ in range(self.num_agents)
         ]           
-
-        self.tracker = Tracker()
-
+        
+        self.init_tracker()
+        
         self.init_target()
 
         self.timing = Timing(self.timeit)                
@@ -84,34 +87,55 @@ class Simulation:
         assert not self.dual_population or self.num_random_pairings > 0, \
             "In dual position num_random_pairings must be > 0"
 
+        assert self.exclusive_motors_threshold is None or self.num_dim==1, \
+            "In 2d mode exclusive_motors mode is not appropriate"
+
     def split_population(self):
         # when population will be split in two for computing random pairs matching
         return not self.dual_population and \
             self.num_random_pairings is not None and \
             self.num_random_pairings>0
 
-    def init_target(self, random_state=None):
-        if random_state is None:
-            # vel_list = np.arange(1, self.num_trials+1) # 1, 2, 3, 4
-            vel_list = np.repeat(np.arange(1,self.num_trials/2+1),2)[:self.num_trials] # 1, 1, 2, 2
-            vel_list[1::2] *= -1 # +, -, +, -, ...
-            self.target = Target(
-                num_data_points = self.num_data_points,
-                env_width = self.env_width,
-                trial_vel = vel_list, 
-                trial_start_pos = [0] * self.num_trials,
-                trial_delta_bnd = [0] * self.num_trials
-            )
+    def init_tracker(self):
+        if self.num_dim == 1:
+            self.tracker = Tracker()
         else:
-            max_vel = np.ceil(self.num_trials/2)
-            max_pos = self.env_width/8
-            self.target = Target(
+            assert self.num_dim == 2
+            self.tracker = Tracker2D()
+
+
+    def init_target(self, rs=None):
+        if self.num_dim == 1:
+            if rs is None:
+                # vel_list = np.arange(1, self.num_trials+1) # 1, 2, 3, 4
+                vel_list = np.repeat(np.arange(1,self.num_trials/2+1),2)[:self.num_trials] # 1, 1, 2, 2
+                vel_list[1::2] *= -1 # +, -, +, -, ...
+                self.target = Target(
+                    num_data_points = self.num_data_points,
+                    trial_vel = vel_list, 
+                    trial_start_pos = [0] * self.num_trials,
+                    trial_delta_bnd = [0] * self.num_trials
+                )
+            else:
+                # random target
+                max_vel = np.ceil(self.num_trials/2)
+                max_pos = ENV_SIZE/8
+                self.target = Target(
+                    num_data_points = self.num_data_points,
+                    trial_vel = rs.choice([-1,1]) * rs.uniform(1, max_vel, self.num_trials),
+                    trial_start_pos = rs.uniform(-max_pos, max_pos, self.num_trials),
+                    trial_delta_bnd = rs.uniform(0, max_pos, self.num_trials)
+                )
+        else:
+            assert self.num_dim == 2
+            self.target = Target2D(
                 num_data_points = self.num_data_points,
-                env_width = self.env_width,
-                trial_vel = random_state.choice([-1,1]) * random_state.uniform(1, max_vel, self.num_trials),
-                trial_start_pos = random_state.uniform(-max_pos, max_pos, self.num_trials),
-                trial_delta_bnd = random_state.uniform(0, max_pos, self.num_trials)
+                trial_vel = [1] * self.num_trials,
+                trial_start_pos = [np.zeros(2)] * self.num_trials,
             )
+
+
+
 
     def get_genotypes_similarity(self):
         if self.num_agents == 1:
@@ -248,10 +272,10 @@ class Simulation:
     def init_data_record_trial(self, t):
         if self.data_record is None:            
             return        
-        self.data_record['delta_tracker_target'][t] = self.delta_tracker_target  # presaved
+        self.data_record['delta_tracker_target'][t] = self.delta_tracker_target       # presaved
         self.data_record['target_position'][t] = self.target_positions           # presaved
         self.data_record['target_velocity'][t] = np.diff(self.target_positions) # presaved
-        self.data_record['tracker_position'][t] = np.zeros(self.num_data_points)
+        self.data_record['tracker_position'][t] = np.zeros((self.num_data_points, self.num_dim))
         self.data_record['tracker_wheels'][t] = np.zeros((self.num_data_points, 2))
         self.data_record['tracker_velocity'][t] = np.zeros(self.num_data_points) 
         self.data_record['tracker_signals'][t] = np.zeros((self.num_data_points, 2)) 
@@ -271,7 +295,7 @@ class Simulation:
         self.data_record['tracker_position'][t][i] = self.tracker.position
         self.data_record['tracker_wheels'][t][i] = self.tracker.wheels
         self.data_record['tracker_velocity'][t][i] = self.tracker.velocity
-        self.data_record['tracker_signals'][t][i] = self.tracker_signals_strength
+        self.data_record['tracker_signals'][t][i] = self.tracker.signals_strength
         for a,o in enumerate(self.agents):    
             self.data_record['agents_sensors'][t][a][i] = o.sensors
             self.data_record['agents_brain_input'][t][a][i] = o.brain.input                    
@@ -300,10 +324,6 @@ class Simulation:
 
         # init deltas
         self.delta_tracker_target = np.zeros(self.num_data_points)        
-
-        # init signal strengths (vision)
-        self.tracker_signals_strength = np.zeros(2) # init signal strength 
-
         # initi all positions and velocities of target
         self.target_positions = self.target.compute_positions(trial = t)
         
@@ -322,28 +342,9 @@ class Simulation:
         
         self.timing.add_time('SIM_prepare_agents_for_trials', self.tim)     
 
-    def compute_tracker_signals_strength(self, i):
-        delta = self.target_positions[i] - self.tracker.position
-        delta_abs = np.abs(delta)
-        if delta_abs <= 1:
-            # consider tracker and target overlapping -> max signla left and right sensor
-            self.tracker_signals_strength = np.ones(2)
-        elif delta_abs >= self.env_width/2:
-            # signals gos to zero if beyond half env_width
-            self.tracker_signals_strength = np.zeros(2)
-        else:
-            signal_index = 1 if delta > 0 else 0 # right or left
-            self.tracker_signals_strength = np.zeros(2)
-            # self.tracker_signals_strength[signal_index] = 1/delta_abs
-            # better if signal decreases linearly
-            self.tracker_signals_strength[signal_index] = utils.linmap(
-                delta_abs, [1,self.env_width/2],[1,0])
-        # store delta
-        self.delta_tracker_target[i] = delta
-
     def compute_brain_input_agents(self):                
         for o in self.agents:
-            o.compute_brain_input(self.tracker_signals_strength)
+            o.compute_brain_input(self.tracker.signals_strength)
         self.timing.add_time('SIM_compute_brain_input', self.tim)
 
     def compute_brain_euler_step_agents(self):          
@@ -389,7 +390,7 @@ class Simulation:
         self.genotype_population = genotype_population
 
         self.genotype_index = genotype_index  
-        self.population_index = population_index      
+        self.population_index = population_index     
         self.random_state = RandomState(random_seed)        
 
         if self.split_population():    
@@ -440,7 +441,8 @@ class Simulation:
                 for i in range(1, self.num_data_points):                
 
                     # 1) Agent senses strength of emitter from the two sensors
-                    self.compute_tracker_signals_strength(i) # computes self.tracker_signals_strength
+                    self.tracker.compute_signal_strength_and_delta_target(self.target_positions[i])
+                    self.delta_tracker_target[i] = self.tracker.delta_target
 
                     # 2) compute brain input
                     self.compute_brain_input_agents()
@@ -455,7 +457,6 @@ class Simulation:
 
                 # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
                 performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.delta_tracker_target))
-                assert performance_t >= 0
 
                 trial_performances.append(performance_t)
 
@@ -544,9 +545,10 @@ class Simulation:
 
 # TEST
 
-def get_simulation_data_from_agent(gen_str, genotype, rs):
+def get_simulation_data_from_agent(gen_struct, genotype, rs, num_dim=1):
     sim = Simulation(
-        genotype_structure=gen_str
+        genotype_structure=gen_struct,
+        num_dim=num_dim
     )
     data_record_list = []
     run_result = sim.run_simulation(        
@@ -558,16 +560,16 @@ def get_simulation_data_from_agent(gen_str, genotype, rs):
     )    
     return run_result, sim, data_record_list
 
-def get_simulation_data_from_random_agent(gen_str, rs):    
+def get_simulation_data_from_random_agent(gen_struct, rs, num_dim=1):    
     from pyevolver.evolution import Evolution    
-    gen_size = gen_structure.get_genotype_size(gen_str)
+    gen_size = gen_structure.get_genotype_size(gen_struct)
     random_genotype = Evolution.get_random_genotype(rs, gen_size)    
-    return get_simulation_data_from_agent(gen_str, random_genotype, rs)
+    return get_simulation_data_from_agent(gen_struct, random_genotype, rs, num_dim)
 
-def get_simulation_data_from_filled_agent(gen_str, value, rs):    
-    gen_size = gen_structure.get_genotype_size(gen_str)
+def get_simulation_data_from_filled_agent(gen_struct, value, rs, num_dim=1):    
+    gen_size = gen_structure.get_genotype_size(gen_struct)
     genotype = np.full(gen_size, value)
-    return get_simulation_data_from_agent(gen_str, genotype, rs)
+    return get_simulation_data_from_agent(gen_struct, genotype, rs, num_dim)
     
 
 def test_simulation():
@@ -576,7 +578,7 @@ def test_simulation():
     run_result, _, data_record_list = get_simulation_data_from_random_agent(default_gen_structure, rs)    
     perf = run_result[0]
     print("Performance: ", perf)
-    utils.save_json_numpy_data(data_record_list, 'data/simulation_correct.json')    
+    utils.save_json_numpy_data(data_record_list, 'data/simulation.json')    
 
 def ger_worst_performance(num_iter):
     worst = MAX_MEAN_DISTANCE
