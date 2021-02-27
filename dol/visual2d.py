@@ -10,7 +10,7 @@ from dol.simulation import Simulation
 from dol import gen_structure
 from dol import utils
 from dol import target2d
-from dol import tracker2d
+from dol.tracker2d import Tracker2D, BODY_RADIUS, SENSOR_RADIUS
 
 CANVAS_SIZE = 800
 ZOOM_FACTOR = 2
@@ -25,12 +25,13 @@ white = (255, 255, 255)
 red = (255, 0, 0)
 blue = (0, 0, 255)
 yellow = (255, 255, 0)
-target_tracker_color = [red, blue]
+target_color = red
+tracker_color = blue
 target_tracker_vpos = [CANVAS_SIZE/3*2, CANVAS_SIZE/3]
 tracker_sensor_color = yellow
 
-body_radius = tracker2d.BODY_RADIUS * ZOOM_FACTOR
-tracker_sensor_radius = tracker2d.SENSOR_RADIUS * ZOOM_FACTOR
+body_radius = BODY_RADIUS * ZOOM_FACTOR
+tracker_sensor_radius = SENSOR_RADIUS * ZOOM_FACTOR
 
 class Visualization2D:
 
@@ -43,16 +44,15 @@ class Visualization2D:
         self.main_surface = pygame.display.set_mode((CANVAS_SIZE, CANVAS_SIZE))
 
 
-    def draw_target_tracker(self, target_pos, tracker_pos, center_shift=0):
+    def draw_target(self, target_pos, center_shift=0):
+        pos = ZOOM_FACTOR * target_pos - ZOOM_FACTOR * center_shift + CANVAS_CENTER
+        pygame.draw.circle(self.main_surface, target_color, pos, body_radius, width=0)
 
-        for i, pos in enumerate([target_pos, tracker_pos]):
-            color = target_tracker_color[i]
-            pos = ZOOM_FACTOR * pos - ZOOM_FACTOR * center_shift + CANVAS_CENTER
-            radius = ZOOM_FACTOR * body_radius
-            pygame.draw.circle(self.main_surface, color, pos, radius, width=0)
-
+    def draw_tracker(self, tracker, center_shift=0):
+        pos = ZOOM_FACTOR * tracker.position - ZOOM_FACTOR * center_shift + CANVAS_CENTER
+        pygame.draw.circle(self.main_surface, tracker_color, pos, body_radius, width=0)
         # draw eye of the agent
-        for sp in agent.get_abs_sensors_pos():
+        for sp in tracker.sensors_pos:
             sp = ZOOM_FACTOR * sp - ZOOM_FACTOR * center_shift + CANVAS_CENTER
             pygame.draw.circle(self.main_surface, tracker_sensor_color, sp, tracker_sensor_radius)
         
@@ -67,8 +67,11 @@ class Visualization2D:
 
         target_positions = data_record['target_position'][trial_index]
         tracker_positions = data_record['tracker_position'][trial_index]
+        tracker_angles = data_record['tracker_angle'][trial_index]
 
         i = 0
+
+        tracker = Tracker2D()
 
         while running and i<duration:
 
@@ -84,12 +87,13 @@ class Visualization2D:
             self.main_surface.fill(black)
 
             target_pos = target_positions[i]
-            tracker_pos = tracker_positions[i]
+            tracker.set_position_and_angle(tracker_positions[i], tracker_angles[i])
 
             center_shift = target_pos[i] if SHIFT_CENTER_TO_TARGET else 0
 
             # draw target and tracker            
-            self.draw_target_tracker(target_pos, tracker_pos, center_shift)
+            self.draw_target(target_pos, center_shift)
+            self.draw_tracker(tracker, center_shift)
 
             # final traformations
             self.final_tranform_main_surface()

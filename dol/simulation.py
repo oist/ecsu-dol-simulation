@@ -257,6 +257,7 @@ class Simulation:
         self.data_record['target_position'] = [None for _ in range(self.num_trials)]
         self.data_record['target_velocity'] = [None for _ in range(self.num_trials)]
         self.data_record['tracker_position'] = [None for _ in range(self.num_trials)]
+        self.data_record['tracker_angle'] = [None for _ in range(self.num_trials)]
         self.data_record['tracker_wheels'] = [None for _ in range(self.num_trials)]
         self.data_record['tracker_velocity'] = [None for _ in range(self.num_trials)]
         self.data_record['tracker_signals'] = [None for _ in range(self.num_trials)]
@@ -276,6 +277,7 @@ class Simulation:
         self.data_record['target_position'][t] = self.target_positions           # presaved
         self.data_record['target_velocity'][t] = np.diff(self.target_positions) # presaved
         self.data_record['tracker_position'][t] = np.zeros((self.num_data_points, self.num_dim))
+        self.data_record['tracker_angle'][t] = np.zeros(self.num_data_points)
         self.data_record['tracker_wheels'][t] = np.zeros((self.num_data_points, 2))
         self.data_record['tracker_velocity'][t] = np.zeros(self.num_data_points) 
         self.data_record['tracker_signals'][t] = np.zeros((self.num_data_points, 2)) 
@@ -293,6 +295,7 @@ class Simulation:
         if self.data_record is None: 
             return
         self.data_record['tracker_position'][t][i] = self.tracker.position
+        self.data_record['tracker_angle'][t][i] = self.tracker.angle
         self.data_record['tracker_wheels'][t][i] = self.tracker.wheels
         self.data_record['tracker_velocity'][t][i] = self.tracker.velocity
         self.data_record['tracker_signals'][t][i] = self.tracker.signals_strength
@@ -575,7 +578,8 @@ def get_simulation_data_from_filled_agent(gen_struct, value, rs, num_dim=1):
 def test_simulation():
     default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)
     rs = RandomState(3)
-    run_result, _, data_record_list = get_simulation_data_from_random_agent(default_gen_structure, rs)    
+    run_result, _, data_record_list = get_simulation_data_from_random_agent(
+        default_gen_structure, rs, num_dim=2)    
     perf = run_result[0]
     print("Performance: ", perf)
     utils.save_json_numpy_data(data_record_list, 'data/simulation.json')    

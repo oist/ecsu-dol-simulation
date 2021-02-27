@@ -10,7 +10,8 @@ from dol.utils import linmap
 class Tracker:
 
     # to be initialized via init_params    
-    position: float = None     
+    position: float = None 
+    angle: float = None                 
     velocity: float = None     
     wheels: np.ndarray = None  
     signals_strength : np.ndarray = None
@@ -19,12 +20,14 @@ class Tracker:
         from dol.simulation import ENV_SIZE
         self.half_env_size = ENV_SIZE/2
         self.position = 0.
+        self.angle = 0.
         self.velocity = 0.
         self.wheels = np.zeros(2)
         self.signals_strength = np.zeros(2)
 
     def move_one_step(self):
         self.velocity = self.wheels[1] - self.wheels[0]
+        self.angle = 0 if self.velocity>0 else -np.pi
         self.position += self.velocity
 
     def compute_signal_strength_and_delta_target(self, target_position):

@@ -4,7 +4,7 @@ TODO: Missing module docstring
 
 from dataclasses import dataclass, field
 import numpy as np
-from dol.utils import euclidean_distance, modulo_radians
+from dol.utils import linmap, modulo_radians
 
 BODY_RADIUS = 4
 SENSOR_RADIUS = 2
@@ -22,6 +22,7 @@ class Tracker2D:
     angle: float = None             
     sensors_angle: np.ndarray = None
     sensors_pos: np.ndarray = None
+    signals_strength : np.ndarray = None
 
     def init_params(self):
         from dol.simulation import ENV_SIZE
@@ -30,6 +31,7 @@ class Tracker2D:
         self.velocity = 0
         self.wheels = np.zeros(2)
         self.angle = 0
+        self.signals_strength = np.zeros(2)
         self.__update_sensors_pos()
 
     def __update_sensors_pos(self):
@@ -38,9 +40,10 @@ class Tracker2D:
             modulo_radians(self.angle + SENSORS_DIVERGENCE_ANGLE),  # left sensor
             modulo_radians(self.angle - SENSORS_DIVERGENCE_ANGLE)   # right sensor
         ])
+        # shape 2,2 (one row per sensor)
         self.sensors_pos = self.position + \
             BODY_RADIUS * \
-            np.array(np.cos(self.sensors_angle), np.sin(self.sensors_angle))
+            np.array([np.cos(self.sensors_angle), np.sin(self.sensors_angle)])
         
     def set_position_and_angle(self, pos, angle):
         self.position = pos # absolute position
@@ -57,9 +60,31 @@ class Tracker2D:
         if delta_angle:
             self.__update_sensors_pos()
 
-    def get_signal_strength(self, target_position):        
-        dists_sensors_target = np.linalg.norm(self.sensors_pos, target_position)        
-        return signal_strengths
+    def compute_signal_strength_and_delta_target(self, target_position):                
+        self.delta_target = np.linalg.norm(
+            target_position - self.position
+        )
+        
+        # distance: 2 element vector
+        abs_dists_sensors_target = np.linalg.norm(  
+            self.sensors_pos - target_position, axis=0
+        ) 
+        
+        # assert (abs_dists_sensors_target>=0).all()
+
+        # signal decreases linearly with distance
+        self.signals_strength = linmap(
+            abs_dists_sensors_target, [1,self.half_env_size],[1,0]
+        ) 
+
+        # if either of the two signals is stronger than one make it 1
+        # (overlapping tracker - target)
+        self.signals_strength[self.signals_strength>1] = 1
+
+        # if signals is negative make it 0
+        # (beyond environment)
+        self.signals_strength[self.signals_strength<0] = 0
+        
 
 def test_tracker():
     Tracker2D(0)
