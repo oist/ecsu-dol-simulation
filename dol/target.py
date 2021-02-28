@@ -11,9 +11,22 @@ from dol.params import ENV_SIZE, HALF_ENV_SIZE
 class Target:
     
     num_data_points: int
-    trial_vel: list = None
-    trial_start_pos: list = None
-    trial_delta_bnd: list = None # margin from left and right boundaries
+    num_trials: int
+    rs: RandomState
+
+    def __post_init__(self):
+        if self.rs is None:
+            self.trial_vel = np.repeat(np.arange(1,self.num_trials/2+1),2)[:self.num_trials] # 1, 1, 2, 2
+            self.trial_vel[1::2] *= -1 # +, -, +, -, ...
+            self.trial_start_pos = [0] * self.num_trials
+            self.trial_delta_bnd = [0] * self.num_trials
+        else:
+            # random target
+            max_vel = np.ceil(self.num_trials/2)
+            max_pos = ENV_SIZE/8
+            self.trial_vel = self.rs.choice([-1,1]) * self.rs.uniform(1, max_vel, self.num_trials),
+            self.trial_start_pos = self.rs.uniform(-max_pos, max_pos, self.num_trials)
+            self.trial_delta_bnd = self.rs.uniform(0, max_pos, self.num_trials)
 
     def set_pos_vel(self, trial):
         # init pos        
@@ -53,39 +66,13 @@ class Target:
                 bnd_pos_abs = self.get_next_boundary_pos(trial)    
         return self.positions
 
-def test_target_constant():
+def test_target():
     t = Target(
-        num_data_points = 500,
-        trial_vel = [1],
-        trial_start_pos = [0],
-        trial_delta_bnd = [0],
+        num_data_points = 500
     )    
     print(t.compute_positions(0))
 
-def test_target_standard_trials():
-    t = Target(        
-        num_data_points = 500,
-        trial_vel = [-1],
-        trial_start_pos = [10],
-        trial_delta_bnd = [5],
-    )    
-    print(t.compute_positions(0))
-
-def test_max_distance():
-    t = Target(        
-        num_data_points = 500,
-        trial_vel = [-2],
-        trial_start_pos = [0],
-        trial_delta_bnd = [0],
-    )    
-    target_pos = t.compute_positions(0)
-    tracker_vel = 20
-    tracker_pos = np.arange(500)*tracker_vel
-    delta_mean = np.mean(np.abs(tracker_pos-target_pos))
-    print('Max delta:', delta_mean)
     
 
 if __name__ == "__main__":
-    test_target_constant()
-    test_target_standard_trials()
-    test_max_distance()
+    test_target()

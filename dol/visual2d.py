@@ -13,9 +13,9 @@ from dol import target2d
 from dol.tracker2d import Tracker2D, BODY_RADIUS, SENSOR_RADIUS, EYE_DIVERGENCE_LR_ANGLES
 from dol.params import ENV_SIZE, HALF_ENV_SIZE, BODY_RADIUS, SENSOR_RADIUS
 
-CANVAS_SIZE = 3*ENV_SIZE
-ZOOM_FACTOR = 2
-REFRESH_RATE = 10
+CANVAS_SIZE = 2*ENV_SIZE
+ZOOM_FACTOR = 1
+REFRESH_RATE = 40
 SENSOR_RANGE_LINE_LENGTH = ZOOM_FACTOR * HALF_ENV_SIZE
 
 CANVAS_CENTER = np.full(2, CANVAS_SIZE/2)
@@ -64,20 +64,16 @@ class Visualization2D:
             eyes_pos = ZOOM_FACTOR * abs_eyes_pos[e] + CANVAS_CENTER
             # print('eyes_pos', e+1, eyes_pos)
             pygame.draw.circle(self.main_surface, tracker_sensor_color, eyes_pos, tracker_sensor_radius)
-            draw_line(self.main_surface, eyes_pos, eye_ang_start, SENSOR_RANGE_LINE_LENGTH, white)
-            draw_line(self.main_surface, eyes_pos, eye_ang_end, SENSOR_RANGE_LINE_LENGTH, white)
+            
+            # draw sensors cones
+            # draw_line(self.main_surface, eyes_pos, eye_ang_start, SENSOR_RANGE_LINE_LENGTH, white)
+            # draw_line(self.main_surface, eyes_pos, eye_ang_end, SENSOR_RANGE_LINE_LENGTH, white)
 
             sign_line_length = ZOOM_FACTOR * HALF_ENV_SIZE
             sign_line = utils.linmap(eye_sig, (0., 1.), (0., HALF_ENV_SIZE))
             draw_line(self.main_surface, eyes_pos, eye_theta, sign_line, tracker_sensor_color)
             
             
-
-        
-
-        
-
-    
     def start_simulation_from_data(self, trial_index, data_record):
         running = True
 
@@ -93,7 +89,7 @@ class Visualization2D:
         i = 0
 
         tracker = Tracker2D()
-        tracker.init_params()
+        tracker.init_params_trial(trial_index)
 
         while running and i<duration:
 
@@ -152,10 +148,10 @@ def test_visual():
     run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
         gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(2),
         rs = RandomState(5),
-        num_dim = 2
+        num_dim = 2,
     )
     vis = Visualization2D(sim)
-    vis.start_simulation_from_data(trial_index=0, data_record=data_record_list[0])
+    vis.start_simulation_from_data(trial_index=3, data_record=data_record_list[0])
 
 
 if __name__ == "__main__":

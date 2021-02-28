@@ -104,32 +104,17 @@ class Simulation:
 
     def init_target(self, rs=None):
         if self.num_dim == 1:
-            if rs is None:
-                # vel_list = np.arange(1, self.num_trials+1) # 1, 2, 3, 4
-                vel_list = np.repeat(np.arange(1,self.num_trials/2+1),2)[:self.num_trials] # 1, 1, 2, 2
-                vel_list[1::2] *= -1 # +, -, +, -, ...
-                self.target = Target(
-                    num_data_points = self.num_data_points,
-                    trial_vel = vel_list, 
-                    trial_start_pos = [0] * self.num_trials,
-                    trial_delta_bnd = [0] * self.num_trials
-                )
-            else:
-                # random target
-                max_vel = np.ceil(self.num_trials/2)
-                max_pos = ENV_SIZE/8
-                self.target = Target(
-                    num_data_points = self.num_data_points,
-                    trial_vel = rs.choice([-1,1]) * rs.uniform(1, max_vel, self.num_trials),
-                    trial_start_pos = rs.uniform(-max_pos, max_pos, self.num_trials),
-                    trial_delta_bnd = rs.uniform(0, max_pos, self.num_trials)
-                )
+            self.target = Target(
+                self.num_data_points,
+                self.num_trials,
+                rs
+            )
         else:
             assert self.num_dim == 2
             self.target = Target2D(
-                num_data_points = self.num_data_points,
-                trial_vel = [1] * self.num_trials,
-                trial_start_pos = [np.zeros(2)] * self.num_trials,
+                self.num_data_points,
+                self.num_trials,
+                rs
             )
 
 
@@ -336,7 +321,7 @@ class Simulation:
             o.init_params()  
 
         # init tracker params
-        self.tracker.init_params()        
+        self.tracker.init_params_trial(t)        
         
         # save trial data at time 0
         self.save_data_record_step(t, 0)        

@@ -9,15 +9,8 @@ from dol.params import ENV_SIZE, HALF_ENV_SIZE
 
 @dataclass
 class Tracker:
-
-    # to be initialized via init_params    
-    position: float = None 
-    angle: float = None                 
-    velocity: float = None     
-    wheels: np.ndarray = None  
-    signals_strength : np.ndarray = None
     
-    def init_params(self):
+    def init_params_trial(self):
         self.position = 0.
         self.angle = 0.
         self.velocity = 0.

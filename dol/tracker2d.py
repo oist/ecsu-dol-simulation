@@ -15,20 +15,14 @@ EYE_VISION_HALF_ANGLE = EYE_VISION_ANGLE / 2
 @dataclass
 class Tracker2D:
 
-    # to be initialized via init_params
-    position: np.ndarray = None     
-    velocity: float = None          
-    wheels: np.ndarray = None       
-    angle: float = None             
-    eyes_angle: np.ndarray = None
-    eyes_pos: np.ndarray = None
-    signals_strength : np.ndarray = None
-
-    def init_params(self):
+    def init_params_trial(self, trial_idx):
         self.position = np.zeros(2)
         self.velocity = 0
         self.wheels = np.zeros(2)
-        self.angle = 0 # -np.pi/4 # 45 degree
+        if trial_idx%2 ==0:
+            self.angle = - np.pi/4 # 45 degree: face the target
+        else:
+            self.angle = 5*np.pi/4 # face the target
         self.signals_strength = np.zeros(2)
         self.__update_eye_pos()
 
