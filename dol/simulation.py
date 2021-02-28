@@ -447,7 +447,7 @@ class Simulation:
                     performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.delta_tracker_target))
                 else:
                     reward = linmap(self.delta_tracker_target, (0,50), (100,0))       
-                    reward[reward<0] = 0
+                    reward[reward<0.] = 0.
                     performance_t = np.mean(reward)
 
 
