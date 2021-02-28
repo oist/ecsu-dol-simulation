@@ -47,6 +47,18 @@ def modulo_radians(theta):
     '''
     return theta % TWO_PI
 
+def angle_in_range(theta, low, high):
+    '''
+    assume that all angles alpha in args:
+    0 <= alpha < 2*pi
+    '''
+    if low < theta < high:
+        return True
+    if theta > low:
+        return high < low # wrapping up of high above zero
+    if theta < high:
+        return low > high # wrapping up of low below zero
+    return False
 
 def rotate_cw_matrix(theta):
     '''

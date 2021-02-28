@@ -5,6 +5,7 @@ TODO: Missing module docstring
 import numpy as np
 from dataclasses import dataclass, field
 from numpy.random import RandomState
+from dol.params import ENV_SIZE, HALF_ENV_SIZE
 
 @dataclass
 class Target:
@@ -13,10 +14,6 @@ class Target:
     trial_vel: list = None
     trial_start_pos: list = None
     trial_delta_bnd: list = None # margin from left and right boundaries
-
-    def __post_init__(self):
-        from dol.simulation import ENV_SIZE
-        self.half_env_size = ENV_SIZE/2        
 
     def set_pos_vel(self, trial):
         # init pos        
@@ -28,7 +25,7 @@ class Target:
         self.vel = self.start_vel
 
     def get_next_boundary_pos(self, trial):        
-        return self.half_env_size - self.trial_delta_bnd[trial]
+        return HALF_ENV_SIZE - self.trial_delta_bnd[trial]
 
     def print_start_pos_vel(self):
         print("Start position: ", self.start_pos)

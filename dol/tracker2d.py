@@ -4,13 +4,13 @@ TODO: Missing module docstring
 
 from dataclasses import dataclass, field
 import numpy as np
-from dol.utils import linmap, modulo_radians
+from dol.utils import linmap, modulo_radians, angle_in_range
+from dol.params import ENV_SIZE, HALF_ENV_SIZE, BODY_RADIUS, SENSOR_RADIUS, EYE_DIVERGENCE_ANGLE, EYE_VISION_ANGLE
 
-BODY_RADIUS = 4
-SENSOR_RADIUS = 2
-
-SENSORS_DIVERGENCE_ANGLE = np.pi/4 # angle between each sensor and axes of symmetry (angle of agent)
-    
+# angle between left/right eye and axes of symmetry (angle of agent)
+EYE_DIVERGENCE_LR_ANGLES = EYE_DIVERGENCE_ANGLE * np.array([1, -1]) 
+# angle of vision of each eye
+EYE_VISION_HALF_ANGLE = EYE_VISION_ANGLE / 2
 
 @dataclass
 class Tracker2D:
@@ -20,35 +20,45 @@ class Tracker2D:
     velocity: float = None          
     wheels: np.ndarray = None       
     angle: float = None             
-    sensors_angle: np.ndarray = None
-    sensors_pos: np.ndarray = None
+    eyes_angle: np.ndarray = None
+    eyes_pos: np.ndarray = None
     signals_strength : np.ndarray = None
 
     def init_params(self):
-        from dol.simulation import ENV_SIZE
-        self.half_env_size = ENV_SIZE/2
         self.position = np.zeros(2)
         self.velocity = 0
         self.wheels = np.zeros(2)
-        self.angle = -np.pi/4 # 45 degree
+        self.angle = 0 # -np.pi/4 # 45 degree
         self.signals_strength = np.zeros(2)
-        self.__update_sensors_pos()
+        self.__update_eye_pos()
 
-    def __update_sensors_pos(self):
+    def __update_eye_pos(self):
         # sensors position are relative to center of the agents
-        self.sensors_angle = np.array([
-            modulo_radians(self.angle + SENSORS_DIVERGENCE_ANGLE),  # left sensor
-            modulo_radians(self.angle - SENSORS_DIVERGENCE_ANGLE)   # right sensor
-        ])
+        self.eyes_angle = modulo_radians(
+            self.angle + EYE_DIVERGENCE_LR_ANGLES
+        )
+
         # shape 2,2 (one row per sensor)
-        self.sensors_pos = self.position + \
-            BODY_RADIUS * \
-            np.array([np.cos(self.sensors_angle), np.sin(self.sensors_angle)])
+        self.eyes_pos = BODY_RADIUS * \
+            np.array([np.cos(self.eyes_angle), np.sin(self.eyes_angle)]).transpose()
         
-    def set_position_and_angle(self, pos, angle):
+        self.eyes_vision_angle_start = modulo_radians(
+            self.angle + EYE_DIVERGENCE_LR_ANGLES - EYE_VISION_HALF_ANGLE
+        )        
+        
+        self.eyes_vision_angle_end = modulo_radians(
+            self.eyes_vision_angle_start + EYE_VISION_ANGLE
+        )
+    
+    def get_abs_eyes_pos(self):
+        # get absolute positions of eyes
+        return self.eyes_pos + self.position
+        
+    def set_position_and_angle_signals_strength(self, pos, angle, signals_strength):
         self.position = pos # absolute position
         self.angle = angle
-        self.__update_sensors_pos()
+        self.signals_strength = signals_strength
+        self.__update_eye_pos()
 
     def move_one_step(self):
         self.velocity = self.wheels[1] - self.wheels[0]  # right - left
@@ -58,33 +68,90 @@ class Tracker2D:
         delta_xy = avg_displacement * np.array([np.cos(self.angle), np.sin(self.angle)])
         self.position += delta_xy
         if delta_angle:
-            self.__update_sensors_pos()
+            self.__update_eye_pos()
 
-    def compute_signal_strength_and_delta_target(self, target_position):                
+    def compute_signal_strength_and_delta_target(self, target_position, debug=False):                
         self.delta_target = np.linalg.norm(
             target_position - self.position
         )
+
+        vector_eyes_target = target_position - self.get_abs_eyes_pos()
         
-        # distance: 2 element vector
-        abs_dists_sensors_target = np.linalg.norm(  
-            self.sensors_pos - target_position, axis=0
-        ) 
+        # distance: 2 elements vector
+        # we need to get the norm of each 2 vector row
+        # always >= 0
+        dists_sensors_target = np.linalg.norm(vector_eyes_target, axis=1)         
         
-        # assert (abs_dists_sensors_target>=0).all()
+
+        angles_eyes_target = modulo_radians(
+            np.arctan2(vector_eyes_target[:,1], vector_eyes_target[:,0])
+        )
+        
+
+        # whether each eye sees the target
+        eyes_see_target = np.array(
+            [
+                angle_in_range(
+                    angles_eyes_target[i],
+                    self.eyes_vision_angle_start[i],
+                    self.eyes_vision_angle_end[i]
+                )
+                for i in range(2)
+            ]
+        )
+        # convert to 1/0
+        eyes_see_target = 1. * eyes_see_target
+        
 
         # signal decreases linearly with distance
-        self.signals_strength = linmap(
-            abs_dists_sensors_target, [1,self.half_env_size],[1,0]
-        ) 
+        self.signals_strength = eyes_see_target * \
+            linmap(
+                dists_sensors_target, [1, HALF_ENV_SIZE],[1,0]
+            ) 
+        
 
         # if either of the two signals is stronger than one make it 1
         # (overlapping tracker - target)
-        self.signals_strength[self.signals_strength>1] = 1
+        self.signals_strength[self.signals_strength>1] = 1.
 
         # if signals is negative make it 0
         # (beyond environment)
-        self.signals_strength[self.signals_strength<0] = 0
-        
+        self.signals_strength[self.signals_strength<0] = 0.
+
+        if debug:
+            print('tracker_angle', np.degrees(self.angle))
+            print('eyes_angle', np.degrees(self.eyes_angle))
+            print('eyes_pos', self.get_abs_eyes_pos())
+            print('eyes_vision_angle_start', np.degrees(self.eyes_vision_angle_start))
+            print('eyes_vision_angle_end', np.degrees(self.eyes_vision_angle_end))
+            print('target_position', target_position)
+            print('tracker_position', self.position)
+            print('vector_eyes_target', vector_eyes_target)
+            print('dists_sensors_target', dists_sensors_target)
+            print('angles_eyes_target', np.degrees(angles_eyes_target))
+            print('eyes_see_target', eyes_see_target)
+            print('signals_strength', self.signals_strength)
+            print('')
+
+
+    '''
+    # old version
+    def compute_signal_strength_and_delta_target(self, target_position):
+        self.delta_target = np.linalg.norm(target_position - self.position)
+        if self.delta_target <= 1:
+            # consider tracker and target overlapping -> max signla left and right sensor
+            self.signals_strength = np.ones(2)
+        elif self.delta_target >= HALF_ENV_SIZE:
+            # signals gos to zero if beyond half env_size
+            self.signals_strength = np.zeros(2)
+        else:
+            signal_index = 1 if self.delta_target > 0 else 0 # right or left
+            self.signals_strength = np.zeros(2)
+            # signals_strength[signal_index] = 1/delta_abs
+            # better if signal decreases linearly
+            self.signals_strength[signal_index] = linmap(
+                self.delta_target, [1,HALF_ENV_SIZE],[1,0])
+    '''
 
 def test_tracker():
     Tracker2D(0)

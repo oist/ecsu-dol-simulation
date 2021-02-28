@@ -14,10 +14,6 @@ class Target2D:
     trial_vel: list = None
     trial_start_pos: list = None
 
-    # def __post_init__(self):
-    #     from dol.simulation import ENV_SIZE
-    #     self.half_env_width = ENV_SIZE/2        
-
     def set_pos_vel(self, trial):
         # init pos        
         self.pos = self.trial_start_pos[trial]

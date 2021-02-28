@@ -5,6 +5,7 @@ TODO: Missing module docstring
 from dataclasses import dataclass, field
 import numpy as np
 from dol.utils import linmap
+from dol.params import ENV_SIZE, HALF_ENV_SIZE
 
 @dataclass
 class Tracker:
@@ -17,8 +18,6 @@ class Tracker:
     signals_strength : np.ndarray = None
     
     def init_params(self):
-        from dol.simulation import ENV_SIZE
-        self.half_env_size = ENV_SIZE/2
         self.position = 0.
         self.angle = 0.
         self.velocity = 0.
@@ -36,7 +35,7 @@ class Tracker:
         if delta_abs <= 1:
             # consider tracker and target overlapping -> max signla left and right sensor
             self.signals_strength = np.ones(2)
-        elif delta_abs >= self.half_env_size:
+        elif delta_abs >= HALF_ENV_SIZE:
             # signals gos to zero if beyond half env_size
             self.signals_strength = np.zeros(2)
         else:
@@ -45,7 +44,7 @@ class Tracker:
             # signals_strength[signal_index] = 1/delta_abs
             # better if signal decreases linearly
             self.signals_strength[signal_index] = linmap(
-                delta_abs, [1,self.half_env_size],[1,0])
+                delta_abs, [1,HALF_ENV_SIZE],[1,0])
 
 def test_tracker():
     Tracker(0)

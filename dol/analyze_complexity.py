@@ -206,7 +206,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
 
 def main_line_plot():    
 
-    dir = 'data/2n_exc-0.1_zfill_rp-3_switch/'
+    dir = './data/tmp/2n_2d_zfill'
     pop_index = 0    
 
     analyze_sensors = True
@@ -226,7 +226,7 @@ def main_line_plot():
     fig = plt.figure(figsize=(10, 6))
     num_plots = len(GEN)
     num_plot_cols = 5
-    num_plot_rows = int(num_plots / num_plot_cols)
+    num_plot_rows = np.ceil(num_plots / num_plot_cols)
     if num_plots % num_plot_cols > 0:
         num_plot_cols += 1
 
@@ -390,8 +390,8 @@ def main_single_agent(init_value = 'random'):
     print('h', h)
 
 if __name__ == "__main__":    
-    # main_line_plot()
-    main_box_plot()
+    main_line_plot()
+    # main_box_plot()
     # main_single_agent(0)
     # main_scatter_plot()
     
