@@ -68,7 +68,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
             print("Performace original: {}".format(perf_orig))            
         print("Performace recomputed: {}".format(performance))
         if expect_same_results:
-            assert abs(perf_orig-performance)<1e-8
+            assert abs(perf_orig-performance)<1e-5
         # if performance == perf_orig:
         #     print("Exact!!")
         if sim.num_agents == 2:

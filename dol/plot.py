@@ -112,6 +112,19 @@ def plot_data_time_multi_keys(data_record, keys, title, log=False):
             ax.plot(trial_data)                    
     plt.show()
 
+def plot_scatter_multi_keys(data_record, keys, title, log=False):    
+    num_trials = len(data_record[keys[0]])
+    fig = plt.figure(figsize=(10, 6))
+    if title is not None:
+        fig.suptitle(title)
+    for t in range(num_trials):
+        ax = fig.add_subplot(1, num_trials, t+1)
+        if log: ax.set_yscale('log')            
+        for k in keys:    
+            trial_data = data_record[k][t]                        
+            ax.plot(trial_data[:,0],trial_data[:,1])           
+    plt.show()
+
 def plot_genotype_similarity(evo, sim):
     from sklearn.metrics.pairwise import pairwise_distances
     population = evo.population
@@ -159,20 +172,27 @@ def plot_results(evo, sim, trial, data_record):
     # time tracker
     # plot_data_time(data_record, 'tracker_wheels', trial)
     # plot_data_time(data_record, 'tracker_velocity', trial)
-    plot_data_time(data_record, 'tracker_signals', trial)
+    # plot_data_time(data_record, 'tracker_signals', trial)
 
     # time target
     # plot_data_time(data_record, 'target_velocity', trial)    
 
     # time tracker & target
-    plot_data_time_multi_keys(
-        data_record, 
-        keys=['tracker_position', 'target_position'], 
-        title="Tracker and Target"
-    )
+    if sim.num_dim == 1:
+        plot_data_time_multi_keys(
+            data_record, 
+            keys=['tracker_position', 'target_position'], 
+            title="Tracker and Target"
+        )
+    else:
+        plot_scatter_multi_keys(
+            data_record, 
+            keys=['tracker_position', 'target_position'], 
+            title="Tracker and Target"
+        )
 
     # delta tracker target (distances)
-    plot_data_time(data_record, 'delta_tracker_target', trial)    
+    # plot_data_time(data_record, 'delta_tracker_target', trial)    
 
     # plot_genotype_similarity(evo, sim)
 

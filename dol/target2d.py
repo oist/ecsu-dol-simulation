@@ -5,7 +5,7 @@ TODO: Missing module docstring
 import numpy as np
 from dataclasses import dataclass, field
 from numpy.random import RandomState
-from dol.params import HALF_ENV_SIZE
+from dol.params import ENV_SIZE, HALF_ENV_SIZE
 
 FOCAL_DISTANCE = HALF_ENV_SIZE
 LEMNISCATE_A = FOCAL_DISTANCE * np.sqrt(2)
@@ -24,8 +24,10 @@ class Target2D:
             self.trial_start_phase = np.full(self.num_trials, 6*np.pi/4)
             self.trial_start_phase[1::2] *= -1 # +, -, +, -, ...
         else:
-            # random target2D
-            assert False, 'To be implemented'
+            max_vel = np.ceil(self.num_trials/2)
+            # max_pos = ENV_SIZE/8
+            self.trial_vel = self.rs.choice([-1,1]) * self.rs.uniform(1, max_vel, self.num_trials)
+            self.trial_start_phase = self.rs.uniform(0, 2*np.pi, self.num_trials)
 
     def set_pos_vel(self, trial):
         # init start_phase        
@@ -51,9 +53,7 @@ class Target2D:
 
 def test_target():
     t = Target2D(
-        num_data_points = 500,
-        trial_vel = [1],
-        trial_start_phase = [np.zeros(2)],
+        num_data_points = 500
     )    
     print(t.compute_positions(0))
     

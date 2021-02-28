@@ -206,7 +206,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
 
 def main_line_plot():    
 
-    dir = './data/tmp/2n_2d_zfill'
+    dir = './data/2d_2n_zfill'
     pop_index = 0    
 
     analyze_sensors = True
@@ -226,9 +226,9 @@ def main_line_plot():
     fig = plt.figure(figsize=(10, 6))
     num_plots = len(GEN)
     num_plot_cols = 5
-    num_plot_rows = np.ceil(num_plots / num_plot_cols)
+    num_plot_rows = int(num_plots / num_plot_cols)
     if num_plots % num_plot_cols > 0:
-        num_plot_cols += 1
+        num_plot_rows += 1
 
     for seed_num, (num_gen_list, best_perfs, nc_seed, h_seed) in enumerate(zip(GEN, BP, NC, H), 1):
         ax1 = fig.add_subplot(num_plot_rows, num_plot_cols, seed_num) 

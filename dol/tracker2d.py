@@ -11,6 +11,9 @@ from dol.params import ENV_SIZE, HALF_ENV_SIZE, BODY_RADIUS, SENSOR_RADIUS, EYE_
 EYE_DIVERGENCE_LR_ANGLES = EYE_DIVERGENCE_ANGLE * np.array([1, -1]) 
 # angle of vision of each eye
 EYE_VISION_HALF_ANGLE = EYE_VISION_ANGLE / 2
+DOUBLE_BODY_RADIUS = 2 * BODY_RADIUS
+
+COLLISION_MODE = False
 
 @dataclass
 class Tracker2D:
@@ -24,6 +27,8 @@ class Tracker2D:
         else:
             self.angle = 5*np.pi/4 # face the target
         self.signals_strength = np.zeros(2)
+        self.collision = False
+        # self.prev_targer_pos = np.zeros(2)
         self.__update_eye_pos()
 
     def __update_eye_pos(self):
@@ -54,20 +59,32 @@ class Tracker2D:
         self.signals_strength = signals_strength
         self.__update_eye_pos()
 
-    def move_one_step(self):
+    def move_one_step(self):        
         self.velocity = self.wheels[1] - self.wheels[0]  # right - left
         delta_angle = self.velocity / BODY_RADIUS
         self.angle += delta_angle
-        avg_displacement = np.mean(self.wheels)
-        delta_xy = avg_displacement * np.array([np.cos(self.angle), np.sin(self.angle)])
-        self.position += delta_xy
-        if delta_angle:
-            self.__update_eye_pos()
+        if self.collision:
+            # reverse the angle and push him away for a distance = ENV_SIZE 
+            self.angle -= np.pi
+            avg_displacement = ENV_SIZE/4
+        else:
+            avg_displacement = np.mean(self.wheels)
+        
+        delta_xy = avg_displacement * np.array([np.cos(self.angle), np.sin(self.angle)])        
+        self.position += delta_xy        
+        self.__update_eye_pos()
 
     def compute_signal_strength_and_delta_target(self, target_position, debug=False):                
         self.delta_target = np.linalg.norm(
             target_position - self.position
         )
+
+        # target_vel = target_position - self.prev_targer_pos
+        # target_direction = np.arctan2(*target_vel[::-1])
+        # self.prev_targer_pos = target_position
+
+        if COLLISION_MODE:
+            self.collision = self.delta_target < DOUBLE_BODY_RADIUS
 
         vector_eyes_target = target_position - self.get_abs_eyes_pos()
         
