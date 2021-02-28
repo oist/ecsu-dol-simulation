@@ -243,7 +243,7 @@ def main_line_plot():
 
 def main_box_plot():
     num_neurons = 2
-    analyze_sensors = False
+    analyze_sensors = True
     analyze_brain = True 
     analyze_motors = False     
     use_brain_derivatives = False  
@@ -290,12 +290,13 @@ def main_box_plot():
     all_NC = np.array(all_NC) # 4 x 20
     print(all_NC.shape)
     selected_nodes_file_str = '_'.join([x[:3] for x in selected_nodes_str_list])
-    f_name = f"data/{num_neurons}n_{selected_nodes_file_str}.csv"
+    combined_str = '_combined' if combined_complexity else ''
+    f_name = f"data/{num_neurons}n_{selected_nodes_file_str}{combined_str}.csv"
     print(f_name)    
 
     # save file to csv
-    # df = pd.DataFrame(np.transpose(all_NC)) #, columns = x_labels) # 20 x 4
-    # df.to_csv(f_name)    
+    df = pd.DataFrame(np.transpose(all_NC)) #, columns = x_labels) # 20 x 4
+    df.to_csv(f_name)    
     
     all_NC_not_NaN = [x[~np.isnan(x)] for x in all_NC]
     plt.boxplot(all_NC_not_NaN, labels=x_labels)
@@ -390,8 +391,8 @@ def main_single_agent(init_value = 'random'):
     print('h', h)
 
 if __name__ == "__main__":    
-    main_line_plot()
-    # main_box_plot()
+    # main_line_plot()
+    main_box_plot()
     # main_single_agent(0)
     # main_scatter_plot()
     
