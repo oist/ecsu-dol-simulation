@@ -59,9 +59,7 @@ def main(raw_args=None):
     if args.dir is not None:
         # create default path if it specified dir already exists
         if os.path.isdir(args.dir):
-            subdir = '{}n'.format(args.num_neurons)
-            if args.num_dim == 2:
-                subdir += '_2d'
+            subdir = '{}d_{}n'.format(args.num_dim, args.num_neurons)
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             if args.gen_zfill:
