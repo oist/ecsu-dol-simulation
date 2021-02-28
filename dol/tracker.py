@@ -10,7 +10,7 @@ from dol.params import ENV_SIZE, HALF_ENV_SIZE
 @dataclass
 class Tracker:
     
-    def init_params_trial(self):
+    def init_params_trial(self, trial_idx):
         self.position = 0.
         self.angle = 0.
         self.velocity = 0.
