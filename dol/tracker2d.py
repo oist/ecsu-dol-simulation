@@ -79,10 +79,6 @@ class Tracker2D:
             target_position - self.position
         )
 
-        # target_vel = target_position - self.prev_targer_pos
-        # target_direction = np.arctan2(*target_vel[::-1])
-        # self.prev_targer_pos = target_position
-
         if COLLISION_MODE:
             self.collision = self.delta_target < DOUBLE_BODY_RADIUS
 

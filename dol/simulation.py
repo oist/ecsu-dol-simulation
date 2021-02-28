@@ -17,12 +17,11 @@ from dol.target2d import Target2D
 from dol.tracker2d import Tracker2D
 from dol import gen_structure
 from dol import utils
-from dol.params import ENV_SIZE, BODY_RADIUS
 from dol.utils import linmap
 
 # max mean distance from target with v=-2 is 5009.8 
 # (see target.test_max_distance)
-MAX_MEAN_DISTANCE = 0 # 5000
+MAX_MEAN_DISTANCE = 5000
 
 @dataclass
 class Simulation:   
@@ -443,13 +442,7 @@ class Simulation:
                     self.save_data_record_step(t, i)             
 
                 # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
-                if self.num_dim == 1:
-                    performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.delta_tracker_target))
-                else:
-                    reward = linmap(self.delta_tracker_target, (0,50), (100,0))       
-                    reward[reward<0.] = 0.
-                    performance_t = np.mean(reward)
-
+                performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.delta_tracker_target))
 
                 trial_performances.append(performance_t)
 
