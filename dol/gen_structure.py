@@ -67,6 +67,7 @@ def load_genotype_structure(json_filepath, process=True):
 
 
 DEFAULT_GEN_STRUCTURE = lambda x: load_genotype_structure('config/genotype_structure_{}n.json'.format(x))
+DEFAULT_GEN_STRUCTURE_2D = lambda x: load_genotype_structure('config/genotype_structure_2d_{}n.json'.format(x))
 
 if __name__ == "__main__":
     default_gs = DEFAULT_GEN_STRUCTURE(2)

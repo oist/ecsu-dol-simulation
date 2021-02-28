@@ -69,9 +69,9 @@ class Agent:
     def init_params(self):
         self.brain.states = np.zeros(self.num_brain_neurons)
         self.position = 0
-        self.sensors = np.array([0., 0.])      
-        self.motors = np.array([0., 0.])      
-        self.brain.compute_output() # for firt computation of euler step
+        self.sensors = np.zeros(4)      
+        self.motors = np.zeros(4)      
+        self.brain.compute_output() # for first computation of euler step
 
     def genotype_to_phenotype(self, genotype, phenotype_list=None, phenotype_dict=None):
         '''
@@ -106,11 +106,11 @@ class Agent:
                 if 'indexes' in val:
                     gene_values = np.take(genotype, val['indexes'])
                     if k == 'sensor_weights':
-                        gene_values = gene_values.reshape(2, -1) # the matrix will have 2 rows (number of sensors)
+                        gene_values = gene_values.reshape(-1, self.brain.num_neurons) # the matrix will have 2 rows (number of sensors)
                     elif k == 'motor_weights':
                         gene_values = gene_values.reshape(self.brain.num_neurons, -1)
                     else:
-                        num_units = 2 # 2 motors
+                        num_units = 4 # 4 motors / sensors
                         gene_values = np.tile(gene_values, num_units) # same tau/bias values for all sensors/motors
                     phenotype_value = linmap(gene_values, EVOLVE_GENE_RANGE, val['range'])                    
                 else:

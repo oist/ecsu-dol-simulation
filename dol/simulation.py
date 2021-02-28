@@ -20,7 +20,7 @@ from dol import utils
 
 # max mean distance from target with v=-2 is 5009.8 
 # (see target.test_max_distance)
-MAX_MEAN_DISTANCE = 5000
+MAX_MEAN_DISTANCE = 10000
 
 @dataclass
 class Simulation:   
@@ -262,15 +262,15 @@ class Simulation:
         self.data_record['tracker_angle'][t] = np.zeros(self.num_data_points)
         self.data_record['tracker_wheels'][t] = np.zeros((self.num_data_points, 2))
         self.data_record['tracker_velocity'][t] = np.zeros(self.num_data_points) 
-        self.data_record['tracker_signals'][t] = np.zeros((self.num_data_points, 2)) 
+        self.data_record['tracker_signals'][t] = np.zeros((self.num_data_points, 4)) 
         self.data_record['agents_motors_control_indexes'][t] = self.agents_motors_control_indexes
         for a in range(self.num_agents):            
-            self.data_record['agents_sensors'][t][a] = np.zeros((self.num_data_points, 2)) # two sensors
+            self.data_record['agents_sensors'][t][a] = np.zeros((self.num_data_points, 4)) # 4 sensors
             self.data_record['agents_brain_input'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_brain_state'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_derivatives'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
             self.data_record['agents_brain_output'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))        
-            self.data_record['agents_motors'][t][a] = np.zeros((self.num_data_points, 2)) # two motors  
+            self.data_record['agents_motors'][t][a] = np.zeros((self.num_data_points, 4)) # 4 motors  
         self.timing.add_time('SIM_init_trial_data', self.tim)            
 
     def save_data_record_step(self, t, i):
@@ -353,7 +353,11 @@ class Simulation:
             if len(np.where(motors>self.exclusive_motors_threshold)[0]) == 2:
                 # when both are more than threshold freeze
                 motors = np.zeros(2)
-        self.tracker.wheels = motors
+        
+        if self.num_dim == 1:
+            self.tracker.wheels = motors
+        else:
+            self.tracker.wheels = np.array([motors[1]-motors[0], motors[3]-motors[2]])
         self.tracker.move_one_step()
         self.timing.add_time('SIM_move_one_step', self.tim)  
 
@@ -442,6 +446,7 @@ class Simulation:
 
                 # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
                 performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.delta_tracker_target))
+                assert performance_t >= 0
 
                 trial_performances.append(performance_t)
 

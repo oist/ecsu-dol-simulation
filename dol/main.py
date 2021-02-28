@@ -53,7 +53,11 @@ def main(raw_args=None):
     t = TicToc()
     t.tic()
 
-    genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE(args.num_neurons)
+    if args.num_dim == 1:
+        genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE(args.num_neurons)
+    else:
+        genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE_2D(args.num_neurons)
+        
     genotype_size = gen_structure.get_genotype_size(genotype_structure)
 
     if args.dir is not None:
