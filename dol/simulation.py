@@ -17,7 +17,6 @@ from dol.target2d import Target2D
 from dol.tracker2d import Tracker2D
 from dol import gen_structure
 from dol import utils
-from dol.utils import linmap
 
 # max mean distance from target with v=-2 is 5009.8 
 # (see target.test_max_distance)
