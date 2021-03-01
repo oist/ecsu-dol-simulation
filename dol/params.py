@@ -2,7 +2,7 @@ import numpy as np
 
 ENV_SIZE = 400
 HALF_ENV_SIZE = ENV_SIZE/2
-BODY_RADIUS = 4
+BODY_RADIUS = 15
 SENSOR_RADIUS = 2
 
 # 2d
