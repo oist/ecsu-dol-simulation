@@ -295,7 +295,7 @@ def main_box_plot():
     print(f_name)    
 
     # save file to csv
-    df = pd.DataFrame(np.transpose(all_NC)) #, columns = x_labels) # 20 x 4
+    df = pd.DataFrame(np.transpose(all_NC), columns = x_labels) # 20 x 4
     df.to_csv(f_name)    
     
     all_NC_not_NaN = [x[~np.isnan(x)] for x in all_NC]
