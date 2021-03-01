@@ -206,16 +206,25 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
 
 def main_line_plot():    
 
-    dir = './data/2d_2n_zfill'
+    num_neurons = 4
+
+    dir = f'./data/2d_{num_neurons}n_zfill'
     pop_index = 0    
 
-    analyze_sensors = True
+    analyze_sensors = False
     analyze_brain = True 
     analyze_motors = False
     filter_performance_threshold = None #20.0
     combined_complexity = False
     
     rs = RandomState(1)    
+
+    selected_nodes_str_list = [ 
+        n for n,b in zip(
+            ['sensors','brain','motors'],
+            [analyze_sensors, analyze_brain, analyze_motors]
+        ) if b
+    ]
     
     GEN, BP, NC, H = get_seeds_generations_complexities(dir, 
         analyze_sensors, analyze_brain, analyze_motors, 
@@ -233,12 +242,16 @@ def main_line_plot():
     for seed_num, (num_gen_list, best_perfs, nc_seed, h_seed) in enumerate(zip(GEN, BP, NC, H), 1):
         ax1 = fig.add_subplot(num_plot_rows, num_plot_cols, seed_num) 
         ax1.plot(num_gen_list, nc_seed) # , label=str(seed_num)
-        ax1.set_ylim(0,3)
+        ax1.set_ylim(0,5)
         ax2 = ax1.twinx()
         ax2.plot(np.arange(len(best_perfs)), best_perfs, color='orange')
         ax2.set_ylim(0,100)
         # ax.plot(num_generations_list, h_seed)
         # plt.legend()
+    
+    selected_nodes_str = ', '.join(selected_nodes_str_list)
+    title = f'Neural Complexity - {num_neurons}n ({selected_nodes_str})'
+    fig.suptitle(title)
     plt.show()
 
 def main_box_plot():
