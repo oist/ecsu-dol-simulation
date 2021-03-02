@@ -359,7 +359,7 @@ def main_scatter_plot():
     plt.show()
 
 
-def main_single_agent(init_value = 'random'):
+def single_agent(init_value = 'random'):
     from dol import simulation    
     from dol import gen_structure
     from numpy.random import RandomState
@@ -391,10 +391,64 @@ def main_single_agent(init_value = 'random'):
     print('nc', nc)
     print('h', h)
 
+def single_paired_agents():
+    from dol.simulation import Simulation
+    import json
+    seed_dir = 'data/2n_exc-0.1_zfill/seed_001'
+    generation = 5000
+    population_idx = 0
+
+    rs = RandomState(1)
+
+    sim_json_filepath = os.path.join(seed_dir, 'simulation.json')    
+    evo_json_filepath = os.path.join(seed_dir, 'evo_{}.json'.format(generation))    
+    
+    sim = Simulation.load_from_file(
+        sim_json_filepath,
+        switch_agents_motor_control = True, # forcing switch
+        num_random_pairings = 1 # forcing to play with one another
+    )
+    
+    evo = Evolution.load_from_file(evo_json_filepath, folder_path=None)
+
+    original_populations = evo.population_unsorted
+    
+    best_two_agent_pop = np.array([
+        [
+            original_populations[0][x] for x in 
+            evo.population_sorted_indexes[population_idx][:2]
+        ]
+    ])
+
+    data_record_list = []
+
+    performance, sim_perfs, _ = sim.run_simulation(
+        best_two_agent_pop, 0, 0, 0, None,
+        data_record_list
+    )
+
+    nc, h = get_sim_agent_complexity(
+        sim_perfs, sim, data_record_list,
+        analyze_sensors=True, 
+        analyze_brain=True, 
+        analyze_motors=False, 
+        use_brain_derivatives=False,
+        combined_complexity=False,
+        rs = rs
+    )
+
+    print('performance', performance)
+    print("Sim agents similarity: ", sim.agents_similarity[0])
+    print('nc', nc)
+    print('h', h)
+
+
+
 if __name__ == "__main__":    
-    main_line_plot()
+    # main_line_plot()
     # main_box_plot()
-    # main_single_agent(0)
+    # single_agent(0)
+    single_paired_agents()
     # main_scatter_plot()
     
     
