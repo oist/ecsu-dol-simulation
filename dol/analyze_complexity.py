@@ -206,7 +206,7 @@ def get_seeds_generations_complexities(dir, analyze_sensors=True,
 
 def main_line_plot():    
 
-    dir = './data/2d_2n_zfill'
+    dir = './data/1d_4n_exc-0.1_zfill'
     pop_index = 0    
 
     analyze_sensors = True
@@ -233,7 +233,7 @@ def main_line_plot():
     for seed_num, (num_gen_list, best_perfs, nc_seed, h_seed) in enumerate(zip(GEN, BP, NC, H), 1):
         ax1 = fig.add_subplot(num_plot_rows, num_plot_cols, seed_num) 
         ax1.plot(num_gen_list, nc_seed) # , label=str(seed_num)
-        ax1.set_ylim(0,3)
+        ax1.set_ylim(0,30)
         ax2 = ax1.twinx()
         ax2.plot(np.arange(len(best_perfs)), best_perfs, color='orange')
         ax2.set_ylim(0,100)
@@ -242,7 +242,8 @@ def main_line_plot():
     plt.show()
 
 def main_box_plot():
-    num_neurons = 2
+    num_dim = 1
+    num_neurons = 4    
     analyze_sensors = True
     analyze_brain = True 
     analyze_motors = False     
@@ -262,16 +263,16 @@ def main_box_plot():
 
     if combined_complexity:
         dir_pop_index = [
-            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
-            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
+            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
+            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
         ]
         x_labels = ['gen', 'spec']        
     else:
         dir_pop_index = [
-            (f'data/{num_neurons}n_exc-0.1_zfill/', 0),
-            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
-            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
-            (f'data/{num_neurons}n_exc-0.1_zfill_rp-3_dual', 1)
+            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill/', 0),
+            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
+            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
+            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 1)
         ]
         x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
 
@@ -391,8 +392,8 @@ def main_single_agent(init_value = 'random'):
     print('h', h)
 
 if __name__ == "__main__":    
-    # main_line_plot()
-    main_box_plot()
+    main_line_plot()
+    # main_box_plot()
     # main_single_agent(0)
     # main_scatter_plot()
     
