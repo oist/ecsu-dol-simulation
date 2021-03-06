@@ -55,7 +55,7 @@ def get_last_performance_runs(base_dir, print_values, print_stats, plot, export_
 
     if export_to_csv:
         # save file to csv
-        f_name = f"{base_dir}/gen_seeds_perf.csv"
+        f_name = os.path.join(base_dir,'gen_seeds_perf.csv')
         print('saving csv:', f_name)
         all_gen_best_performances = np.transpose(np.array(all_gen_best_performances))
         num_agents, num_gen, num_seeds = all_gen_best_performances.shape
