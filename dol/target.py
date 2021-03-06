@@ -24,7 +24,7 @@ class Target:
             # random target
             max_vel = np.ceil(self.num_trials / 2)
             max_pos = ENV_SIZE / 8
-            self.trial_vel = self.rs.choice([-1, 1]) * self.rs.uniform(1, max_vel, self.num_trials),
+            self.trial_vel = self.rs.choice([-1, 1]) * self.rs.uniform(1, max_vel, self.num_trials)
             self.trial_start_pos = self.rs.uniform(-max_pos, max_pos, self.num_trials)
             self.trial_delta_bnd = self.rs.uniform(0, max_pos, self.num_trials)
 
