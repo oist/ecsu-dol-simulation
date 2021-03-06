@@ -126,6 +126,7 @@ if __name__ == "__main__":
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
     parser.add_argument('--plot_trial', type=int, help='Whether to plot a specif trial')
+    parser.add_argument('--compute_complexity', action='store_true', help='Whether to plot the data')
 
     args = parser.parse_args()
 
@@ -139,3 +140,15 @@ if __name__ == "__main__":
         vis.start_simulation_from_data(args.visualize_trial - 1, data_record)
     if args.plot:
         plot.plot_results(evo, sim, args.plot_trial, data_record)
+
+    if args.compute_complexity:
+        from dol.analyze_complexity import get_sim_agent_complexity
+        nc, h = get_sim_agent_complexity (sim_perfs, sim, data_record_list,
+            analyze_sensors=True, 
+            analyze_brain=True, 
+            analyze_motors=False, 
+            use_brain_derivatives=False,
+            combined_complexity=False, 
+            rs=RandomState(1))
+        print('TSE', nc)
+        print('H', h)
