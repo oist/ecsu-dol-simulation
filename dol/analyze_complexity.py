@@ -142,7 +142,7 @@ def get_seeds_generations_complexities(
         rs=None):
     print('dir', dir, 'pop_idx', pop_index)
 
-    seed_num_list = sorted([
+    SEEDS = sorted([
         int(f.split('_')[1]) for f in os.listdir(dir)
         if f.startswith('seed_')
     ])
@@ -150,7 +150,7 @@ def get_seeds_generations_complexities(
     GEN, NC, H, BP = [], [], [], []
     skp_seeds = []
 
-    for seed_num in tqdm(seed_num_list):
+    for seed_num in tqdm(SEEDS):
 
         # print('seed', seed_num)
 
@@ -203,7 +203,7 @@ def get_seeds_generations_complexities(
     if len(skp_seeds) > 0:
         print("Skipped seed", skp_seeds)
 
-    return GEN, BP, NC, H
+    return SEEDS, GEN, BP, NC, H
 
 
 def main_line_plot():
@@ -224,11 +224,12 @@ def main_line_plot():
 
     rs = RandomState(1)
 
-    GEN, BP, NC, H = get_seeds_generations_complexities(dir,
-                                                        analyze_sensors, analyze_brain, analyze_motors,
-                                                        pop_index=pop_index, only_last_generation=False,
-                                                        filter_performance_threshold=filter_performance_threshold,
-                                                        combined_complexity=combined_complexity, rs=rs)
+    SEEDS, GEN, BP, NC, H = get_seeds_generations_complexities(
+        dir, analyze_sensors, analyze_brain, analyze_motors,
+        pop_index=pop_index, only_last_generation=False,
+        filter_performance_threshold=filter_performance_threshold,
+        combined_complexity=combined_complexity, rs=rs
+    )
 
     fig = plt.figure(figsize=(10, 6))
     num_plots = len(GEN)
@@ -236,6 +237,24 @@ def main_line_plot():
     num_plot_rows = int(num_plots / num_plot_cols)
     if num_plots % num_plot_cols > 0:
         num_plot_rows += 1
+
+    # save file to csv
+    f_name = os.path.join(dir,'gen_seeds_TSE.csv')
+    print('saving csv:', f_name)
+    seeds_str = [f'seed_{s}' for s in SEEDS]
+    cols_names = ['GEN'] + seeds_str
+    num_seeds, gen_list_size = np.array(NC).shape
+    assert gen_list_size == len(GEN[0])
+    csv_data = np.transpose( # gen_list_size x num_seeds
+        np.concatenate(
+            [
+                np.array(GEN[0]).reshape((1,gen_list_size)), # need only 1 list of generations
+                NC
+            ]
+        )
+    )
+    df = pd.DataFrame(csv_data, columns=cols_names) 
+    df.to_csv(f_name, index=False)
 
     for seed_num, (num_gen_list, best_perfs, nc_seed, h_seed) in enumerate(zip(GEN, BP, NC, H), 1):
         ax1 = fig.add_subplot(num_plot_rows, num_plot_cols, seed_num)
@@ -289,7 +308,7 @@ def main_box_plot():
         x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
 
     for dir, pop_index in dir_pop_index:
-        _, _, NC, _ = get_seeds_generations_complexities(
+        _, _, _, NC, _ = get_seeds_generations_complexities(
             dir, analyze_sensors, analyze_brain, analyze_motors,
             pop_index, only_last_generation=True, filter_performance_threshold=20.0,
             use_brain_derivatives=use_brain_derivatives,
@@ -303,13 +322,13 @@ def main_box_plot():
     all_NC = np.array(all_NC)  # 4 x 20
     print(all_NC.shape)
     selected_nodes_file_str = '_'.join([x[:3] for x in selected_nodes_str_list])
-    combined_str = '_combined' if combined_complexity else ''
-    f_name = f"data/{num_neurons}n_{selected_nodes_file_str}{combined_str}.csv"
-    print(f_name)
+    combined_str = '_combined' if combined_complexity else ''    
 
     # save file to csv
+    f_name = f"data/{num_neurons}n_{selected_nodes_file_str}{combined_str}.csv"
+    print('saving csv:', f_name)
     df = pd.DataFrame(np.transpose(all_NC), columns=x_labels)  # 20 x 4
-    df.to_csv(f_name)
+    df.to_csv(f_name, index=False)
 
     all_NC_not_NaN = [x[~np.isnan(x)] for x in all_NC]
     plt.boxplot(all_NC_not_NaN, labels=x_labels)
@@ -464,7 +483,7 @@ def single_paired_agents():
 
 if __name__ == "__main__":
     main_line_plot()
-    main_box_plot()
-    single_agent(0)
-    single_paired_agents()
-    main_scatter_plot()
+    # main_box_plot()
+    # single_agent(0)
+    # single_paired_agents()
+    # main_scatter_plot()
