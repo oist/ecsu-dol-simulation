@@ -57,7 +57,7 @@ def get_test_data():
     return data_record
 
 
-def get_sim_agent_complexity(sim_perfs, sim, data_record_list,
+def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index,
                              analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
                              combined_complexity, rs):
     data_keys = []  # data elements on which complexity is analyzed
@@ -178,6 +178,8 @@ def get_seeds_generations_complexities(
             # print("generation:",generation)
             perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
                 seed_dir, generation, population_idx=pop_index, quiet=True)
+
+            agent_index = pop_index
 
             nc_avg, h_avg = get_sim_agent_complexity(
                 sim_perfs, sim, data_record_list, None, # agent_index must be None
@@ -378,6 +380,8 @@ def main_scatter_plot():
         perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
             seed_dir, generation, genotype_idx, population_idx=pop_index, quiet=True)
 
+        agent_index = pop_index
+
         nc_avg, h_avg = get_sim_agent_complexity(
             sim_perfs, sim, data_record_list, None, # agent_index must be None
             analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
@@ -490,8 +494,8 @@ def single_paired_agents():
 
 
 if __name__ == "__main__":
-    main_line_plot()
-    # main_box_plot()
+    # main_line_plot()
+    main_box_plot()
     # single_agent(0)
     # single_paired_agents()
     # main_scatter_plot()

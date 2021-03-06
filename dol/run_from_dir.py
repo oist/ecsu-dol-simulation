@@ -10,15 +10,14 @@ from numpy.random import RandomState
 from dol.simulation import Simulation, MAX_MEAN_DISTANCE
 from pyevolver.evolution import Evolution
 from dol import utils
+import numpy as np
 
-
-def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, select_sim=1,
+def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
                             random_target_seed=None, random_pairing_seed=None, isolation_idx=None,
                             write_data=False, **kwargs):
     """
     Utitity function to get data from a simulation
     """
-    sim_index = select_sim - 1
 
     evo_files = [f for f in os.listdir(dir) if f.startswith('evo_')]
     assert len(evo_files) > 0, "Can't find evo files in dir {}".format(dir)
@@ -74,8 +73,6 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0, s
             assert abs(perf_orig - performance) < 1e-5
         # if performance == perf_orig:
         #     print("Exact!!")
-        if sim.num_agents == 2:
-            print("Sim agents similarity: ", sim.agents_similarity[sim_index])
 
     if write_data:
         for s, data_record in enumerate(data_record_list, 1):
@@ -112,8 +109,6 @@ if __name__ == "__main__":
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')
     parser.add_argument('--population_idx', type=int, default=0,
                         help='Index of the population, usually 0 can be 1 in dual populations')
-    parser.add_argument('--select_sim', type=int, default=1,
-                        help='Which simulation to select for visualization and plot (1-based)')
     parser.add_argument('--random_target_seed', type=int,
                         help='Seed to re-run simulation with random target (None to obtain same results)')
     parser.add_argument('--random_pairing_seed', type=int,
@@ -123,17 +118,44 @@ if __name__ == "__main__":
     parser.add_argument('--write_data', action='store_true', help='Whether to output data (same directory as input)')
 
     # additional args
+    parser.add_argument('--select_sim', type=int, help='Which simulation to select for visualization and plot (1-based) - default best')
+    parser.add_argument('--compute_complexity', action='store_true', help='Whether to plot the data')
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
     parser.add_argument('--plot_trial', type=int, help='Whether to plot a specif trial')
-    parser.add_argument('--compute_complexity', action='store_true', help='Whether to plot the data')
 
     args = parser.parse_args()
 
     perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(**vars(args))
 
+    if args.select_sim is None:
+        # select best one
+        sim_idx = np.argmax(sim_perfs)
+        if sim.num_random_pairings > 0:
+            print("Best sim (random pairings)", sim_idx+1)
+    else:
+        sim_idx = args.select_sim - 1 # zero based
+
+    if sim.num_agents == 2:
+        print("Sim agents similarity: ", sim.agents_similarity[sim_idx])
+
     single_simulation = len(data_record_list) == 1
-    data_record = data_record_list[args.select_sim - 1]
+    data_record = data_record_list[sim_idx]
+
+    if args.compute_complexity:
+        from dol.analyze_complexity import get_sim_agent_complexity
+        for a in range(sim.num_agents):
+            nc, h = get_sim_agent_complexity(
+                sim_perfs, sim, data_record_list,
+                agent_index=a,
+                analyze_sensors=True,
+                analyze_brain=True,
+                analyze_motors=False,
+                use_brain_derivatives=False,
+                combined_complexity=False,
+                rs=RandomState(1))
+            print('TSE', a+1, nc)
+            print('H', a+1, h)
 
     if args.visualize_trial > 0:
         vis = Visualization(sim) if sim.num_dim == 1 else Visualization2D(sim)
@@ -141,14 +163,3 @@ if __name__ == "__main__":
     if args.plot:
         plot.plot_results(evo, sim, args.plot_trial, data_record)
 
-    if args.compute_complexity:
-        from dol.analyze_complexity import get_sim_agent_complexity
-        nc, h = get_sim_agent_complexity (sim_perfs, sim, data_record_list,
-            analyze_sensors=True, 
-            analyze_brain=True, 
-            analyze_motors=False, 
-            use_brain_derivatives=False,
-            combined_complexity=False, 
-            rs=RandomState(1))
-        print('TSE', nc)
-        print('H', h)
