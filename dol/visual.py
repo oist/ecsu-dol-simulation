@@ -1,5 +1,5 @@
 """
-TODO: Missing module docstring
+Implements 1D animation of experimental simulation.
 """
 
 import numpy as np

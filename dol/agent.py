@@ -1,5 +1,6 @@
 """
-TODO: Missing module docstring
+Implements agent body and includes CTRNN brain.
+Both body and brain structure is specified by genotype structure provided in configuration.
 """
 
 from dataclasses import dataclass, field

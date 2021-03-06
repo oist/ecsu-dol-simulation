@@ -1,5 +1,5 @@
 """
-TODO: Missing module docstring
+Utility functions for vector manipulation etc.
 """
 
 import string
@@ -10,6 +10,7 @@ import os
 # CONSTANTS
 TWO_PI = 2 * pi
 RANDOM_CHAR_SET = string.ascii_uppercase + string.digits
+
 
 def linmap(vin, rin, rout):
     """
@@ -25,7 +26,8 @@ def linmap(vin, rin, rout):
     c = rout[0]
     d = rout[1]
     return ((c + d) + (d - c) * ((2 * vin - (a + b)) / (b - a))) / 2
-    
+
+
 def discretize(a, bins, min_v=0, max_v=1):
     a[a > max_v] = max_v
     a[a < min_v] = min_v
@@ -47,6 +49,7 @@ def modulo_radians(theta):
     '''
     return theta % TWO_PI
 
+
 def angle_in_range(theta, low, high):
     '''
     assume that all angles alpha in args:
@@ -55,10 +58,11 @@ def angle_in_range(theta, low, high):
     if low < theta < high:
         return True
     if theta > low:
-        return high < low # wrapping up of high above zero
+        return high < low  # wrapping up of high above zero
     if theta < high:
-        return low > high # wrapping up of low below zero
+        return low > high  # wrapping up of low below zero
     return False
+
 
 def rotate_cw_matrix(theta):
     '''
@@ -79,6 +83,7 @@ def add_noise(vector, random_state, noise_level):
 
 def euclidean_distance(p1, p2):
     return np.linalg.norm(p1 - p2)
+
 
 def make_rand_vector(dims, random_state):
     """
@@ -106,7 +111,8 @@ def random_int(random_state=None, size=None):
         return np.random.randint(0, 2147483647, size)
     else:
         return random_state.randint(0, 2147483647, size)
-    
+
+
 def make_dir_if_not_exists_or_replace(dir_path):
     import shutil
     if os.path.exists(dir_path):
@@ -114,6 +120,7 @@ def make_dir_if_not_exists_or_replace(dir_path):
         # assert os.path.isdir(dir_path), 'Path {} is not a directory'.format(dir_path)
         # return
     os.makedirs(dir_path)
+
 
 def assert_string_in_values(s, s_name, values):
     assert s in values, '{} should be one of the following: {}. Given value: {}'.format(s_name, values, s)

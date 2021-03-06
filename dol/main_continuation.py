@@ -1,5 +1,5 @@
 """
-TODO: Missing module docstring
+Continues evolution of the main simulation from some generation.
 """
 
 import os

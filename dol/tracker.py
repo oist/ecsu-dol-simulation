@@ -1,5 +1,5 @@
 """
-TODO: Missing module docstring
+Implements moving tracker in 1D.
 """
 
 from dataclasses import dataclass, field

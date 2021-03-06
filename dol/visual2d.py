@@ -1,5 +1,5 @@
 """
-TODO: Missing module docstring
+Implements 2D animation of experimental simulation.
 """
 
 import numpy as np
@@ -13,12 +13,12 @@ from dol import target2d
 from dol.tracker2d import Tracker2D, BODY_RADIUS, SENSOR_RADIUS, EYE_DIVERGENCE_LR_ANGLES
 from dol.params import ENV_SIZE, HALF_ENV_SIZE, BODY_RADIUS, SENSOR_RADIUS
 
-CANVAS_SIZE = int(2.5*ENV_SIZE)
+CANVAS_SIZE = int(2.5 * ENV_SIZE)
 ZOOM_FACTOR = 1.5
 REFRESH_RATE = 10
 SENSOR_RANGE_LINE_LENGTH = ZOOM_FACTOR * HALF_ENV_SIZE
 
-CANVAS_CENTER = np.full(2, CANVAS_SIZE/2)
+CANVAS_CENTER = np.full(2, CANVAS_SIZE / 2)
 
 black = (0, 0, 0)
 white = (255, 255, 255)
@@ -27,11 +27,12 @@ blue = (0, 0, 255)
 yellow = (255, 255, 0)
 target_color = red
 tracker_color = blue
-target_tracker_vpos = [CANVAS_SIZE/3*2, CANVAS_SIZE/3]
+target_tracker_vpos = [CANVAS_SIZE / 3 * 2, CANVAS_SIZE / 3]
 tracker_sensor_color = yellow
 
 body_radius = BODY_RADIUS * ZOOM_FACTOR
 tracker_sensor_radius = SENSOR_RADIUS * ZOOM_FACTOR
+
 
 class Visualization2D:
 
@@ -42,7 +43,6 @@ class Visualization2D:
         pygame.init()
 
         self.main_surface = pygame.display.set_mode((CANVAS_SIZE, CANVAS_SIZE))
-
 
     def draw_target(self, target_pos):
         pos = ZOOM_FACTOR * target_pos + CANVAS_CENTER
@@ -62,7 +62,7 @@ class Visualization2D:
             eyes_pos = ZOOM_FACTOR * abs_eyes_pos[e] + CANVAS_CENTER
             # print('eyes_pos', e+1, eyes_pos)
             pygame.draw.circle(self.main_surface, tracker_sensor_color, eyes_pos, tracker_sensor_radius)
-            
+
             # draw sensors cones
             '''
             eye_ang_start = tracker.eyes_vision_angle_start[e]
@@ -77,14 +77,13 @@ class Visualization2D:
             sign_line = utils.linmap(eye_sig, (0., 1.), (0., HALF_ENV_SIZE))
             draw_line(self.main_surface, eyes_pos, eye_theta, sign_line, tracker_sensor_color)
             '''
-            
-            
+
     def start_simulation_from_data(self, trial_index, data_record):
         running = True
 
         clock = pygame.time.Clock()
-        
-        duration = self.simulation.num_data_points        
+
+        duration = self.simulation.num_data_points
 
         target_positions = data_record['target_position'][trial_index]
         tracker_positions = data_record['tracker_position'][trial_index]
@@ -96,7 +95,7 @@ class Visualization2D:
         tracker = Tracker2D()
         tracker.init_params_trial(trial_index)
 
-        while running and i<duration:
+        while running and i < duration:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -110,10 +109,10 @@ class Visualization2D:
             self.main_surface.fill(black)
 
             target_pos = target_positions[i]
-            tracker.set_position_and_angle_signals_strength(                
-                tracker_positions[i], 
+            tracker.set_position_and_angle_signals_strength(
+                tracker_positions[i],
                 tracker_angles[i],
-                tracker_signals_strength[i]                
+                tracker_signals_strength[i]
             )
             tracker.compute_signal_strength_and_delta_target(target_pos)
 
@@ -128,7 +127,6 @@ class Visualization2D:
             clock.tick(REFRESH_RATE)
 
             i += 1
-
 
     def final_tranform_main_surface(self):
         '''
@@ -146,14 +144,13 @@ def draw_line(surface, x1y1, theta, length, color):
     )
     pygame.draw.line(surface, color, x1y1, x2y2, width=1)
 
-    
 
 def test_visual():
-    from dol import simulation    
+    from dol import simulation
     run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
-        gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(2),
-        rs = RandomState(5),
-        num_dim = 2,
+        gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(2),
+        rs=RandomState(5),
+        num_dim=2,
     )
     vis = Visualization2D(sim)
     vis.start_simulation_from_data(trial_index=2, data_record=data_record_list[0])

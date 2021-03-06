@@ -1,3 +1,6 @@
+"""
+Main parameters for simulation experiment environment and agent body.
+"""
 import numpy as np
 
 ENV_SIZE = 400
