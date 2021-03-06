@@ -132,13 +132,14 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list,
     return nc_avg, h_avg
 
 
-def get_seeds_generations_complexities(dir, analyze_sensors=True,
-                                       analyze_brain=True, analyze_motors=True,
-                                       pop_index=0, only_last_generation=False,
-                                       filter_performance_threshold=None,
-                                       use_brain_derivatives=False,
-                                       combined_complexity=False,
-                                       rs=None):
+def get_seeds_generations_complexities(
+        dir, analyze_sensors=True,
+        analyze_brain=True, analyze_motors=True,
+        pop_index=0, only_last_generation=False,
+        filter_performance_threshold=None,
+        use_brain_derivatives=False,
+        combined_complexity=False,
+        rs=None):
     print('dir', dir, 'pop_idx', pop_index)
 
     seed_num_list = sorted([

@@ -197,14 +197,14 @@ def plot_results(evo, sim, trial, data_record):
     plot_data_time(data_record, 'agents_brain_input', trial)
     plot_data_time(data_record, 'agents_brain_output', trial)
     plot_data_time(data_record, 'agents_sensors', trial)
-    # plot_data_time(data_record, 'agents_brain_state', trial)
-    # plot_data_time(data_record, 'agents_derivatives', trial)
+    plot_data_time(data_record, 'agents_brain_state', trial)
+    plot_data_time(data_record, 'agents_derivatives', trial)
     plot_motor_time(sim, data_record, 'agents_motors', trial)
 
     # time tracker
-    # plot_data_time(data_record, 'tracker_wheels', trial)
-    # plot_data_time(data_record, 'tracker_velocity', trial)
-    # plot_data_time(data_record, 'tracker_signals', trial)
+    plot_data_time(data_record, 'tracker_wheels', trial)
+    plot_data_time(data_record, 'tracker_velocity', trial)
+    plot_data_time(data_record, 'tracker_signals', trial)
 
     # time target
     # plot_data_time(data_record, 'target_velocity', trial)    
@@ -224,9 +224,7 @@ def plot_results(evo, sim, trial, data_record):
         )
 
     # delta tracker target (distances)
-    # plot_data_time(data_record, 'delta_tracker_target', trial)    
-
-    # plot_genotype_similarity(evo, sim)
+    plot_data_time(data_record, 'delta_tracker_target', trial)
 
 
 def test_plot(value='random'):
