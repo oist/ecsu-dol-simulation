@@ -105,8 +105,14 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list,
     for t in range(num_trials):
         # print("trial:",t+1)
 
-        a = sim.population_index  # can be 1 in dual mode or in split if 
-        # current agent is in the second part of population
+        if agent_index is None:
+            # we get the agent_index based on what is the best agent
+            # can be 1 in dual mode if manually set 
+            # or in split-mode if best agent was in the second part of population 
+            # (when it was shuffled)
+            a = sim.population_index
+        else:
+            a = agent_index          
 
         if combined_complexity:
             assert num_agents == 2
@@ -174,7 +180,7 @@ def get_seeds_generations_complexities(
                 seed_dir, generation, population_idx=pop_index, quiet=True)
 
             nc_avg, h_avg = get_sim_agent_complexity(
-                sim_perfs, sim, data_record_list,
+                sim_perfs, sim, data_record_list, None, # agent_index must be None
                 analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
                 combined_complexity, rs
             )
@@ -274,7 +280,7 @@ def main_box_plot():
     saves it to CSV and outputs boxplots.
     """
     num_dim = 1
-    num_neurons = 4
+    num_neurons = 2
     analyze_sensors = True
     analyze_brain = True
     analyze_motors = False
@@ -325,7 +331,7 @@ def main_box_plot():
     combined_str = '_combined' if combined_complexity else ''    
 
     # save file to csv
-    f_name = f"data/{num_neurons}n_{selected_nodes_file_str}{combined_str}.csv"
+    f_name = f"data/{num_dim}d_{num_neurons}n_{selected_nodes_file_str}{combined_str}.csv"
     print('saving csv:', f_name)
     df = pd.DataFrame(np.transpose(all_NC), columns=x_labels)  # 20 x 4
     df.to_csv(f_name, index=False)
@@ -373,7 +379,7 @@ def main_scatter_plot():
             seed_dir, generation, genotype_idx, population_idx=pop_index, quiet=True)
 
         nc_avg, h_avg = get_sim_agent_complexity(
-            sim_perfs, sim, data_record_list,
+            sim_perfs, sim, data_record_list, None, # agent_index must be None
             analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
             combined_complexity, rs
         )
@@ -413,6 +419,7 @@ def single_agent(init_value='random'):
 
     nc, h = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
+        agent_index=None,
         analyze_sensors=True,
         analyze_brain=True,
         analyze_motors=False,
@@ -467,6 +474,7 @@ def single_paired_agents():
 
     nc, h = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
+        agent_index=None,
         analyze_sensors=True,
         analyze_brain=True,
         analyze_motors=False,
