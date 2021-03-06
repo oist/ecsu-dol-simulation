@@ -223,11 +223,12 @@ def main_line_plot():
 
     rs = RandomState(1)
 
-    GEN, BP, NC, H = get_seeds_generations_complexities(dir,
-                                                        analyze_sensors, analyze_brain, analyze_motors,
-                                                        pop_index=pop_index, only_last_generation=False,
-                                                        filter_performance_threshold=filter_performance_threshold,
-                                                        combined_complexity=combined_complexity, rs=rs)
+    GEN, BP, NC, H = get_seeds_generations_complexities(
+        dir, analyze_sensors, analyze_brain, analyze_motors,
+        pop_index=pop_index, only_last_generation=False,
+        filter_performance_threshold=filter_performance_threshold,
+        combined_complexity=combined_complexity, rs=rs
+    )
 
     fig = plt.figure(figsize=(10, 6))
     num_plots = len(GEN)
@@ -302,11 +303,11 @@ def main_box_plot():
     all_NC = np.array(all_NC)  # 4 x 20
     print(all_NC.shape)
     selected_nodes_file_str = '_'.join([x[:3] for x in selected_nodes_str_list])
-    combined_str = '_combined' if combined_complexity else ''
-    f_name = f"data/{num_neurons}n_{selected_nodes_file_str}{combined_str}.csv"
-    print(f_name)
+    combined_str = '_combined' if combined_complexity else ''    
 
     # save file to csv
+    f_name = f"data/{num_neurons}n_{selected_nodes_file_str}{combined_str}.csv"
+    print('saving csv:', f_name)
     df = pd.DataFrame(np.transpose(all_NC), columns=x_labels)  # 20 x 4
     df.to_csv(f_name)
 
@@ -463,7 +464,7 @@ def single_paired_agents():
 
 if __name__ == "__main__":
     main_line_plot()
-    main_box_plot()
-    single_agent(0)
-    single_paired_agents()
-    main_scatter_plot()
+    # main_box_plot()
+    # single_agent(0)
+    # single_paired_agents()
+    # main_scatter_plot()
