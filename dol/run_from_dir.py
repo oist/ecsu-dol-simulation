@@ -136,6 +136,9 @@ if __name__ == "__main__":
     else:
         sim_idx = args.select_sim - 1 # zero based
 
+    sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
+    print("Performace recomputed (sim): ",  sim_idx+1, sim_perf)
+
     if sim.num_agents == 2:
         print("Sim agents similarity: ", sim.agents_similarity[sim_idx])
 
