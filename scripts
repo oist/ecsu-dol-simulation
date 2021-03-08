@@ -1,0 +1,14 @@
+# main 1d
+python -m dol.main --dir ./data/tmp --cores 7 --seed 1 --num_neurons 2 --popsize 20 --max_gen 10
+
+# main 2d
+python -m dol.main --dir ./data/tmp --cores 7 --seed 1 --num_neurons 2 --popsize 20 --max_gen 10 --num_dim 2
+
+# run from data
+python -m dol.run_from_dir --dir ./data/tmp/2n/seed_001 --generation=10 --visualize_trial 1 --plot
+
+# rsync from fede only specific patters
+rsync -avz --include="*/" --include="simulation.json" --include="evo_2000.json" --exclude="*" deigo-ext:/bucket/FroeseU/fede/dol-simulation/ ./data/
+
+# rsync pyevolve lib (temporary updates)
+rsync -av .env/lib/python3.7/site-packages/pyevolver deigo-ext:~/Code/dol-simulation/env/lib/python3.7/site-packages

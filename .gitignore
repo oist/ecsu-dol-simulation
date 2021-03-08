@@ -1,2 +1,6 @@
-data
+.env/
+env/
+.ipynb_checkpoints
+data/
 *.eps
+dol/__pycache__
