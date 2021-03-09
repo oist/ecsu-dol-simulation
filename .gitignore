@@ -4,3 +4,9 @@ env/
 data/
 *.eps
 dol/__pycache__
+rstats/.Rproj.user
+rstats/packrat/lib*/
+rstats/packrat/src
+.Rhistory
+.Rprofile
+plots

@@ -1,0 +1,51 @@
+individual converged seeds (16/20)
+1: converges around 1600; perf 0.71, C 0.29; uses only n2
+2: around 350-370; perf 0.74, C 0.22; only n1
+4: around 2000; perf 0.72, C 0.36; only n2
+5: around 4300; perf 0.74, C 0.29; only n1; seems to use breaking
+6: around 120; perf 0.85, C 0.22; only n2
+7: around 375; perf 0.75, C 0.31; only n2
+
+8: around 540; 0.74, C 0.58; n2
+with random seed 99: perf 2.18, C 0.48
+
+10: around 1450; 0.73, 0.37; n1
+13: 740; 0.75, 0.28; n1
+14: 220; 0.71, 0.31; n1
+15: 860; 0.75, 0.31; n1
+16: 75; 0.83, 0.46; n1
+
+17: 687; 0.72, 2.18; uses both neurons
+with random seed 99: perf 1.55, C 2.13
+
+18: 1993; 0.75, 1.35; uses both neurons
+with random seed 99: perf 1.8, C 1.19
+
+19: 786; 0.70, 0.31; n1
+20: 133; 0.72, 0.42; n2
+
+
+generalist (13/20)
+2: gen 4700; perf 1.5; c 2.18, 2.23; both motors active in both agents; activation looks very similar
+3: 1740; perf 1.22; c 1.35, 1.3; both
+6: 2730; 1.59; 0.45, 0.58; seems to use braking strategy
+8: 4550; 1.19; 1.08, 1.51; 
+10: 860; 1.06; 0.8, 1.38; the first agent seems to use 1 neuron less
+11: 4800; 2.24; 0.61, 0.97; both agents use both neurons less intensively than other seeds
+12: 920; 1.35; 2.71, 1.36; 
+13:
+14:
+15:
+16:
+18:
+19:
+
+
+specialist (19/20)
+1-10
+12-20
+
+
+
+
+brain state and output?
