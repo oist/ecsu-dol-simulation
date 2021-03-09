@@ -131,7 +131,7 @@ if __name__ == "__main__":
     if args.select_sim is None:
         # select best one
         sim_idx = np.argmax(sim_perfs)
-        if sim.num_random_pairings > 0:
+        if sim.num_random_pairings!=None and sim.num_random_pairings > 0:
             print("Best sim (random pairings)", sim_idx+1)
     else:
         sim_idx = args.select_sim - 1 # zero based
