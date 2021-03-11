@@ -74,7 +74,7 @@ def main(raw_args=None):
             if args.switch_agents_motor_control:
                 subdir += '_switch'
             if args.dual_population:
-                subdir += '_dual'.format(args.exclusive_motors_threshold)
+                subdir += '_dual'
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
             outdir = os.path.join(args.dir, subdir, seed_dir)
         else:

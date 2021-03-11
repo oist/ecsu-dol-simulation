@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from dol.run_from_dir import run_simulation_from_dir
 from dol.shannon_entropy import get_shannon_entropy_2d, get_shannon_entropy_dd, get_shannon_entropy_dd_simplified
-from dol.neural_complexity import compute_neural_complexity
+from dol.neural_complexity import compute_neural_complexity, compute_neural_complexity_n1n2_combined, compute_neural_complexity_n1n2_single
 import pandas as pd
 from pyevolver.evolution import Evolution
 
@@ -59,7 +59,7 @@ def get_test_data():
 
 def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index,
                              analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
-                             combined_complexity, rs):
+                             combined_complexity, only_part_n1n2, rs):
     data_keys = []  # data elements on which complexity is analyzed
     # trials x 1/2 agents x 500 data points x 2 dim
 
@@ -101,7 +101,6 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index,
     )
 
     nc_trials = np.zeros(num_trials)
-    h_trials = np.zeros(num_trials)
     for t in range(num_trials):
         # print("trial:",t+1)
 
@@ -114,38 +113,48 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index,
         else:
             a = agent_index          
 
-        if combined_complexity:
-            assert num_agents == 2
-            trial_data = np.concatenate(
-                (
-                    data[:, t, a, :],
-                    data[:, t, 1 - a, :]
-                )
-            )
-            assert trial_data.shape == (2 * num_rows, num_data_points)
+        if only_part_n1n2:
+            n1_idx = num_sensors
+            n2_idx = num_sensors+1
+            if combined_complexity:
+                trial_data1 = data[:, t, a, :]
+                trial_data2 = data[:, t, 1 - a, :]                
+                nc = compute_neural_complexity_n1n2_combined(
+                    trial_data1, trial_data2, n1_idx, n2_idx, rs)
+            else:
+                trial_data = data[:, t, a, :]
+                nc = compute_neural_complexity_n1n2_single(
+                    trial_data, n1_idx, n2_idx, rs)
         else:
-            trial_data = data[:, t, a, :]
-            assert trial_data.shape == (num_rows, num_data_points)
+            if combined_complexity:
+                assert num_agents == 2
+                trial_data = np.concatenate(
+                    (
+                        data[:, t, a, :],
+                        data[:, t, 1 - a, :]
+                    )
+                )
+                assert trial_data.shape == (2 * num_rows, num_data_points)
+            else:
+                trial_data = data[:, t, a, :]
+                assert trial_data.shape == (num_rows, num_data_points)
 
-        nc = compute_neural_complexity(trial_data, rs)
+            nc = compute_neural_complexity(trial_data, rs)
+
         # print("nc:",nc)
         nc_trials[t] = nc
-        h_trials[t] = get_shannon_entropy_dd_simplified(np.transpose(trial_data))
     nc_avg = np.mean(nc_trials)
-    h_avg = np.mean(h_trials)
     # print("nc_avg:",nc_avg)
     # print("h_avg:",h_avg)
-    return nc_avg, h_avg
+    return nc_avg
 
 
 def get_seeds_generations_complexities(
-        dir, analyze_sensors=True,
-        analyze_brain=True, analyze_motors=True,
-        pop_index=0, only_last_generation=False,
-        filter_performance_threshold=None,
-        use_brain_derivatives=False,
-        combined_complexity=False,
-        rs=None):
+        dir, analyze_sensors=True, analyze_brain=True, analyze_motors=True,
+        pop_index=0, only_last_generation=False, filter_performance_threshold=None,
+        use_brain_derivatives=False, combined_complexity=False,
+        only_part_n1n2=False, rs=None):
+
     print('dir', dir, 'pop_idx', pop_index)
 
     SEEDS = sorted([
@@ -153,7 +162,7 @@ def get_seeds_generations_complexities(
         if f.startswith('seed_')
     ])
 
-    GEN, NC, H, BP = [], [], [], []
+    GEN, NC, BP = [], [], []
     skp_seeds = []
 
     for seed_num in tqdm(SEEDS):
@@ -172,23 +181,21 @@ def get_seeds_generations_complexities(
             num_generations_list = num_generations_list[-1:]
 
         nc_seed = []
-        h_seed = []
 
         for generation in num_generations_list:
             # print("generation:",generation)
             perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
                 seed_dir, generation, population_idx=pop_index, quiet=True)
 
-            agent_index = pop_index
+            agent_index = None
 
-            nc_avg, h_avg = get_sim_agent_complexity(
-                sim_perfs, sim, data_record_list, None, # agent_index must be None
+            nc_avg = get_sim_agent_complexity(
+                sim_perfs, sim, data_record_list, agent_index, # agent_index must be None
                 analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
-                combined_complexity, rs
+                combined_complexity, only_part_n1n2, rs
             )
 
             nc_seed.append(nc_avg)
-            h_seed.append(h_avg)
 
             # check if converged (only usefull for last generation)
         converged = filter_performance_threshold is None or perf < filter_performance_threshold
@@ -199,19 +206,17 @@ def get_seeds_generations_complexities(
             GEN.append(num_generations_list)
             BP.append(sim.normalize_performance(np.array(evo.best_performances)))
             NC.append(nc_seed)
-            H.append(h_seed)
         else:
             fill = [] if not only_last_generation else [np.NaN]
             GEN.append(fill)
             BP.append(fill)
             NC.append(fill)
-            H.append(fill)
             skp_seeds.append(seed_num_zero)
 
     if len(skp_seeds) > 0:
         print("Skipped seed", skp_seeds)
 
-    return SEEDS, GEN, BP, NC, H
+    return SEEDS, GEN, BP, NC
 
 
 def main_line_plot():
@@ -229,6 +234,7 @@ def main_line_plot():
     analyze_motors = False
     filter_performance_threshold = None  # 20.0
     combined_complexity = False
+    only_part_n1n2 = True
 
     rs = RandomState(1)
 
@@ -236,7 +242,9 @@ def main_line_plot():
         dir, analyze_sensors, analyze_brain, analyze_motors,
         pop_index=pop_index, only_last_generation=False,
         filter_performance_threshold=filter_performance_threshold,
-        combined_complexity=combined_complexity, rs=rs
+        combined_complexity=combined_complexity, 
+        only_part_n1n2=only_part_n1n2,
+        rs=rs
     )
 
     fig = plt.figure(figsize=(10, 6))
@@ -285,9 +293,10 @@ def main_box_plot():
     num_neurons = 2
     analyze_sensors = True
     analyze_brain = True
-    analyze_motors = False
+    analyze_motors = True
     use_brain_derivatives = False
     combined_complexity = True
+    only_part_n1n2 = True
 
     rs = RandomState(1)
 
@@ -316,11 +325,13 @@ def main_box_plot():
         x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
 
     for dir, pop_index in dir_pop_index:
-        _, _, _, NC, _ = get_seeds_generations_complexities(
+        SEEDS, GEN, BP, NC = get_seeds_generations_complexities(
             dir, analyze_sensors, analyze_brain, analyze_motors,
             pop_index, only_last_generation=True, filter_performance_threshold=20.0,
             use_brain_derivatives=use_brain_derivatives,
-            combined_complexity=combined_complexity, rs=rs)
+            combined_complexity=combined_complexity, 
+            only_part_n1n2=only_part_n1n2,
+            rs=rs)
 
         NC = np.squeeze(NC)
         # print(NC)
@@ -364,6 +375,8 @@ def main_scatter_plot():
     use_brain_derivatives = False
 
     combined_complexity = False
+    only_part_n1n2 = True
+
     rs = RandomState(1)
 
     evo_file = sorted([f for f in os.listdir(seed_dir) if 'evo_' in f])[0]
@@ -380,12 +393,12 @@ def main_scatter_plot():
         perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
             seed_dir, generation, genotype_idx, population_idx=pop_index, quiet=True)
 
-        agent_index = pop_index
+        agent_index = None
 
-        nc_avg, h_avg = get_sim_agent_complexity(
-            sim_perfs, sim, data_record_list, None, # agent_index must be None
+        nc_avg = get_sim_agent_complexity(
+            sim_perfs, sim, data_record_list, agent_index, # agent_index must be None
             analyze_sensors, analyze_brain, analyze_motors, use_brain_derivatives,
-            combined_complexity, rs
+            combined_complexity, only_part_n1n2, rs
         )
 
         perf_data[genotype_idx] = perf
@@ -421,7 +434,7 @@ def single_agent(init_value='random'):
         )
     total_performance, sim_perfs, random_agent_indexes = run_result
 
-    nc, h = get_sim_agent_complexity(
+    nc = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
         agent_index=None,
         analyze_sensors=True,
@@ -429,11 +442,11 @@ def single_agent(init_value='random'):
         analyze_motors=False,
         use_brain_derivatives=False,
         combined_complexity=False,
+        only_part_n1n2=False,
         rs=rs
     )
 
     print('nc', nc)
-    print('h', h)
 
 
 def single_paired_agents():
@@ -476,7 +489,7 @@ def single_paired_agents():
         data_record_list
     )
 
-    nc, h = get_sim_agent_complexity(
+    nc = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
         agent_index=None,
         analyze_sensors=True,
@@ -484,13 +497,13 @@ def single_paired_agents():
         analyze_motors=False,
         use_brain_derivatives=False,
         combined_complexity=False,
+        only_part_n1n2=False,
         rs=rs
     )
 
     print('performance', performance)
     print("Sim agents similarity: ", sim.agents_similarity[0])
     print('nc', nc)
-    print('h', h)
 
 
 if __name__ == "__main__":
