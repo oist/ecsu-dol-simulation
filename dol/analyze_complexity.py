@@ -342,9 +342,10 @@ def main_box_plot():
     print(all_NC.shape)
     selected_nodes_file_str = '_'.join([x[:3] for x in selected_nodes_str_list])
     combined_str = '_combined' if combined_complexity else ''    
+    only_part_n1n2_str = '_onlyN1N2' if only_part_n1n2 else ''    
 
     # save file to csv
-    f_name = f"data/{num_dim}d_{num_neurons}n_{selected_nodes_file_str}{combined_str}.csv"
+    f_name = f"data/{num_dim}d_{num_neurons}n_{selected_nodes_file_str}{combined_str}{only_part_n1n2_str}.csv"
     print('saving csv:', f_name)
     df = pd.DataFrame(np.transpose(all_NC), columns=x_labels)  # 20 x 4
     df.to_csv(f_name, index=False)
@@ -352,9 +353,11 @@ def main_box_plot():
     all_NC_not_NaN = [x[~np.isnan(x)] for x in all_NC]
     plt.boxplot(all_NC_not_NaN, labels=x_labels)
     selected_nodes_str = ', '.join(selected_nodes_str_list)
-    title = f'Neural Complexity - {num_neurons}n ({selected_nodes_str})'
+    title = f'Neural Complexity - {num_neurons}n {selected_nodes_str}'
     if combined_complexity:
-        title += ' (combined)'
+        title += ' - combined'
+    if only_part_n1n2:
+        title += ' - onlyN1N2'
     plt.title(title)
     plt.show()
 

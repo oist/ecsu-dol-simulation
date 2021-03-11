@@ -4,6 +4,8 @@ Implements TSE complexity.
 import numpy as np
 from numpy.random import RandomState
 
+NOISE_LEVEL = 1e-5
+
 def bipartition(collection):
     assert len(collection) > 1
     if len(collection) == 2:
@@ -57,7 +59,7 @@ def compute_neural_complexity_n1n2_single(data, n1_idx, n2_idx, rs=None):
     assert data.shape[0] < data.shape[1]  # few rows, many columns
     if rs is not None:
         # add noise
-        noise = rs.normal(0, 1e-5, data.shape)
+        noise = rs.normal(0, NOISE_LEVEL, data.shape)
         data = data + noise
     num_nodes, _ = data.shape
 
@@ -102,8 +104,8 @@ def compute_neural_complexity_n1n2_combined(data1, data2, n1_idx, n2_idx, rs=Non
     num_nodes, _ = data1.shape
     if rs is not None:
         # add noise
-        noise1 = rs.normal(0, 1e-5, data1.shape)
-        noise2 = rs.normal(0, 1e-5, data2.shape)
+        noise1 = rs.normal(0, NOISE_LEVEL, data1.shape)
+        noise2 = rs.normal(0, NOISE_LEVEL, data2.shape)
         data1 = data1 + noise1        
         data2 = data1 + noise2
 
@@ -144,8 +146,8 @@ def compute_neural_complexity(data, rs=None):
     assert data.ndim == 2
     assert data.shape[0] < data.shape[1]  # few rows, many columns
     if rs is not None:
-        # add noise
-        noise = rs.normal(0, 1e-5, data.shape)
+        # add noise        
+        noise = rs.normal(0, NOISE_LEVEL, data.shape)
         data = data + noise
     num_nodes, _ = data.shape
     h_AB = get_entropy_using_coveriance(data)
