@@ -221,7 +221,7 @@ def main_line_plot():
     - performance over generations
     - hardcoded complexity over generations
     """
-    dir = './data/1d_4n_exc-0.1_zfill'
+    dir = './data/2n_exc-0.1_zfill'
     pop_index = 0
 
     analyze_sensors = True
@@ -494,8 +494,8 @@ def single_paired_agents():
 
 
 if __name__ == "__main__":
-    # main_line_plot()
-    main_box_plot()
+    main_line_plot()
+    # main_box_plot()
     # single_agent(0)
     # single_paired_agents()
     # main_scatter_plot()

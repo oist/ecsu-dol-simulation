@@ -6,33 +6,8 @@ library(ggsignif)
 library(ggpubr)
 
 
-brain_nc_4n.wide <- read.table("../data/4n_bra.csv", sep=',', header=TRUE,
-                          fill=TRUE)
-brain_nc_4n.wide <- select(brain_nc_4n.wide, -X)
-brain_nc_4n <- gather(brain_nc_4n.wide, "condition", "neural_complexity")
-
-ggplot(brain_nc_4n, aes(x=condition, y=neural_complexity)) + 
-  geom_boxplot()
-
-
-z_scores <- as.data.frame(scale(brain_nc_4n.wide))
-no_outliers <- z_scores[!rowSums(z_scores>3), ]
-no_outliers <- gather(no_outliers, "condition", "neural_complexity")
-ggplot(no_outliers, aes(x=condition, y=neural_complexity)) + 
-  geom_boxplot()
-
-
-leveneTest(no_outliers$neural_complexity, no_outliers$condition) # significant
-n4.model <- aov(neural_complexity ~ condition, data = no_outliers)
-summary(n4.model) # not significant
-# pairwise.t.test(synchrony$distance, synchrony$condition, paired = FALSE, 
-#                p.adjust.method = "bonferroni")  # significant only for cond4 vs rest
-
-
-
-sen_brain_nc_2n.wide <- read.table("../data/2n_sen_bra.csv", sep=',', header=TRUE,
-                               fill=TRUE)
-sen_brain_nc_2n.wide <- select(sen_brain_nc_2n.wide, -X)
+sen_brain_nc_2n.wide <- read.table("../data/1d_2n_sen_bra_onlyN1N2.csv", 
+                                   sep=',', header=TRUE, fill=TRUE)
 names(sen_brain_nc_2n.wide) <- c('individual', 'generalist', 'specialist.left', 'specialist.right')
 sen_brain_nc_2n.wide <- mutate(sen_brain_nc_2n.wide, 
                                specialist = rowMeans(select(sen_brain_nc_2n.wide, 
@@ -61,23 +36,27 @@ pairwise.t.test(sen_brain_nc_2n$neural_complexity, sen_brain_nc_2n$condition, pa
 my_comparisons = list( c("individual", "generalist"), 
                        c("generalist", "specialist"))
 
-ggboxplot(sen_brain_nc_2n, x = "condition", y = "neural_complexity") + 
-  stat_compare_means(method = "anova", label.y=3.5, size=8) +
-  stat_compare_means(comparisons = my_comparisons, label.y = c(3.1, 2.9),
+ind.plot <- ggboxplot(sen_brain_nc_2n, x = "condition", y = "neural_complexity") + 
+  # stat_compare_means(method = "anova", label.y=2.3, size=8) +
+  stat_compare_means(comparisons = my_comparisons, label.y = c(1.7, 1.5),
                      label = "p.signif", method = "t.test", p.adj = "bonferroni",
                      size=8) +
-  scale_y_continuous(name = "TSE Complexity") +
+  scale_y_continuous(name = "TSE Complexity", limits=c(0, 2.2),
+                     breaks=c(0.0, 0.5, 1.0, 1.5, 2.0)) +
   scale_x_discrete(name = "Condition") + 
-  theme(axis.text = element_text(size = 16),
-        axis.title=element_text(size=20), panel.background = element_blank(),
+  theme(axis.text = element_text(size = 14),
+        axis.title=element_text(size=18), panel.background = element_blank(),
         axis.line = element_line(colour = "grey"),
         axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
+ggsave("../plots/boxplot_individual.eps", ind.plot, 
+       width=18, height=10, units="cm")
 
-sen_brain_nc_2n_joint.wide <- read.table("../data/2n_sen_bra_combined.csv", sep=',', header=TRUE,
-                                   fill=TRUE)
-sen_brain_nc_2n_joint.wide <- select(sen_brain_nc_2n_joint.wide, -X)
+
+sen_brain_nc_2n_joint.wide <- read.table(
+  "../data/1d_2n_sen_bra_combined_onlyN1N2.csv", 
+  sep=',', header=TRUE, fill=TRUE)
 names(sen_brain_nc_2n_joint.wide) <- c('generalist', 'specialist')
 
 sen_brain_nc_2n_joint <- gather(sen_brain_nc_2n_joint.wide, "condition", "neural_complexity")
@@ -93,14 +72,30 @@ n2.joint.model # not significant
 
 my_comparisons = list(c("generalist", "specialist"))
 
-ggboxplot(sen_brain_nc_2n_joint, x = "condition", y = "neural_complexity") + 
-  stat_compare_means(method="t.test", label.y = 46, size=8) +
-  stat_compare_means(comparisons = my_comparisons, label.y = c(43),
+joint.plot <- ggboxplot(sen_brain_nc_2n_joint, x = "condition", y = "neural_complexity") + 
+  # stat_compare_means(method="t.test", label.y = 46, size=8) +
+  stat_compare_means(comparisons = my_comparisons, label.y = c(2.3),
                      label = "p.signif", size=8) +
-  scale_y_continuous(name = "TSE Complexity") +
+  scale_y_continuous(name = "TSE Complexity", limits=c(0, 2.5),
+                     breaks=c(0.0, 0.5, 1.0, 1.5, 2.0)) +
   scale_x_discrete(name = "Condition") + 
-  theme(axis.text = element_text(size = 16),
-        axis.title=element_text(size=20), panel.background = element_blank(),
+  theme(axis.text = element_text(size = 14),
+        axis.title=element_text(size=18), panel.background = element_blank(),
         axis.line = element_line(colour = "grey"),
         axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+ggsave("../plots/boxplot_joint.eps", joint.plot, 
+       width=18, height=10, units="cm")
+
+
+tse.individual.wide <- read.table(
+  "../data/1d_2n_sen_bra_combined_onlyN1N2_gen_seeds_TSE.csv", 
+  sep=',', header=TRUE, fill=TRUE)
+tse.individual <- gather(tse.individual.wide, key="seed", 
+                         value="neural_complexity", -GEN)
+
+ggplot(tse.individual, aes(y=neural_complexity, group=seed)) + 
+  geom_line()
+
+

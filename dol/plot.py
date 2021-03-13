@@ -184,17 +184,17 @@ def plot_results(evo, sim, trial, data_record):
     if trial is None:
         trial = 'all'
 
-    if evo is not None:
-        plot_performances(evo, log=True)
-        # plot_performances(evo, log=False, only_best=True)
-        plot_genotype_similarity(evo, sim)
+    # if evo is not None:
+    #     plot_performances(evo, log=True)
+    #     # plot_performances(evo, log=False, only_best=True)
+    #     plot_genotype_similarity(evo, sim)
 
     # scatter agents
-    plot_data_scatter(data_record, 'agents_brain_output')
+    # plot_data_scatter(data_record, 'agents_brain_output')
     # plot_data_scatter(data_record, 'agents_brain_state')
 
     # time agents
-    plot_data_time(data_record, 'agents_brain_input', trial)
+    # plot_data_time(data_record, 'agents_brain_input', trial)
     plot_data_time(data_record, 'agents_brain_output', trial)
     # plot_data_time(data_record, 'agents_sensors', trial)
     # plot_data_time(data_record, 'agents_brain_state', trial)

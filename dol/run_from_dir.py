@@ -12,6 +12,7 @@ from pyevolver.evolution import Evolution
 from dol import utils
 import numpy as np
 
+
 def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
                             random_target_seed=None, random_pairing_seed=None, isolation_idx=None,
                             write_data=False, **kwargs):
@@ -67,7 +68,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
         if genotype_idx == 0:
             perf_orig = evo.best_performances[generation][population_idx]
             perf_orig = sim.normalize_performance(perf_orig)
-            print("Performace original: {}".format(perf_orig))
+            # print("Performace original: {}".format(perf_orig))
         print("Performace recomputed: {}".format(performance))
         if expect_same_results:
             assert abs(perf_orig - performance) < 1e-5
@@ -131,13 +132,13 @@ if __name__ == "__main__":
     if args.select_sim is None:
         # select best one
         sim_idx = np.argmax(sim_perfs)
-        if sim.num_random_pairings > 0:
+        if sim.num_random_pairings != None and sim.num_random_pairings > 0:
             print("Best sim (random pairings)", sim_idx+1)
     else:
         sim_idx = args.select_sim - 1 # zero based
 
     sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
-    print("Performace recomputed (sim): ",  sim_idx+1, sim_perf)
+    print("Performance recomputed (sim): ",  sim_idx+1, sim_perf)
 
     if sim.num_agents == 2:
         print("Sim agents similarity: ", sim.agents_similarity[sim_idx])
@@ -158,7 +159,7 @@ if __name__ == "__main__":
                 combined_complexity=False,
                 rs=RandomState(1))
             print('TSE', a+1, nc)
-            print('H', a+1, h)
+            # print('H', a+1, h)
 
     if args.visualize_trial > 0:
         vis = Visualization(sim) if sim.num_dim == 1 else Visualization2D(sim)
