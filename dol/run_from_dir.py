@@ -68,7 +68,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
         if genotype_idx == 0:
             perf_orig = evo.best_performances[generation][population_idx]
             perf_orig = sim.normalize_performance(perf_orig)
-            # print("Performace original: {}".format(perf_orig))
+            print("Performace original: {}".format(perf_orig))
         print("Performace recomputed: {}".format(performance))
         if expect_same_results:
             assert abs(perf_orig - performance) < 1e-5
@@ -149,16 +149,17 @@ if __name__ == "__main__":
     if args.compute_complexity:
         from dol.analyze_complexity import get_sim_agent_complexity
         for a in range(sim.num_agents):
-            nc, h = get_sim_agent_complexity(
+            nc = get_sim_agent_complexity(
                 sim_perfs, sim, data_record_list,
                 agent_index=a,
                 analyze_sensors=True,
                 analyze_brain=True,
                 analyze_motors=False,
                 combined_complexity=False,
-                rs=RandomState(1))
+                only_part_n1n2=True,
+                rs=RandomState(1)
+            )
             print('TSE', a+1, nc)
-            # print('H', a+1, h)
 
     if args.visualize_trial > 0:
         vis = Visualization(sim) if sim.num_dim == 1 else Visualization2D(sim)
