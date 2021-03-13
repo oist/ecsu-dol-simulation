@@ -135,7 +135,7 @@ if __name__ == "__main__":
         if sim.num_random_pairings != None and sim.num_random_pairings > 0:
             print("Best sim (random pairings)", sim_idx+1)
     else:
-        sim_idx = args.select_sim - 1 # zero based
+        sim_idx = args.select_sim - 1  # zero based
 
     sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
     print("Performance recomputed (sim): ",  sim_idx+1, sim_perf)
@@ -155,7 +155,6 @@ if __name__ == "__main__":
                 analyze_sensors=True,
                 analyze_brain=True,
                 analyze_motors=False,
-                use_brain_derivatives=False,
                 combined_complexity=False,
                 rs=RandomState(1))
             print('TSE', a+1, nc)
