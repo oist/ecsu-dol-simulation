@@ -109,6 +109,11 @@ def compute_neural_complexity_n1n2_combined(data1, data2, n1_idx, n2_idx, rs=Non
         data1 = data1 + noise1        
         data2 = data1 + noise2
 
+    # swap neural nodes of data2
+    # (test if result different from default aligment)
+    # data1[[n1_idx, n2_idx]] = data1[[n2_idx, n1_idx]]
+    # data2[[n1_idx, n2_idx]] = data2[[n2_idx, n1_idx]]
+
     # consider the following partionings
     # p1 = (n1), (n2, s1, s2, m1, m2)
     # p2 = (n2), (n1, s1, s2, m1, m2)
