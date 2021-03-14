@@ -562,7 +562,7 @@ def single_paired_agents():
     print('nc', nc)
 
 def run_alife21_analysis():
-    for combined_complexity in [True]:
+    for combined_complexity in [False, True]:
         main_box_plot(
             num_dim = 1,
             num_neurons = 2,

@@ -15,18 +15,22 @@ from dol.utils import get_numpy_signature
 
 
 def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
-                            random_target_seed=None, random_pairing_seed=None, isolation_idx=None,
-                            write_data=False, **kwargs):
+                            random_target_seed=None, random_pairing_seed=None, 
+                            isolation_idx=None, write_data=False, **kwargs):
     """
     Utitity function to get data from a simulation
     """
 
-    evo_files = [f for f in os.listdir(dir) if f.startswith('evo_')]
+    evo_files = sorted([f for f in os.listdir(dir) if f.startswith('evo_')])
     assert len(evo_files) > 0, "Can't find evo files in dir {}".format(dir)
     file_num_zfill = len(evo_files[0].split('_')[1].split('.')[0])
-    generation_str = str(generation).zfill(file_num_zfill)
-    sim_json_filepath = os.path.join(dir, 'simulation.json')
-    evo_json_filepath = os.path.join(dir, 'evo_{}.json'.format(generation_str))
+    if generation is None:
+        evo_json_filepath = os.path.join(dir, evo_files[-1])
+        generation = int(evo_files[-1].split('_')[1].split('.')[0])
+    else:
+        generation_str = str(generation).zfill(file_num_zfill)
+        evo_json_filepath = os.path.join(dir, 'evo_{}.json'.format(generation_str))    
+    sim_json_filepath = os.path.join(dir, 'simulation.json')    
     sim = Simulation.load_from_file(sim_json_filepath)
     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
 
@@ -65,7 +69,9 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
 
     performance = sim.normalize_performance(performance)
 
-    if not kwargs.get('quiet', False):
+    verbose = not kwargs.get('quiet', False)
+
+    if verbose:
         if genotype_idx == 0:
             perf_orig = evo.best_performances[generation][population_idx]
             perf_orig = sim.normalize_performance(perf_orig)
@@ -92,30 +98,29 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
                     outfile = os.path.join(outdir, '{}.json'.format(k))
                     utils.save_json_numpy_data(v, outfile)
 
-    if kwargs['select_sim'] is None:
+    
+    if kwargs.get('select_sim', None) is None:
         # select best one
         sim_idx = np.argmax(sim_perfs)
-        if sim.num_random_pairings != None and sim.num_random_pairings > 0:
+        # if sim.num_random_pairings != None and sim.num_random_pairings > 0:
+        if verbose:
             print("Best sim (random pairings)", sim_idx+1)
     else:
         sim_idx = kwargs['select_sim'] - 1  # zero based
-        print("Selecting simulation", sim_idx+1)
+        if verbose:
+            print("Selecting simulation", sim_idx+1)
 
-    sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
-    print("Performance recomputed (sim): ",  sim_idx+1, sim_perf)
-
-    if sim.num_agents == 2:
-        print("Sim agents similarity: ", sim.agents_similarity[sim_idx])
-
-    # single_simulation = len(data_record_list) == 1
-    data_record = data_record_list[sim_idx]
-
-    # print agents signatures
-    agents_sign = [get_numpy_signature(gt) for gt in data_record_list[sim_idx]['genotypes']]
-    print('Agent(s) signature(s):', agents_sign) 
+    if verbose:
+        sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
+        print("Performance recomputed (sim): ",  sim_idx+1, sim_perf)
+        if sim.num_agents == 2:
+            print("Sim agents similarity: ", sim.agents_similarity[sim_idx])
+        # print agents signatures
+        agents_sign = [get_numpy_signature(gt) for gt in data_record_list[sim_idx]['genotypes']]
+        print('Agent(s) signature(s):', agents_sign) 
 
 
-    if args.compute_complexity:
+    if kwargs.get('compute_complexity', False):
         from dol.analyze_complexity import get_sim_agent_complexity
         for a in range(sim.num_agents):
             nc = get_sim_agent_complexity(
