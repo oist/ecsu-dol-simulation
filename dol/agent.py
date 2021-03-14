@@ -5,11 +5,9 @@ Both body and brain structure is specified by genotype structure provided in con
 
 from dataclasses import dataclass, field
 import numpy as np
-import hashlib
-import codecs
 from scipy.special import expit # pylint: disable-msg=E0611
 from pyevolver.ctrnn import BrainCTRNN
-from dol.utils import linmap
+from dol.utils import linmap, get_numpy_signature
 from pyevolver.evolution import MIN_SEARCH_VALUE, MAX_SEARCH_VALUE
 
 # range of each site in the genotype (pyevolver)
@@ -135,12 +133,7 @@ class Agent:
                     i += 1
     
     def get_signature(self):
-        hex_hash = hashlib.sha1(self.genotype).hexdigest() 
-        sign = codecs.encode(
-            codecs.decode(hex_hash, 'hex'), 
-            'base64'
-        ).decode()[:5]
-        return sign
+        return get_numpy_signature(self.genotype)
 
     def compute_brain_input(self, signal_strength):
         # let n be the number of neurons in the brain

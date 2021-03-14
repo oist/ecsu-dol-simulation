@@ -57,7 +57,7 @@ def get_test_data():
     return data_record
 
 
-def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index,
+def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index, sim_idx,
                              analyze_sensors, analyze_brain, analyze_motors,
                              combined_complexity, only_part_n1n2, rs):
     data_keys = []  # data elements on which complexity is analyzed
@@ -71,12 +71,13 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index,
     if analyze_motors:
         data_keys.append('agents_motors')  # dim = num motors = 2
 
-    best_sim_idx = np.argmax(sim_perfs)
+    if sim_idx is None:
+        sim_idx = np.argmax(sim_perfs)
 
     num_trials = sim.num_trials
     num_agents = sim.num_agents
     num_data_points = sim.num_data_points
-    data_record = data_record_list[best_sim_idx]
+    data_record = data_record_list[sim_idx]
     # data_record = get_test_data()            
 
     num_sensors = np.array(data_record['agents_sensors']).shape[-1] if analyze_sensors else 0
@@ -184,13 +185,14 @@ def get_seeds_generations_complexities(
 
         for generation in num_generations_list:
             # print("generation:",generation)
-            perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
+            perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(
                 seed_dir, generation, population_idx=pop_index, quiet=True)
 
-            agent_index = None
+            agent_index = None # agent_index must be None (to get best agents of the two)
+            sim_idx = None # sim_idx must be None (to get best sim among randomom pairs)
 
             nc_avg = get_sim_agent_complexity(
-                sim_perfs, sim, data_record_list, agent_index, # agent_index must be None
+                sim_perfs, sim, data_record_list, agent_index, sim_idx,
                 analyze_sensors, analyze_brain, analyze_motors,
                 combined_complexity, only_part_n1n2, rs
             )
@@ -443,13 +445,14 @@ def main_scatter_plot():
     nc_data = np.zeros(pop_size)
 
     for genotype_idx in tqdm(range(pop_size)):
-        perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(
+        perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(
             seed_dir, generation, genotype_idx, population_idx=pop_index, quiet=True)
 
-        agent_index = None
+        agent_index = None # agent_index must be None (to get best agents of the two)
+        sim_idx = None # sim_idx must be None (to get best sim among randomom pairs)
 
         nc_avg = get_sim_agent_complexity(
-            sim_perfs, sim, data_record_list, agent_index, # agent_index must be None
+            sim_perfs, sim, data_record_list, agent_index, sim_idx,
             analyze_sensors, analyze_brain, analyze_motors,
             combined_complexity, only_part_n1n2, rs
         )
@@ -490,6 +493,7 @@ def single_agent(init_value='random'):
     nc = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
         agent_index=None,
+        sim_idx=None,
         analyze_sensors=True,
         analyze_brain=True,
         analyze_motors=False,
@@ -544,6 +548,7 @@ def single_paired_agents():
     nc = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
         agent_index=None,
+        sim_idx=None,
         analyze_sensors=True,
         analyze_brain=True,
         analyze_motors=False,

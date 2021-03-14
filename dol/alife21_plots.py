@@ -87,7 +87,7 @@ def plot_data_time_multi_keys(data_record, trial, title, filename, save_fig=True
 plot_seed = '017'
 plot_dir = 'data/2n_exc-0.1_zfill/seed_{}'.format(plot_seed)
 
-performance1, sim_perfs1, evo1, sim1, data_record_list1 = run_simulation_from_dir(
+performance1, sim_perfs1, evo1, sim1, data_record_list1, sim_idx = run_simulation_from_dir(
     dir=plot_dir, generation=5000, random_target_seed=78)
 
 data_record1 = data_record_list1[0]
@@ -104,13 +104,13 @@ plot_activity_over_time(data_record1, 'agents_motors', trl,
 # generalists
 plot_seed = '019'
 plot_dir = 'data/2n_exc-0.1_zfill_rp-3_switch/seed_{}'.format(plot_seed)
-_, sim_perfs2, _, _, _ = run_simulation_from_dir(
+_, sim_perfs2, _, _, _, _ = run_simulation_from_dir(
     dir=plot_dir, generation=5000)
 # select best simulation for joint cases
 sim_idx = np.argmax(sim_perfs2)
 
 # rerun with random target
-performance2, sim_perfs2, evo2, sim2, data_record_list2 = run_simulation_from_dir(
+performance2, sim_perfs2, evo2, sim2, data_record_list2, sim_idx2 = run_simulation_from_dir(
     dir=plot_dir, generation=5000, random_target_seed=78)
 data_record2 = data_record_list2[sim_idx]
 
@@ -126,13 +126,13 @@ plot_activity_over_time(data_record2, 'agents_motors', trl,
 plot_seed = '003'
 plot_dir = 'data/2n_exc-0.1_zfill_rp-3_dual/seed_{}'.format(plot_seed)
 
-_, sim_perfs3, _, _, _ = run_simulation_from_dir(
+_, sim_perfs3, _, _, _, _ = run_simulation_from_dir(
     dir=plot_dir, generation=5000)
 # select best simulation for joint cases
 sim_idx = np.argmax(sim_perfs3)
 
 # rerun with random target
-performance3, sim_perfs3, evo3, sim3, data_record_list3 = run_simulation_from_dir(
+performance3, sim_perfs3, evo3, sim3, data_record_list3, sim_idx3 = run_simulation_from_dir(
     dir=plot_dir, generation=5000, random_target_seed=78)
 
 data_record3 = data_record_list3[sim_idx]
