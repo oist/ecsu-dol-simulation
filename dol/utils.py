@@ -6,6 +6,8 @@ import string
 import numpy as np
 from numpy import pi
 import os
+import hashlib
+import codecs
 
 # CONSTANTS
 TWO_PI = 2 * pi
@@ -124,3 +126,11 @@ def make_dir_if_not_exists_or_replace(dir_path):
 
 def assert_string_in_values(s, s_name, values):
     assert s in values, '{} should be one of the following: {}. Given value: {}'.format(s_name, values, s)
+
+def get_numpy_signature(arr):
+    hex_hash = hashlib.sha1(arr).hexdigest() 
+    sign = codecs.encode(
+        codecs.decode(hex_hash, 'hex'), 
+        'base64'
+    ).decode()[:5]
+    return sign    

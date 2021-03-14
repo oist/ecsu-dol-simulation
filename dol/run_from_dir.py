@@ -11,6 +11,7 @@ from dol.simulation import Simulation, MAX_MEAN_DISTANCE
 from pyevolver.evolution import Evolution
 from dol import utils
 import numpy as np
+from dol.utils import get_numpy_signature
 
 
 def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
@@ -65,10 +66,6 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
     performance = sim.normalize_performance(performance)
 
     if not kwargs.get('quiet', False):
-        # print agents signatures
-        agents_sign = [a.get_signature() for a in sim.agents]
-        print('Agent(s) signature(s):', agents_sign) 
-
         if genotype_idx == 0:
             perf_orig = evo.best_performances[generation][population_idx]
             perf_orig = sim.normalize_performance(perf_orig)
@@ -95,7 +92,46 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
                     outfile = os.path.join(outdir, '{}.json'.format(k))
                     utils.save_json_numpy_data(v, outfile)
 
-    return performance, sim_perfs, evo, sim, data_record_list
+    if kwargs['select_sim'] is None:
+        # select best one
+        sim_idx = np.argmax(sim_perfs)
+        if sim.num_random_pairings != None and sim.num_random_pairings > 0:
+            print("Best sim (random pairings)", sim_idx+1)
+    else:
+        sim_idx = kwargs['select_sim'] - 1  # zero based
+        print("Selecting simulation", sim_idx+1)
+
+    sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
+    print("Performance recomputed (sim): ",  sim_idx+1, sim_perf)
+
+    if sim.num_agents == 2:
+        print("Sim agents similarity: ", sim.agents_similarity[sim_idx])
+
+    # single_simulation = len(data_record_list) == 1
+    data_record = data_record_list[sim_idx]
+
+    # print agents signatures
+    agents_sign = [get_numpy_signature(gt) for gt in data_record_list[sim_idx]['genotypes']]
+    print('Agent(s) signature(s):', agents_sign) 
+
+
+    if args.compute_complexity:
+        from dol.analyze_complexity import get_sim_agent_complexity
+        for a in range(sim.num_agents):
+            nc = get_sim_agent_complexity(
+                sim_perfs, sim, data_record_list,
+                agent_index=a,
+                sim_idx=sim_idx,
+                analyze_sensors=True,
+                analyze_brain=True,
+                analyze_motors=False,
+                combined_complexity=False,
+                only_part_n1n2=True,
+                rs=RandomState(1)
+            )
+            print('TSE', a+1, nc)
+
+    return performance, sim_perfs, evo, sim, data_record_list, sim_idx
 
 
 if __name__ == "__main__":
@@ -122,49 +158,19 @@ if __name__ == "__main__":
     parser.add_argument('--isolation_idx', type=int,
                         help='To force the first (0) or second (1) agent to run in isolation (None otherwise)')
     parser.add_argument('--write_data', action='store_true', help='Whether to output data (same directory as input)')
-
-    # additional args
     parser.add_argument('--select_sim', type=int, help='Which simulation to select for visualization and plot (1-based) - default best')
     parser.add_argument('--compute_complexity', action='store_true', help='Whether to plot the data')
+
+    # additional args
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
     parser.add_argument('--plot_trial', type=int, help='Whether to plot a specif trial')
 
     args = parser.parse_args()
 
-    perf, sim_perfs, evo, sim, data_record_list = run_simulation_from_dir(**vars(args))
+    perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(**vars(args))
 
-    if args.select_sim is None:
-        # select best one
-        sim_idx = np.argmax(sim_perfs)
-        if sim.num_random_pairings != None and sim.num_random_pairings > 0:
-            print("Best sim (random pairings)", sim_idx+1)
-    else:
-        sim_idx = args.select_sim - 1  # zero based
-
-    sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
-    print("Performance recomputed (sim): ",  sim_idx+1, sim_perf)
-
-    if sim.num_agents == 2:
-        print("Sim agents similarity: ", sim.agents_similarity[sim_idx])
-
-    single_simulation = len(data_record_list) == 1
     data_record = data_record_list[sim_idx]
-
-    if args.compute_complexity:
-        from dol.analyze_complexity import get_sim_agent_complexity
-        for a in range(sim.num_agents):
-            nc = get_sim_agent_complexity(
-                sim_perfs, sim, data_record_list,
-                agent_index=a,
-                analyze_sensors=True,
-                analyze_brain=True,
-                analyze_motors=False,
-                combined_complexity=False,
-                only_part_n1n2=True,
-                rs=RandomState(1)
-            )
-            print('TSE', a+1, nc)
 
     if args.visualize_trial > 0:
         vis = Visualization(sim) if sim.num_dim == 1 else Visualization2D(sim)
