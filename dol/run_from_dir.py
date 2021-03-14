@@ -33,7 +33,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
 
     random_seed = evo.pop_eval_random_seed
 
-    expect_same_results = True
+    expect_same_results = isolation_idx is None
 
     # overwriting simulaiton
     if random_target_seed is not None:
@@ -65,10 +65,14 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
     performance = sim.normalize_performance(performance)
 
     if not kwargs.get('quiet', False):
+        # print agents signatures
+        agents_sign = [a.get_signature() for a in sim.agents]
+        print('Agent(s) signature(s):', agents_sign) 
+
         if genotype_idx == 0:
             perf_orig = evo.best_performances[generation][population_idx]
             perf_orig = sim.normalize_performance(perf_orig)
-            # print("Performace original: {}".format(perf_orig))
+            print("Performace original: {}".format(perf_orig))
         print("Performace recomputed: {}".format(performance))
         if expect_same_results:
             assert abs(perf_orig - performance) < 1e-5
@@ -106,6 +110,7 @@ if __name__ == "__main__":
 
     # args for run_simulation_from_dir
     parser.add_argument('--dir', type=str, help='Directory path')
+    parser.add_argument('--quiet', type=str, help='Do not print extra information (e.g., originale performance)')
     parser.add_argument('--generation', type=int, help='Number of generation to load')
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')
     parser.add_argument('--population_idx', type=int, default=0,
@@ -149,16 +154,17 @@ if __name__ == "__main__":
     if args.compute_complexity:
         from dol.analyze_complexity import get_sim_agent_complexity
         for a in range(sim.num_agents):
-            nc, h = get_sim_agent_complexity(
+            nc = get_sim_agent_complexity(
                 sim_perfs, sim, data_record_list,
                 agent_index=a,
                 analyze_sensors=True,
                 analyze_brain=True,
                 analyze_motors=False,
                 combined_complexity=False,
-                rs=RandomState(1))
+                only_part_n1n2=True,
+                rs=RandomState(1)
+            )
             print('TSE', a+1, nc)
-            # print('H', a+1, h)
 
     if args.visualize_trial > 0:
         vis = Visualization(sim) if sim.num_dim == 1 else Visualization2D(sim)

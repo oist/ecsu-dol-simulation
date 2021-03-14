@@ -5,6 +5,8 @@ Both body and brain structure is specified by genotype structure provided in con
 
 from dataclasses import dataclass, field
 import numpy as np
+import hashlib
+import codecs
 from scipy.special import expit # pylint: disable-msg=E0611
 from pyevolver.ctrnn import BrainCTRNN
 from dol.utils import linmap
@@ -78,6 +80,7 @@ class Agent:
         '''
         map genotype to brain values (self.brain) and sensor/motor (self)
         '''
+        self.genotype = genotype # assign genotype
         i = 0
         for k, val in self.genotype_structure.items():
             if k == 'crossover_points':
@@ -131,6 +134,14 @@ class Agent:
                     phenotype_list[i] = phenotype_value
                     i += 1
     
+    def get_signature(self):
+        hex_hash = hashlib.sha1(self.genotype).hexdigest() 
+        sign = codecs.encode(
+            codecs.decode(hex_hash, 'hex'), 
+            'base64'
+        ).decode()[:5]
+        return sign
+
     def compute_brain_input(self, signal_strength):
         # let n be the number of neurons in the brain
         # sensor_output shape is (2, ): [O1, O2]        
