@@ -33,7 +33,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
 
     random_seed = evo.pop_eval_random_seed
 
-    expect_same_results = True
+    expect_same_results = isolation_idx is None
 
     # overwriting simulaiton
     if random_target_seed is not None:
@@ -65,6 +65,10 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
     performance = sim.normalize_performance(performance)
 
     if not kwargs.get('quiet', False):
+        # print agents signatures
+        agents_sign = [a.get_signature() for a in sim.agents]
+        print('Agent(s) signature(s):', agents_sign) 
+
         if genotype_idx == 0:
             perf_orig = evo.best_performances[generation][population_idx]
             perf_orig = sim.normalize_performance(perf_orig)
@@ -106,6 +110,7 @@ if __name__ == "__main__":
 
     # args for run_simulation_from_dir
     parser.add_argument('--dir', type=str, help='Directory path')
+    parser.add_argument('--quiet', type=str, help='Do not print extra information (e.g., originale performance)')
     parser.add_argument('--generation', type=int, help='Number of generation to load')
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')
     parser.add_argument('--population_idx', type=int, default=0,
