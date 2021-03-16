@@ -8,10 +8,10 @@ import numpy as np
 from scipy.special import expit # pylint: disable-msg=E0611
 from pyevolver.ctrnn import BrainCTRNN
 from dol.utils import linmap, get_numpy_signature
-from pyevolver.evolution import MIN_SEARCH_VALUE, MAX_SEARCH_VALUE
+from dol.params import EVOLVE_GENE_RANGE
 
 # range of each site in the genotype (pyevolver)
-EVOLVE_GENE_RANGE = (MIN_SEARCH_VALUE, MAX_SEARCH_VALUE)
+
 
 @dataclass
 class Agent:

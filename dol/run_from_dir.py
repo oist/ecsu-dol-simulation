@@ -114,7 +114,7 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
         sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
         print("Performance recomputed (sim): ",  sim_idx+1, sim_perf)
         if sim.num_agents == 2:
-            print("Sim agents similarity: ", sim.agents_similarity[sim_idx])
+            print("Sim genotype agents similarity: ", sim.agents_similarity[sim_idx])
         # print agents signatures
         agents_sign = [get_numpy_signature(gt) for gt in data_record_list[sim_idx]['genotypes']]
         print('Agent(s) signature(s):', agents_sign) 

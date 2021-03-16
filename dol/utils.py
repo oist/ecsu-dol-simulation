@@ -9,6 +9,8 @@ import os
 import hashlib
 import codecs
 
+from numpy.core.overrides import array_function_from_dispatcher
+
 # CONSTANTS
 TWO_PI = 2 * pi
 RANDOM_CHAR_SET = string.ascii_uppercase + string.digits
@@ -28,7 +30,6 @@ def linmap(vin, rin, rout):
     c = rout[0]
     d = rout[1]
     return ((c + d) + (d - c) * ((2 * vin - (a + b)) / (b - a))) / 2
-
 
 def discretize(a, bins, min_v=0, max_v=1):
     a[a > max_v] = max_v
@@ -134,3 +135,16 @@ def get_numpy_signature(arr):
         'base64'
     ).decode()[:5]
     return sign    
+
+def genotype_similarity(a, b):
+    from dol.params import EVOLVE_GENE_RANGE
+    a_norm = linmap(a, EVOLVE_GENE_RANGE, (0,1))
+    b_norm = linmap(b, EVOLVE_GENE_RANGE, (0,1))
+    diff = a_norm - b_norm
+    dist = np.linalg.norm(diff) 
+    # same as scipy.spatial.distance.euclidean(a_norm, b_norm)
+    max_dist = np.sqrt(len(a))    
+    dist_norm = linmap(dist, (0,max_dist), (0,1))
+    similarity = 1 - dist_norm    
+    assert 0 <= similarity <= 1
+    return similarity

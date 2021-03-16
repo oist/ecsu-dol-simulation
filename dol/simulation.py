@@ -118,7 +118,10 @@ class Simulation:
     def get_genotypes_similarity(self):
         if self.num_agents == 1:
             return None
-        return 1 - np.linalg.norm(np.subtract(self.genotypes[0], self.genotypes[1]))
+        return utils.genotype_similarity(
+            self.genotypes[0], 
+            self.genotypes[1]
+        )
 
     def save_to_file(self, file_path):
         with open(file_path, 'w') as f_out:

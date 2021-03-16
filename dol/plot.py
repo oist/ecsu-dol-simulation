@@ -4,9 +4,10 @@ of a specific simulation seed.
 """
 
 import matplotlib.pyplot as plt
-from dol.simulation import MAX_MEAN_DISTANCE
 import numpy as np
-
+from dol.simulation import MAX_MEAN_DISTANCE
+from dol import utils
+from dol import params
 
 def plot_performances(evo, log=False, only_best=False):
     """
@@ -155,14 +156,22 @@ def plot_genotype_similarity(evo, sim):
     """
     Heatmap of genotype similarity within the population.
     """
-    from sklearn.metrics.pairwise import pairwise_distances
+    from sklearn.metrics.pairwise import pairwise_distances    
     population = evo.population
+    genotype_length = len(evo.population[0][0])
     if len(evo.population) > 1:
         population = np.concatenate(evo.population)
         population = np.expand_dims(population, 0)
-    similarity = 1 - pairwise_distances(population[0])
+    population_norm = utils.linmap(population, params.EVOLVE_GENE_RANGE, (0,1))    
+    dist = pairwise_distances(population_norm[0])
+    max_dist = np.sqrt(genotype_length)
+    dist_norm = utils.linmap(dist, (0,max_dist), (0,1))
+    similarity = 1 - dist_norm
+
+    assert 0 <= similarity.all() <= 1
     # print(similarity.shape)
     plt.imshow(similarity)
+    plt.clim(0, 1)
     plt.colorbar()
     plt.show()
 
@@ -171,7 +180,7 @@ def plot_genotype_similarity(evo, sim):
         similarity = np.zeros((1, len(population)))
         for i, pair in enumerate(population):
             a, b = np.array_split(pair, 2)
-            similarity[0][i] = 1 - np.linalg.norm(a - b)
+            similarity[0][i] = utils.genotype_similarity(a,b)
         plt.imshow(similarity)
         plt.colorbar()
         plt.show()
@@ -184,10 +193,10 @@ def plot_results(evo, sim, trial, data_record):
     if trial is None:
         trial = 'all'
 
-    # if evo is not None:
-    #     plot_performances(evo, log=True)
-    #     # plot_performances(evo, log=False, only_best=True)
-    #     plot_genotype_similarity(evo, sim)
+    if evo is not None:
+        plot_performances(evo, log=True)
+        # plot_performances(evo, log=False, only_best=True)
+        plot_genotype_similarity(evo, sim)
 
     # scatter agents
     # plot_data_scatter(data_record, 'agents_brain_output')
