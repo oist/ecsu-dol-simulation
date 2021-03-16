@@ -3,6 +3,7 @@ Main plotting functions for visualizing experiment behavior
 of a specific simulation seed.
 """
 
+from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
 from dol.simulation import MAX_MEAN_DISTANCE
@@ -166,24 +167,20 @@ def plot_genotype_similarity(evo, sim):
     dist = pairwise_distances(population_norm[0])
     max_dist = np.sqrt(genotype_length)
     dist_norm = utils.linmap(dist, (0,max_dist), (0,1))
-    similarity = 1 - dist_norm
-
-    assert 0 <= similarity.all() <= 1
-    # print(similarity.shape)
-    plt.imshow(similarity)
-    plt.clim(0, 1)
-    plt.colorbar()
-    plt.show()
 
     if sim.num_random_pairings == 0:
         # genotypes evolved in pairs
-        similarity = np.zeros((1, len(population)))
+        dist_norm = np.zeros((1, len(population)))
         for i, pair in enumerate(population):
             a, b = np.array_split(pair, 2)
-            similarity[0][i] = utils.genotype_similarity(a,b)
-        plt.imshow(similarity)
-        plt.colorbar()
-        plt.show()
+            dist_norm[0][i] = utils.genotype_distance(a,b)
+
+    assert 0 <= dist_norm.all() <= 1
+    cmap_inv = plt.cm.get_cmap('viridis_r')        
+    plt.imshow(dist_norm, cmap=cmap_inv)       
+    plt.clim(0, 1) 
+    plt.colorbar()
+    plt.show()
 
 
 def plot_results(evo, sim, trial, data_record):

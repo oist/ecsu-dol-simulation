@@ -558,7 +558,7 @@ def single_paired_agents():
     )
 
     print('performance', performance)
-    print("Sim agents similarity: ", sim.agents_similarity[0])
+    print("Sim agents similarity: ", sim.agents_genotype_distance[0])
     print('nc', nc)
 
 def run_alife21_analysis():

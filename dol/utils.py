@@ -136,7 +136,7 @@ def get_numpy_signature(arr):
     ).decode()[:5]
     return sign    
 
-def genotype_similarity(a, b):
+def genotype_distance(a, b):
     from dol.params import EVOLVE_GENE_RANGE
     a_norm = linmap(a, EVOLVE_GENE_RANGE, (0,1))
     b_norm = linmap(b, EVOLVE_GENE_RANGE, (0,1))
@@ -145,6 +145,5 @@ def genotype_similarity(a, b):
     # same as scipy.spatial.distance.euclidean(a_norm, b_norm)
     max_dist = np.sqrt(len(a))    
     dist_norm = linmap(dist, (0,max_dist), (0,1))
-    similarity = 1 - dist_norm    
-    assert 0 <= similarity <= 1
-    return similarity
+    assert 0 <= dist_norm <= 1
+    return dist_norm

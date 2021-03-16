@@ -115,10 +115,10 @@ class Simulation:
                 rs
             )
 
-    def get_genotypes_similarity(self):
+    def get_genotypes_distance(self):
         if self.num_agents == 1:
             return None
-        return utils.genotype_similarity(
+        return utils.genotype_distance(
             self.genotypes[0], 
             self.genotypes[1]
         )
@@ -395,7 +395,7 @@ class Simulation:
 
         # SIMULATIONS START
 
-        self.agents_similarity = [None for _ in range(num_simulations)]
+        self.agents_genotype_distance = [None for _ in range(num_simulations)]
 
         for self.sim_index in range(num_simulations):
 
@@ -444,12 +444,12 @@ class Simulation:
             # returning mean performances between all trials
             exp_perf = np.mean(trial_performances)
 
-            self.agents_similarity[self.sim_index] = self.get_genotypes_similarity()
+            self.agents_genotype_distance[self.sim_index] = self.get_genotypes_distance()
 
             if self.data_record:
                 self.data_record['info'] = {
                     'rand_agent_index': self.rand_agent_idx,
-                    'genotype_similarity': self.agents_similarity[self.sim_index],
+                    'genotype_distance': self.agents_genotype_distance[self.sim_index],
                     'trials_performances': trial_performances,
                     'experiment_performance': exp_perf,
                 }
