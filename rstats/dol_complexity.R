@@ -7,42 +7,48 @@ library(ggpubr)
 library(pastecs)
 library(compute.es)
 
-
+# read in data for TSE calculated from sensory and brain neurons only with respect
+# to brain neurons N1, N2
 sen_brain_nc_2n.wide <- read.table(
   "../analysis_alife21/1d_2n_box_TSE_sen_bra_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 names(sen_brain_nc_2n.wide) <- c('individual', 'generalist', 'specialist.left', 'specialist.right')
+
+# calculate average values for 2 specialist populations and remove original columns
 sen_brain_nc_2n.wide <- mutate(sen_brain_nc_2n.wide, 
                                specialist = rowMeans(select(sen_brain_nc_2n.wide, 
                                                             starts_with('specialist')), 
                                                      na.rm = TRUE))
 sen_brain_nc_2n.wide <- select(sen_brain_nc_2n.wide, -c('specialist.left', 'specialist.right'))
 
+# convert to long format
 sen_brain_nc_2n <- gather(sen_brain_nc_2n.wide, "condition", "neural_complexity")
 sen_brain_nc_2n$condition <- as.factor(sen_brain_nc_2n$condition)
 sen_brain_nc_2n$condition <- relevel(sen_brain_nc_2n$condition, 'individual')
 
-
+# see a quick plot
 ggplot(sen_brain_nc_2n, aes(x=condition, y=neural_complexity)) + 
   geom_boxplot()
 
+# calculate statistical significance of differences
 leveneTest(sen_brain_nc_2n$neural_complexity, sen_brain_nc_2n$condition) # not significant
 n2.model <- aov(neural_complexity ~ condition, data = sen_brain_nc_2n)
 summary(n2.model) # significant
 pairwise.t.test(sen_brain_nc_2n$neural_complexity, sen_brain_nc_2n$condition, paired = FALSE, 
                 p.adjust.method = "bonferroni")  # significant for generalist vs the others
 
+# calculate effect sizes
 descr <- by(sen_brain_nc_2n$neural_complexity, sen_brain_nc_2n$condition, stat.desc)
 mes(descr$individual["mean"], descr$generalist["mean"], 
     descr$individual["std.dev"], descr$generalist["std.dev"], 16, 13)
 mes(descr$specialist["mean"], descr$generalist["mean"], descr$specialist["std.dev"], 
     descr$generalist["std.dev"], 19, 13)
 
-
 # ggplot(sen_brain_nc_2n, aes(x=condition, y=neural_complexity)) + 
 #   geom_boxplot() + geom_signif(comparisons = list(c("individual", "generalist")), 
 #                                map_signif_level=TRUE)
 
+# make a final publication plot
 my_comparisons = list( c("individual", "generalist"), 
                        c("generalist", "specialist"))
 
@@ -64,26 +70,33 @@ ggsave("../plots/boxplot_individual.eps", ind.plot,
        width=18, height=10, units="cm")
 
 
+# read in data for joint TSE calculated from sensory and brain neurons only with respect
+# to brain neurons N1, N2
 sen_brain_nc_2n_joint.wide <- read.table(
   "../analysis_alife21/1d_2n_box_TSE_sen_bra_combined_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 names(sen_brain_nc_2n_joint.wide) <- c('generalist', 'specialist')
 
+# convert to long format
 sen_brain_nc_2n_joint <- gather(sen_brain_nc_2n_joint.wide, "condition", "neural_complexity")
 sen_brain_nc_2n_joint$condition <- as.factor(sen_brain_nc_2n_joint$condition)
 
+# quick plot
 ggplot(sen_brain_nc_2n_joint, aes(x=condition, y=neural_complexity)) + 
   geom_boxplot()
 
+# calculate statistical significance
 leveneTest(sen_brain_nc_2n_joint$neural_complexity, sen_brain_nc_2n_joint$condition) # not significant
 n2.joint.model <- t.test(neural_complexity ~ condition, data = sen_brain_nc_2n_joint,
                          paired=FALSE)
 n2.joint.model # significant
 
+# calculate effect size
 t <- n2.joint.model$statistic[[1]]
 df <- n2.joint.model$parameter[[1]]
 eff.size <- sqrt(t^2/(t^2+df))
 
+# make a final publication plot
 my_comparisons = list(c("generalist", "specialist"))
 
 joint.plot <- ggboxplot(sen_brain_nc_2n_joint, x = "condition", y = "neural_complexity") + 
@@ -102,7 +115,10 @@ joint.plot <- ggboxplot(sen_brain_nc_2n_joint, x = "condition", y = "neural_comp
 ggsave("../plots/boxplot_joint.eps", joint.plot, 
        width=18, height=10, units="cm")
 
+# read in data for TSE over generations for different conditions
+# and convert to long format
 
+# individual condition
 tse.individual.wide <- read.table(
   "../analysis_alife21/1d_2n_gen_seeds_TSE_individuals_sen_bra_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
@@ -111,6 +127,7 @@ tse.individual <- gather(tse.individual.wide, key="seed",
                          value="neural_complexity", -GEN, -condition)
 tse.individual$seed <- paste("i", tse.individual$seed, sep="_")
 
+# generalist condition
 tse.generalist.wide <- read.table(
   "../analysis_alife21/1d_2n_gen_seeds_TSE_generalists_sen_bra_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
@@ -119,7 +136,7 @@ tse.generalist <- gather(tse.generalist.wide, key="seed",
                          value="neural_complexity", -GEN, -condition)
 tse.generalist$seed <- paste("g", tse.generalist$seed, sep="_")
 
-
+# specialist condition
 tse.specialist.wide <- read.table(
   "../analysis_alife21/1d_2n_gen_seeds_TSE_specialists_sen_bra_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
@@ -128,15 +145,17 @@ tse.specialist <- gather(tse.specialist.wide, key="seed",
                          value="neural_complexity", -GEN, -condition)
 tse.specialist$seed <- paste("s", tse.specialist$seed, sep="_")
 
-
+# combine all three conditions
 tse.individual.gen <- rbind(tse.individual, tse.generalist, tse.specialist)
 tse.individual.gen$condition <- factor(tse.individual.gen$condition)
 tse.individual.gen$condition <- relevel(tse.individual.gen$condition, 'individual')
 
+# calculate averages per condition for each generation
 gd <- tse.individual.gen %>% 
   group_by(condition, GEN) %>% 
   summarise(neural_complexity = mean(neural_complexity))
 
+# create a plot for TSE over generations
 tse.generations <- ggplot(tse.individual.gen, 
                           aes(x=GEN, y=neural_complexity, color=condition)) + 
   geom_line(aes(group=seed), alpha=0.2) +
@@ -155,8 +174,7 @@ tse.generations <- ggplot(tse.individual.gen,
 ggsave("../plots/tse_over_generations.pdf", tse.generations, 
        width=18, height=10, units="cm")
 
-
-
+# do the same for joint TSE (not included in the publication)
 tse.generalist.combined.wide <- read.table(
   "../analysis_alife21/1d_2n_gen_seeds_TSE_generalists_sen_bra_combined_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
