@@ -11,7 +11,7 @@ The paper **Evolution of Neural Complexity in Division of Labor Tasks** by **Eka
    - `git clone https://gitlab.com/oist-ecsu/dol-simulation`
    - `cd dol-simulation`
    - `git checkout 0.1.0`
-3. Create anc activate python virtual environment, and upgrade pip
+3. Create and activate python virtual environment, and upgrade pip
    - `python3 -m venv .venv`
    - `source .venve/bin/activate`
    - `python -m pip install --upgrade pip wheel`
@@ -23,5 +23,5 @@ The paper **Evolution of Neural Complexity in Division of Labor Tasks** by **Eka
    - `sbatch slurm/array_2n_dual.slurm` (specialist condition)
 
    This will run each condition 20 times on 20 seeds (`1` to `20`).
-   Our code has been run on 128 `AMD Epyc` CPUs nodes [cluster at OIST](https://groups.oist.jp/scs/deigo) running `CentOS 8`.<br><br>
+   Our code has been run on 128 `AMD Epyc` CPUs nodes [cluster at OIST](https://groups.oist.jp/scs/deigo) running `CentOS 8`.
 6. To **run the code on a personal computer**: execute the `python3` command included in any slurm file above with appropriate arguments.
