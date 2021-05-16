@@ -51,7 +51,7 @@ ind.plot <- ggboxplot(sen_brain_nc_2n, x = "condition", y = "neural_complexity")
   stat_compare_means(comparisons = my_comparisons, label.y = c(1.7, 1.5),
                      label = "p.signif", method = "t.test", p.adj = "bonferroni",
                      size=8) +
-  scale_y_continuous(name = "TSE Complexity", limits=c(0, 2.2),
+  scale_y_continuous(name = "C(X)", limits=c(0, 2.2),
                      breaks=c(0.0, 0.5, 1.0, 1.5, 2.0)) +
   scale_x_discrete(name = "Condition") + 
   theme(axis.text = element_text(size = 14),
@@ -90,7 +90,7 @@ joint.plot <- ggboxplot(sen_brain_nc_2n_joint, x = "condition", y = "neural_comp
   # stat_compare_means(method="t.test", label.y = 46, size=8) +
   stat_compare_means(comparisons = my_comparisons, label.y = c(2.3),
                      label = "p.signif", size=8) +
-  scale_y_continuous(name = "TSE Complexity", limits=c(0, 2.5),
+  scale_y_continuous(name = "C(X)", limits=c(0, 2.5),
                      breaks=c(0.0, 0.5, 1.0, 1.5, 2.0)) +
   scale_x_discrete(name = "Condition") + 
   theme(axis.text = element_text(size = 14),
@@ -141,7 +141,7 @@ tse.generations <- ggplot(tse.individual.gen,
                           aes(x=GEN, y=neural_complexity, color=condition)) + 
   geom_line(aes(group=seed), alpha=0.2) +
   geom_line(data=gd, alpha=1, size=0.8) +
-  scale_y_continuous(name = "TSE Complexity") +
+  scale_y_continuous(name = "C(X)") +
   scale_x_continuous(name = "Generations") + 
   theme(axis.text = element_text(size = 14),
         axis.title=element_text(size=18), panel.background = element_blank(),
@@ -185,7 +185,7 @@ gd.combined <- tse.combined.gen %>%
 ggplot(tse.combined.gen, aes(x=GEN, y=neural_complexity, color=condition)) + 
   geom_line(aes(group=seed), alpha=0.2) +
   geom_line(data=gd.combined, alpha=1, size=0.8) +
-  scale_y_continuous(name = "TSE Complexity") +
+  scale_y_continuous(name = "C(X)") +
   scale_x_continuous(name = "Generations") + 
   theme(axis.text = element_text(size = 14),
         axis.title=element_text(size=18), panel.background = element_blank(),
