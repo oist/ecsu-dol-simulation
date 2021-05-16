@@ -1,18 +1,12 @@
-"""
-Rerun a simulation of a given seed and optionally visualize
-animation and data plots of behavior and neural activity.
-Run as
-python -m dol.run_from_dir --help
-"""
 import numpy as np
 from dol.run_from_dir import run_simulation_from_dir
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import os
 
 def plot_activity_over_time(data_record, key, trial, title, filename, save_fig=True, joint=False):
     """
-    Line plot of simulation run for a specific key over simulation time steps.
+    Line plot of simulation run for a specific key over simulation time stpdf.
     """
     trial_data = data_record[key][trial]
     fig = plt.figure(figsize=(5, 3))
@@ -80,75 +74,6 @@ def plot_data_time_multi_keys(data_record, trial, title, filename, save_fig=True
         plt.show()
 
 
-# run simulation with random target
-# returns average performance normalized, a list of performances per trial,
-# evolution object, simulation object, simulation data
-# individual
-plot_seed = '017'
-plot_dir = 'data/2n_exc-0.1_zfill/seed_{}'.format(plot_seed)
-
-performance1, sim_perfs1, evo1, sim1, data_record_list1, sim_idx = run_simulation_from_dir(
-    dir=plot_dir, generation=5000, random_target_seed=78)
-
-data_record1 = data_record_list1[0]
-trl = 0
-
-plot_data_time_multi_keys(data_record1, trl,
-                          "Tracker and Target", 'plots/individual_behavior.eps')
-plot_activity_over_time(data_record1, 'agents_brain_output', trl,
-                        "Brain output", 'plots/individual_brain.eps')
-plot_activity_over_time(data_record1, 'agents_motors', trl,
-                        "Motor output", 'plots/individual_motor.eps')
-
-
-# generalists
-plot_seed = '019'
-plot_dir = 'data/2n_exc-0.1_zfill_rp-3_switch/seed_{}'.format(plot_seed)
-_, sim_perfs2, _, _, _, _ = run_simulation_from_dir(
-    dir=plot_dir, generation=5000)
-# select best simulation for joint cases
-sim_idx = np.argmax(sim_perfs2)
-
-# rerun with random target
-performance2, sim_perfs2, evo2, sim2, data_record_list2, sim_idx2 = run_simulation_from_dir(
-    dir=plot_dir, generation=5000, random_target_seed=78)
-data_record2 = data_record_list2[sim_idx]
-
-plot_data_time_multi_keys(data_record2, trl,
-                          "Tracker and Target", 'plots/generalist_behavior.eps')
-plot_activity_over_time(data_record2, 'agents_brain_output', trl,
-                        "Brain output", 'plots/generalist_brain.eps', joint=True)
-plot_activity_over_time(data_record2, 'agents_motors', trl,
-                        "Motor output", 'plots/generalist_motor.eps', joint=True)
-
-
-# specialists
-plot_seed = '003'
-plot_dir = 'data/2n_exc-0.1_zfill_rp-3_dual/seed_{}'.format(plot_seed)
-
-_, sim_perfs3, _, _, _, _ = run_simulation_from_dir(
-    dir=plot_dir, generation=5000)
-# select best simulation for joint cases
-sim_idx = np.argmax(sim_perfs3)
-
-# rerun with random target
-performance3, sim_perfs3, evo3, sim3, data_record_list3, sim_idx3 = run_simulation_from_dir(
-    dir=plot_dir, generation=5000, random_target_seed=78)
-
-data_record3 = data_record_list3[sim_idx]
-
-
-plot_data_time_multi_keys(data_record3, trl,
-                          "Tracker and Target", 'plots/specialist_behavior.eps')
-plot_activity_over_time(data_record3, 'agents_brain_output', trl,
-                        "Brain output", 'plots/specialist_brain.eps', joint=True)
-plot_activity_over_time(data_record3, 'agents_motors', trl,
-                        "Motor output", 'plots/specialist_motor.eps', joint=True)
-
-
-""" Phase space plots """
-
-
 def get_derivative(network, state):
     # Compute the next state of the network given its current state and the simple euler equation
     # update the state of all neurons
@@ -203,12 +128,121 @@ def plot_phase_space(net_history, network):
     plt.title('Phase portrait and a single trajectory for agent brain', fontsize=16)
     plt.show()
 
+def plot_alife21(indir, outdir):
+    # run simulation with random target
+    # returns average performance normalized, a list of performances per trial,
+    # evolution object, simulation object, simulation data
+    # individual
+    plot_seed = '017'
+    plot_dir = f'{indir}/1d_2n_exc-0.1_zfill/seed_{plot_seed}'
 
-# sim1_trajectory = data_record1['agents_brain_state'][0][0]
-# sim1_brain = sim1.agents[0].brain
-# plot_phase_space(sim1_trajectory, sim1_brain)
-#
-# # first trial, first agent
-# sim2_trajectory1 = data_record2['agents_brain_state'][0][0]
-# sim2_brain1 = sim2.agents[0].brain
-# plot_phase_space(sim2_trajectory1, sim2_brain1)
+    performance1, sim_perfs1, evo1, sim1, data_record_list1, sim_idx = run_simulation_from_dir(
+        dir=plot_dir, generation=5000, random_target_seed=78)
+
+    data_record1 = data_record_list1[0]
+    trl = 0
+
+    plot_data_time_multi_keys(
+        data_record1, 
+        trl,
+        "Tracker and Target", 
+        os.path.join(outdir, 'individual_behavior.pdf')
+    )
+    plot_activity_over_time(
+        data_record1, 
+        'agents_brain_output', 
+        trl,
+        "Brain output", 
+        os.path.join(outdir, 'individual_brain.pdf')
+    )
+    plot_activity_over_time(
+        data_record1, 
+        'agents_motors', 
+        trl,
+        "Motor output", 
+        os.path.join(outdir, 'individual_motor.pdf')
+    )
+
+    # plot_phase_space
+    # sim1_trajectory = data_record1['agents_brain_state'][0][0]
+    # sim1_brain = sim1.agents[0].brain
+    # plot_phase_space(sim1_trajectory, sim1_brain)
+
+    # generalists
+    plot_seed = '019'
+    plot_dir = f'{indir}/1d_2n_exc-0.1_zfill_rp-3_switch/seed_{plot_seed}'
+    _, sim_perfs2, _, _, _, _ = run_simulation_from_dir(
+        dir=plot_dir, generation=5000)
+    # select best simulation for joint cases
+    sim_idx = np.argmax(sim_perfs2)
+
+    # rerun with random target
+    performance2, sim_perfs2, evo2, sim2, data_record_list2, sim_idx2 = run_simulation_from_dir(
+        dir=plot_dir, generation=5000, random_target_seed=78)
+    data_record2 = data_record_list2[sim_idx]
+
+    plot_data_time_multi_keys(
+        data_record2, 
+        trl,
+        "Tracker and Target", 
+        os.path.join(outdir, 'generalist_behavior.pdf')
+    )
+    plot_activity_over_time(
+        data_record2, 
+        'agents_brain_output', 
+        trl,
+        "Brain output", 
+        os.path.join(outdir, 'generalist_brain.pdf'), 
+        joint=True
+    )
+    plot_activity_over_time(
+        data_record2, 
+        'agents_motors', 
+        trl,
+        "Motor output", 
+        os.path.join(outdir, 'generalist_motor.pdf'), 
+        joint=True
+    )
+
+    # plot_phase_space
+    # sim2_trajectory1 = data_record2['agents_brain_state'][0][0]
+    # sim2_brain1 = sim2.agents[0].brain
+    # plot_phase_space(sim2_trajectory1, sim2_brain1)
+
+    # specialists
+    plot_seed = '003'
+    plot_dir = f'{indir}/1d_2n_exc-0.1_zfill_rp-3_dual/seed_{plot_seed}'
+
+    _, sim_perfs3, _, _, _, _ = run_simulation_from_dir(
+        dir=plot_dir, generation=5000)
+    # select best simulation for joint cases
+    sim_idx = np.argmax(sim_perfs3)
+
+    # rerun with random target
+    performance3, sim_perfs3, evo3, sim3, data_record_list3, sim_idx3 = run_simulation_from_dir(
+        dir=plot_dir, generation=5000, random_target_seed=78)
+
+    data_record3 = data_record_list3[sim_idx]
+
+
+    plot_data_time_multi_keys(
+        data_record3, trl,
+        "Tracker and Target", 
+        os.path.join(outdir, 'specialist_behavior.pdf')
+    )
+    plot_activity_over_time(
+        data_record3, 
+        'agents_brain_output', 
+        trl,
+        "Brain output", 
+        os.path.join(outdir, 'specialist_brain.pdf'), 
+        joint=True
+    )
+    plot_activity_over_time(
+        data_record3, 
+        'agents_motors', 
+        trl,
+        "Motor output", 
+        os.path.join(outdir, 'specialist_motor.pdf'), 
+        joint=True
+    )

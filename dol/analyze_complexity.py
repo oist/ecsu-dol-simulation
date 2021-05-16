@@ -231,7 +231,8 @@ def get_seeds_generations_complexities(
 
 def main_line_plot(num_dim = 1, num_neurons = 2, sim_type = 'individuals',
     analyze_sensors = True, analyze_brain = True, analyze_motors = False,
-    tse_max=2, combined_complexity = False, only_part_n1n2 = True, output_dir = None):
+    tse_max=2, combined_complexity = False, only_part_n1n2 = True, 
+    input_dir = 'data', plot_dir = None, csv_dir = None):
     """
     Given a hard-coded directory with N simulation seeds,
     plots N line subplots, each containing 2 lines:
@@ -248,7 +249,7 @@ def main_line_plot(num_dim = 1, num_neurons = 2, sim_type = 'individuals',
     assert sim_type in sim_type_dir, f'sim_type must be in {sim_type_dir.keys()}'
     
     exp_dir = sim_type_dir[sim_type]
-    in_dir = os.path.join('data', exp_dir)
+    in_dir = os.path.join(input_dir, exp_dir)
 
     pop_index = 0
 
@@ -270,22 +271,24 @@ def main_line_plot(num_dim = 1, num_neurons = 2, sim_type = 'individuals',
     if num_plots % num_plot_cols > 0:
         num_plot_rows += 1
 
-    if output_dir is not None:
-        # save file to csv    
-
+    if csv_dir is not None or plot_dir is not None:
         selected_nodes_str_list = [
-            n for n, b in zip(
-                ['sensors', 'brain', 'motors'],
-                [analyze_sensors, analyze_brain, analyze_motors]
-            ) if b
-        ]
+                n for n, b in zip(
+                    ['sensors', 'brain', 'motors'],
+                    [analyze_sensors, analyze_brain, analyze_motors]
+                ) if b
+            ]
         selected_nodes_file_str = '_'.join([x[:3] for x in selected_nodes_str_list])
-
         combined_str = '_combined' if combined_complexity else ''    
         only_part_n1n2_str = '_onlyN1N2' if only_part_n1n2 else ''    
+        fname = f'{num_dim}d_{num_neurons}n_gen_seeds_TSE_{sim_type}_{selected_nodes_file_str}{combined_str}{only_part_n1n2_str}'
+
+    if csv_dir is not None:
+        # save file to csv    
+    
         f_path = os.path.join(
-            output_dir, 
-            f'{num_dim}d_{num_neurons}n_gen_seeds_TSE_{sim_type}_{selected_nodes_file_str}{combined_str}{only_part_n1n2_str}.csv'
+            csv_dir, 
+            fname + '.csv'
         )
         print('saving csv:', f_path)    
 
@@ -325,17 +328,21 @@ def main_line_plot(num_dim = 1, num_neurons = 2, sim_type = 'individuals',
     fig.suptitle(title)    
     fig.subplots_adjust(top=0.88)
 
-    if output_dir is not None:
-        fpath_pdf = f_path[:-3] + 'pdf'
-        plt.savefig(fpath_pdf)  # remove csv and add pdf
-        print('saving pdf:', fpath_pdf)        
+    if plot_dir is not None:
+        f_path = os.path.join(
+            plot_dir, 
+            fname + '.pdf'
+        )
+        plt.savefig(f_path)  # remove csv and add pdf
+        print('saving pdf:', f_path)        
     else:
         plt.show()
 
 
 def main_box_plot(num_dim = 1, num_neurons = 2, analyze_sensors = True,
     analyze_brain = True, analyze_motors = False,
-    combined_complexity = True, only_part_n1n2 = True, output_dir = None):
+    combined_complexity = True, only_part_n1n2 = True, 
+    input_dir = 'data', csv_dir = None, plot_dir = None):
     """
     Calculates neural complexity for different conditions,
     saves it to CSV and outputs boxplots.
@@ -355,16 +362,16 @@ def main_box_plot(num_dim = 1, num_neurons = 2, analyze_sensors = True,
 
     if combined_complexity:
         dir_pop_index = [
-            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
-            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
+            (f'{input_dir}/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
+            (f'{input_dir}/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
         ]
         x_labels = ['gen', 'spec']
     else:
         dir_pop_index = [
-            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill/', 0),
-            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
-            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
-            (f'data/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 1)
+            (f'{input_dir}/{num_dim}d_{num_neurons}n_exc-0.1_zfill/', 0),
+            (f'{input_dir}/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_switch', 0),
+            (f'{input_dir}/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 0),
+            (f'{input_dir}/{num_dim}d_{num_neurons}n_exc-0.1_zfill_rp-3_dual', 1)
         ]
         x_labels = ['iso', 'gen', 'spec-left', 'spec-right']
 
@@ -387,11 +394,13 @@ def main_box_plot(num_dim = 1, num_neurons = 2, analyze_sensors = True,
     combined_str = '_combined' if combined_complexity else ''    
     only_part_n1n2_str = '_onlyN1N2' if only_part_n1n2 else ''    
 
-    # save file to csv
-    if output_dir is not None:
+    f_name = f"{num_dim}d_{num_neurons}n_box_TSE_{selected_nodes_file_str}{combined_str}{only_part_n1n2_str}" 
+
+    # save file to csv    
+    if csv_dir is not None:
         f_path = os.path.join(
-            output_dir,
-            f"{num_dim}d_{num_neurons}n_box_TSE_{selected_nodes_file_str}{combined_str}{only_part_n1n2_str}.csv"
+            csv_dir,
+            f_name + '.csv'
         )
         print('saving csv:', f_path)
         df = pd.DataFrame(np.transpose(all_NC), columns=x_labels)  # 20 x 4
@@ -407,21 +416,25 @@ def main_box_plot(num_dim = 1, num_neurons = 2, analyze_sensors = True,
         title += ' - onlyN1N2'
     plt.title(title)
 
-    if output_dir is not None:
-        fpath_pdf = f_path[:-3] + 'pdf'
-        plt.savefig(fpath_pdf)  # remove csv and add pdf
-        print('saving pdf:', fpath_pdf)
+    if plot_dir is not None:
+        f_path = os.path.join(
+            plot_dir,
+            f_name + '.pdf'
+        )
+        plt.savefig(f_path)  # remove csv and add pdf
+        print('saving pdf:', f_path)
+        plt.clf()
     else:
         plt.show()
 
 
-def main_scatter_plot():
+def main_scatter_plot(input_dir='data'):
     """
     From a given seed, look at the last generation,
     and compute the neural complexity for all agents.
     Plot correlation between fitness and complexity.
     """
-    seed_dir = 'data/2n_exc-0.1_zfill/seed_001'
+    seed_dir = f'{input_dir}/2n_exc-0.1_zfill/seed_001'
     generation = 5000
     pop_index = 0
 
@@ -505,14 +518,14 @@ def single_agent(init_value='random'):
     print('nc', nc)
 
 
-def single_paired_agents():
+def single_paired_agents(input_dir='data'):
     """
     Test whether individually evolved agents can perform the task together
     and calculate their combined neural complexity.
     """
     from dol.simulation import Simulation
     import json
-    seed_dir = 'data/2n_exc-0.1_zfill/seed_001'
+    seed_dir = f'{input_dir}/2n_exc-0.1_zfill/seed_001'
     generation = 5000
     population_idx = 0
 
@@ -561,45 +574,3 @@ def single_paired_agents():
     print("Sim agents similarity: ", sim.agents_genotype_distance[0])
     print('nc', nc)
 
-def run_alife21_analysis():
-    for combined_complexity in [False, True]:
-        main_box_plot(
-            num_dim = 1,
-            num_neurons = 2,
-            analyze_sensors = True,
-            analyze_brain = True,
-            analyze_motors = False,
-            combined_complexity = combined_complexity,
-            only_part_n1n2 = True,
-            output_dir = './anlysis_alife21'
-        )
-    
-    line_plots_params = [
-        {'sim_type': 'individuals', 'tse_max':2, 'combined_complexity':False},
-        {'sim_type': 'generalists', 'tse_max':4, 'combined_complexity':False},
-        {'sim_type': 'generalists', 'tse_max':6, 'combined_complexity':True},
-        {'sim_type': 'specialists', 'tse_max':2, 'combined_complexity':False},
-        {'sim_type': 'specialists', 'tse_max':3, 'combined_complexity':True}
-    ]
-    for params in line_plots_params:
-        main_line_plot(
-            num_dim = 1, 
-            num_neurons = 2, 
-            sim_type = params['sim_type'],
-            analyze_sensors = True, 
-            analyze_brain = True, 
-            analyze_motors = False,
-            tse_max = params['tse_max'],
-            combined_complexity = params['combined_complexity'],
-            only_part_n1n2 = True, 
-            output_dir = './anlysis_alife21'
-        )
-
-
-if __name__ == "__main__":
-    run_alife21_analysis()
-    # main_line_plot()
-    # main_box_plot()
-    # single_agent(0)
-    # single_paired_agents()
-    # main_scatter_plot()

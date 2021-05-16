@@ -124,6 +124,12 @@ def make_dir_if_not_exists_or_replace(dir_path):
         # return
     os.makedirs(dir_path)
 
+def make_dir_if_not_exists(dir_path):
+    if os.path.exists(dir_path):        
+        return
+    else:
+        os.makedirs(dir_path)
+
 
 def assert_string_in_values(s, s_name, values):
     assert s in values, '{} should be one of the following: {}. Given value: {}'.format(s_name, values, s)

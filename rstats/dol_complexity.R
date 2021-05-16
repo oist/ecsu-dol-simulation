@@ -10,7 +10,7 @@ library(compute.es)
 # read in data for TSE calculated from sensory and brain neurons only with respect
 # to brain neurons N1, N2
 sen_brain_nc_2n.wide <- read.table(
-  "../analysis_alife21/1d_2n_box_TSE_sen_bra_onlyN1N2.csv", 
+  "../data/alife21/csv/1d_2n_box_TSE_sen_bra_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 names(sen_brain_nc_2n.wide) <- c('individual', 'generalist', 'specialist.left', 'specialist.right')
 
@@ -66,14 +66,14 @@ ind.plot <- ggboxplot(sen_brain_nc_2n, x = "condition", y = "neural_complexity")
         axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
-ggsave("../plots/boxplot_individual.eps", ind.plot, 
+ggsave("../data/alife21/plots/boxplot_individual.eps", ind.plot, 
        width=18, height=10, units="cm")
 
 
 # read in data for joint TSE calculated from sensory and brain neurons only with respect
 # to brain neurons N1, N2
 sen_brain_nc_2n_joint.wide <- read.table(
-  "../analysis_alife21/1d_2n_box_TSE_sen_bra_combined_onlyN1N2.csv", 
+  "../data/alife21/csv/1d_2n_box_TSE_sen_bra_combined_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 names(sen_brain_nc_2n_joint.wide) <- c('generalist', 'specialist')
 
@@ -112,7 +112,7 @@ joint.plot <- ggboxplot(sen_brain_nc_2n_joint, x = "condition", y = "neural_comp
         axis.title.x = element_text(margin = margin(t = 20, r = 0, b = 0, l = 0)),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
-ggsave("../plots/boxplot_joint.eps", joint.plot, 
+ggsave("../data/alife21/plots/boxplot_joint.eps", joint.plot, 
        width=18, height=10, units="cm")
 
 # read in data for TSE over generations for different conditions
@@ -120,7 +120,7 @@ ggsave("../plots/boxplot_joint.eps", joint.plot,
 
 # individual condition
 tse.individual.wide <- read.table(
-  "../analysis_alife21/1d_2n_gen_seeds_TSE_individuals_sen_bra_onlyN1N2.csv", 
+  "../data/alife21/csv/1d_2n_gen_seeds_TSE_individuals_sen_bra_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 tse.individual.wide$condition <- rep("individual", 11)
 tse.individual <- gather(tse.individual.wide, key="seed", 
@@ -129,7 +129,7 @@ tse.individual$seed <- paste("i", tse.individual$seed, sep="_")
 
 # generalist condition
 tse.generalist.wide <- read.table(
-  "../analysis_alife21/1d_2n_gen_seeds_TSE_generalists_sen_bra_onlyN1N2.csv", 
+  "../data/alife21/csv/1d_2n_gen_seeds_TSE_generalists_sen_bra_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 tse.generalist.wide$condition <- rep("generalist", 11)
 tse.generalist <- gather(tse.generalist.wide, key="seed", 
@@ -138,7 +138,7 @@ tse.generalist$seed <- paste("g", tse.generalist$seed, sep="_")
 
 # specialist condition
 tse.specialist.wide <- read.table(
-  "../analysis_alife21/1d_2n_gen_seeds_TSE_specialists_sen_bra_onlyN1N2.csv", 
+  "../data/alife21/csv/1d_2n_gen_seeds_TSE_specialists_sen_bra_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 tse.specialist.wide$condition <- rep("specialist", 11)
 tse.specialist <- gather(tse.specialist.wide, key="seed", 
@@ -171,12 +171,12 @@ tse.generations <- ggplot(tse.individual.gen,
         legend.text = element_text(size=12)) +
   scale_color_discrete(name = "Condition")
 
-ggsave("../plots/tse_over_generations.pdf", tse.generations, 
+ggsave("../data/alife21/plots/tse_over_generations.pdf", tse.generations, 
        width=18, height=10, units="cm")
 
 # do the same for joint TSE (not included in the publication)
 tse.generalist.combined.wide <- read.table(
-  "../analysis_alife21/1d_2n_gen_seeds_TSE_generalists_sen_bra_combined_onlyN1N2.csv", 
+  "../data/alife21/csv/1d_2n_gen_seeds_TSE_generalists_sen_bra_combined_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 tse.generalist.combined.wide$condition <- rep("generalist", 11)
 tse.generalist.combined <- gather(tse.generalist.combined.wide, key="seed", 
@@ -185,7 +185,7 @@ tse.generalist.combined$seed <- paste("g", tse.generalist.combined$seed, sep="_"
 
 
 tse.specialist.combined.wide <- read.table(
-  "../analysis_alife21/1d_2n_gen_seeds_TSE_specialists_sen_bra_combined_onlyN1N2.csv", 
+  "../data/alife21/csv/1d_2n_gen_seeds_TSE_specialists_sen_bra_combined_onlyN1N2.csv", 
   sep=',', header=TRUE, fill=TRUE)
 tse.specialist.combined.wide$condition <- rep("specialist", 11)
 tse.specialist.combined <- gather(tse.specialist.combined.wide, key="seed", 
