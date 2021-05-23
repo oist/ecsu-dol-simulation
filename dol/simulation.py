@@ -27,7 +27,7 @@ class Simulation:
 
     # the genotype structure  
     genotype_structure: Dict = field(default_factory = \
-        lambda:gen_structure.DEFAULT_GEN_STRUCTURE(2))  
+        lambda:gen_structure.DEFAULT_GEN_STRUCTURE(1,2))  
 
     num_dim: int = 1 # number of dimensions (1 or 2)
 
@@ -64,6 +64,7 @@ class Simulation:
 
         self.agents = [
             Agent(
+                self.num_dim,
                 self.num_brain_neurons,
                 self.brain_step_size,
                 self.genotype_structure,
@@ -563,7 +564,7 @@ def get_simulation_data_from_filled_agent(gen_struct, value, rs, num_dim=1):
     
 
 def test_simulation():
-    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)
+    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(1,2)
     rs = RandomState(3)
     run_result, _, data_record_list = get_simulation_data_from_random_agent(
         default_gen_structure, rs, num_dim=2)    
@@ -573,7 +574,7 @@ def test_simulation():
 
 def ger_worst_performance(num_iter):
     worst = MAX_MEAN_DISTANCE
-    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)    
+    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(1,2)    
     rs = RandomState(None)
     for _ in range(num_iter):
         run_result, _, _ = get_simulation_data_from_random_agent(default_gen_structure, rs)

@@ -10,8 +10,7 @@ import pandas as pd
 from pyevolver.evolution import Evolution
 
 def get_test_data():
-    num_sensors = 2
-    num_motors = 2
+    num_sensors_motors = 2
     num_neurons = 4
     num_agents = 1
     num_data_points = 500
@@ -21,7 +20,7 @@ def get_test_data():
         'agents_sensors': [
             [
                 [ 
-                    ['t{}_a{}_p{}_sens{}'.format(t,a,p,s) for s in range(num_sensors)] 
+                    ['t{}_a{}_p{}_sens{}'.format(t,a,p,s) for s in range(num_sensors_motors)] 
                     for p in range(num_data_points)    
                 ] 
                 for a in range(num_agents)            
@@ -41,7 +40,7 @@ def get_test_data():
         'agents_motors': [
             [
                 [ 
-                    ['t{}_a{}_p{}_mot{}'.format(t,a,p,m) for m in range(num_motors)]                 
+                    ['t{}_a{}_p{}_mot{}'.format(t,a,p,m) for m in range(num_sensors_motors)]                 
                     for p in range(num_data_points)
                 ] 
                 for a in range(num_agents)            
@@ -82,7 +81,7 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list,
     num_rows = num_sensors + num_neurons + num_motors        
 
     data = [ 
-        np.moveaxis(np.array(data_record[k]), 3, 0)     # moving last dim (num_sensors/num_neurons/num_mot) first
+        np.moveaxis(np.array(data_record[k]), 3, 0)     # moving last dim (num_sensors_motors/num_neurons/num_mot) first
         for k in data_keys                              # (num_trials, num_agents, num_data_points, num_neurons) -> 
     ]                                                   # (num_neurons, num_trials, num_agents, num_data_points)                                        
     
@@ -374,16 +373,17 @@ def main_single_agent(init_value = 'random'):
     from dol import simulation    
     from dol import gen_structure
     from numpy.random import RandomState
+    num_dim = 1
     num_neurons = 4
     rs = RandomState(1)
     if init_value == 'random':
         run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
-            gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
+            gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(num_dim, num_neurons),
             rs = rs
         )
     else:
         run_result, sim, data_record_list = simulation.get_simulation_data_from_filled_agent(
-            gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
+            gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(num_dim, num_neurons),
             value = init_value,
             rs = rs
         )

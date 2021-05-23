@@ -66,11 +66,12 @@ def load_genotype_structure(json_filepath, process=True):
 
 
 
-DEFAULT_GEN_STRUCTURE = lambda x: load_genotype_structure('config/genotype_structure_{}n.json'.format(x))
-DEFAULT_GEN_STRUCTURE_2D = lambda x: load_genotype_structure('config/genotype_structure_2d_{}n.json'.format(x))
+DEFAULT_GEN_STRUCTURE = lambda d,n: load_genotype_structure('config/genotype_structure_{}d_{}n.json'.format(d,n))
 
 if __name__ == "__main__":
-    default_gs = DEFAULT_GEN_STRUCTURE(2)
+    d=1
+    n=2
+    default_gs = DEFAULT_GEN_STRUCTURE(d,n)
     print("Size: {}".format(get_genotype_size(default_gs)))
     print("Neurons: {}".format(get_num_brain_neurons(default_gs)))
     print("DEFAULT_GEN_STRUCTURE: {}".format(json.dumps(default_gs, indent=3)))

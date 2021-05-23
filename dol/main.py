@@ -53,10 +53,7 @@ def main(raw_args=None):
     t = TicToc()
     t.tic()
 
-    if args.num_dim == 1:
-        genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE(args.num_neurons)
-    else:
-        genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE_2D(args.num_neurons)
+    genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE(args.num_dim, args.num_neurons)
         
     genotype_size = gen_structure.get_genotype_size(genotype_structure)
 
@@ -73,7 +70,7 @@ def main(raw_args=None):
             if args.switch_agents_motor_control:
                 subdir += '_switch'
             if args.dual_population:
-                subdir += '_dual'.format(args.exclusive_motors_threshold)
+                subdir += '_dual'
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
             outdir = os.path.join(args.dir,subdir,seed_dir)            
         else:

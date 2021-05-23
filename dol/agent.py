@@ -24,6 +24,7 @@ class Agent:
     TODO: update documentation above
     """
     
+    num_dim: int # dimensions, 1 or 2
     num_brain_neurons: int
     brain_step_size: float
     genotype_structure: dict
@@ -32,6 +33,7 @@ class Agent:
 
     def __post_init__(self):
 
+        self.num_sensors_motors = 2 * self.num_dim
         get_param_range = lambda param: self.genotype_structure[param].get('range', None)
         get_param_default = lambda param: self.genotype_structure[param].get('default', None)
 
@@ -69,8 +71,8 @@ class Agent:
     def init_params(self):
         self.brain.states = np.zeros(self.num_brain_neurons)
         self.position = 0
-        self.sensors = np.zeros(4)      
-        self.motors = np.zeros(4)      
+        self.sensors = np.zeros(self.num_sensors_motors)      
+        self.motors = np.zeros(self.num_sensors_motors)      
         self.brain.compute_output() # for first computation of euler step
 
     def genotype_to_phenotype(self, genotype, phenotype_list=None, phenotype_dict=None):
@@ -106,11 +108,11 @@ class Agent:
                 if 'indexes' in val:
                     gene_values = np.take(genotype, val['indexes'])
                     if k == 'sensor_weights':
-                        gene_values = gene_values.reshape(-1, self.brain.num_neurons) # the matrix will have 2 rows (number of sensors)
+                        gene_values = gene_values.reshape(self.num_sensors_motors, self.brain.num_neurons)
                     elif k == 'motor_weights':
                         gene_values = gene_values.reshape(self.brain.num_neurons, -1)
                     else:
-                        num_units = 4 # 4 motors / sensors
+                        num_units = self.num_sensors_motors 
                         gene_values = np.tile(gene_values, num_units) # same tau/bias values for all sensors/motors
                     phenotype_value = linmap(gene_values, EVOLVE_GENE_RANGE, val['range'])                    
                 else:
@@ -155,13 +157,16 @@ def test_random_genotype():
     from dol import gen_structure
     from pyevolver.evolution import Evolution
     from numpy.random import RandomState
-    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(2)
+    num_dim = 1
+    num_neurons = 2
+    default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(num_dim, num_neurons)
     gen_size = gen_structure.get_genotype_size(default_gen_structure)
     num_brain_neurons = gen_structure.get_num_brain_neurons(default_gen_structure)
     print('Gen size of agent: {}'.format(gen_size))
     print('Num brain neurons: {}'.format(num_brain_neurons))
     random_genotype = Evolution.get_random_genotype(RandomState(None), gen_size)        
     agent = Agent(
+        num_dim,
         num_brain_neurons,
         brain_step_size=0.1,
         genotype_structure=default_gen_structure,        
