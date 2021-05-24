@@ -7,7 +7,7 @@ python -m dol.run_from_dir --help
 
 import os
 from numpy.random import RandomState
-from dol.simulation import Simulation, MAX_MEAN_DISTANCE
+from dol.simulation import Simulation
 from pyevolver.evolution import Evolution
 from dol import utils
 import numpy as np
@@ -77,9 +77,9 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
             perf_orig = sim.normalize_performance(perf_orig)
             print("Performace original: {}".format(perf_orig))
         print("Performace recomputed: {}".format(performance))
-        # if expect_same_results:
-        #     diff_perfomance = abs(perf_orig - performance)
-        #     assert diff_perfomance < 1e-5, f'diff_perfomance: {diff_perfomance}'
+        if expect_same_results:
+            diff_perfomance = abs(perf_orig - performance)
+            assert diff_perfomance < 1e-5, f'diff_perfomance: {diff_perfomance}'
         # if performance == perf_orig:
         #     print("Exact!!")
 

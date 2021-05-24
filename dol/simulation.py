@@ -18,11 +18,6 @@ from dol.tracker2d import Tracker2D
 from dol import gen_structure
 from dol import utils
 
-# max mean distance from target with v=-2 is 5009.8 
-# (see target.test_max_distance)
-MAX_MEAN_DISTANCE = 10000
-
-
 @dataclass
 class Simulation:
     # the genotype structure  
@@ -56,6 +51,8 @@ class Simulation:
     def __post_init__(self):
 
         self.__check_params__()
+
+        self.max_mean_distance = 5000 if self.num_dim==1 else 10000
 
         self.num_sensors_motors = 2 * self.num_dim
 
@@ -442,7 +439,7 @@ class Simulation:
                     self.save_data_record_step(t, i)
 
                     # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
-                performance_t = MAX_MEAN_DISTANCE - np.mean(np.abs(self.delta_tracker_target))
+                performance_t = self.max_mean_distance - np.mean(np.abs(self.delta_tracker_target))
                 assert performance_t >= 0
 
                 trial_performances.append(performance_t)
@@ -524,7 +521,7 @@ class Simulation:
         Returns the normalized performance
         such that best performance == 0
         '''
-        return MAX_MEAN_DISTANCE - performance
+        return self.max_mean_distance - performance
 
 
 # --- END OF SIMULATION CLASS
@@ -572,13 +569,13 @@ def test_simulation():
 
 
 def ger_worst_performance(num_iter):
-    worst = MAX_MEAN_DISTANCE
+    worst = 0
     default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(1,2)    
     rs = RandomState(None)
     for _ in range(num_iter):
         run_result, _, _ = get_simulation_data_from_random_agent(default_gen_structure, rs)
         perf = run_result[0]
-        if perf < worst:
+        if perf > worst:
             worst = perf
             print('Worst perf: ', worst)
 

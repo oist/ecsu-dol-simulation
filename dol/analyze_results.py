@@ -10,10 +10,9 @@ import os
 import json
 import matplotlib.pyplot as plt
 from scipy import stats
-import sys
 import numpy as np
-from dol.simulation import MAX_MEAN_DISTANCE
 import pandas as pd
+from dol.simulation import Simulation
 
 def get_last_performance_runs(base_dir, print_values, print_stats, plot, export_to_csv):
     exp_dirs = sorted([d for d in os.listdir(base_dir) if d.startswith('seed_')])
@@ -34,10 +33,12 @@ def get_last_performance_runs(base_dir, print_values, print_stats, plot, export_
         if not os.path.isfile(evo_file):
             continue
         with open(evo_file) as f_in:
+            sim_json_filepath = os.path.join(exp_dir, 'simulation.json')    
+            sim = Simulation.load_from_file(sim_json_filepath)
             exp_evo_data = json.load(f_in)
             seeds.append(exp_evo_data['random_seed'])
             gen_best_perf = np.array(exp_evo_data['best_performances'])
-            gen_best_perf = MAX_MEAN_DISTANCE - gen_best_perf
+            gen_best_perf = sim.max_mean_distance - gen_best_perf
 
             # make sure it's monotonic increasing(otherwise there is a bug)
             # assert all(gen_best_perf[i] <= gen_best_perf[i+1] for i in range(len(gen_best_perf)-1))

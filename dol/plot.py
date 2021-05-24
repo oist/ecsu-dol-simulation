@@ -3,14 +3,12 @@ Main plotting functions for visualizing experiment behavior
 of a specific simulation seed.
 """
 
-from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
-from dol.simulation import MAX_MEAN_DISTANCE
 from dol import utils
 from dol import params
 
-def plot_performances(evo, log=False, only_best=False):
+def plot_performances(evo, sim, log=False, only_best=False):
     """
     Performance over generations.
     """
@@ -19,13 +17,13 @@ def plot_performances(evo, log=False, only_best=False):
     ax = fig.add_subplot(1, 1, 1)
     if log:
         ax.set_yscale('log')
-    best_perf = MAX_MEAN_DISTANCE - np.array(evo.best_performances)
+    best_perf = sim.max_mean_distance - np.array(evo.best_performances)
     if only_best:
         ax.plot(best_perf, label='Best')
     else:
         ax.plot(best_perf, label='Best')
-        avg_perf = MAX_MEAN_DISTANCE - np.array(evo.avg_performances)
-        worse_perf = MAX_MEAN_DISTANCE - np.array(evo.worst_performances)
+        avg_perf = sim.max_mean_distance - np.array(evo.avg_performances)
+        worse_perf = sim.max_mean_distance - np.array(evo.worst_performances)
         ax.plot(avg_perf, label='Avg')
         ax.plot(worse_perf, label='Worst')
     plt.legend()
@@ -191,8 +189,8 @@ def plot_results(evo, sim, trial, data_record):
         trial = 'all'
 
     if evo is not None:
-        plot_performances(evo, log=True)
-        # plot_performances(evo, log=False, only_best=True)
+        plot_performances(evo, sim, log=True)
+        # plot_performances(evo, sim, log=False, only_best=True)
         plot_genotype_similarity(evo, sim)
 
     # scatter agents
@@ -240,12 +238,12 @@ def test_plot(value='random'):
     from numpy.random import RandomState
     if value == 'random':
         run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
-            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(2),
+            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(1,2),
             rs=RandomState(None)
         )
     else:
         run_result, sim, data_record_list = simulation.get_simulation_data_from_filled_agent(
-            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(4),
+            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(1,4),
             value=value,
             rs=RandomState(None)
         )
