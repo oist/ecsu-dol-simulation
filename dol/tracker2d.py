@@ -1,5 +1,5 @@
 """
-TODO: Missing module docstring
+Implements moving tracker in 2D.
 """
 
 from dataclasses import dataclass, field
@@ -8,7 +8,7 @@ from dol.utils import linmap, modulo_radians, angle_in_range
 from dol.params import ENV_SIZE, HALF_ENV_SIZE, BODY_RADIUS, SENSOR_RADIUS, EYE_DIVERGENCE_ANGLE, EYE_VISION_ANGLE
 
 # angle between left/right eye and axes of symmetry (angle of agent)
-EYE_DIVERGENCE_LR_ANGLES = EYE_DIVERGENCE_ANGLE * np.array([1, -1]) 
+EYE_DIVERGENCE_LR_ANGLES = EYE_DIVERGENCE_ANGLE * np.array([1, -1])
 # angle of vision of each eye
 EYE_VISION_HALF_ANGLE = EYE_VISION_ANGLE / 2
 DOUBLE_BODY_RADIUS = 2 * BODY_RADIUS
@@ -43,22 +43,22 @@ class Tracker2D:
 
         # shape 2,2 (one row per sensor)
         self.eyes_pos = BODY_RADIUS * \
-            np.array([np.cos(self.eyes_angle), np.sin(self.eyes_angle)]).transpose()
-        
+                        np.array([np.cos(self.eyes_angle), np.sin(self.eyes_angle)]).transpose()
+
         self.eyes_vision_angle_start = modulo_radians(
             self.angle + EYE_DIVERGENCE_LR_ANGLES - EYE_VISION_HALF_ANGLE
-        )        
-        
+        )
+
         self.eyes_vision_angle_end = modulo_radians(
             self.eyes_vision_angle_start + EYE_VISION_ANGLE
         )
-    
+
     def get_abs_eyes_pos(self):
         # get absolute positions of eyes
         return self.eyes_pos + self.position
-        
+
     def set_position_and_angle_signals_strength(self, pos, angle, signals_strength):
-        self.position = pos # absolute position
+        self.position = pos  # absolute position
         self.angle = angle
         self.signals_strength = signals_strength
         if not XY_MODE: 
@@ -145,7 +145,6 @@ class Tracker2D:
             self.signals_strength[self.signals_strength<0] = 0.
 
 
-
     '''
     # old version
     def compute_signal_strength_and_delta_target(self, target_position):
@@ -165,8 +164,10 @@ class Tracker2D:
                 self.delta_target, [1,HALF_ENV_SIZE],[1,0])
     '''
 
+
 def test_tracker():
     Tracker2D(0)
+
 
 if __name__ == "__main__":
     test_tracker()

@@ -1,16 +1,17 @@
 """
-TODO: Missing module docstring
+Implements agent body and includes CTRNN brain.
+Both body and brain structure is specified by genotype structure provided in configuration.
 """
 
 from dataclasses import dataclass, field
 import numpy as np
 from scipy.special import expit # pylint: disable-msg=E0611
 from pyevolver.ctrnn import BrainCTRNN
-from dol.utils import linmap
-from pyevolver.evolution import MIN_SEARCH_VALUE, MAX_SEARCH_VALUE
+from dol.utils import linmap, get_numpy_signature
+from dol.params import EVOLVE_GENE_RANGE
 
 # range of each site in the genotype (pyevolver)
-EVOLVE_GENE_RANGE = (MIN_SEARCH_VALUE, MAX_SEARCH_VALUE)
+
 
 @dataclass
 class Agent:
@@ -79,6 +80,7 @@ class Agent:
         '''
         map genotype to brain values (self.brain) and sensor/motor (self)
         '''
+        self.genotype = genotype # assign genotype
         i = 0
         for k, val in self.genotype_structure.items():
             if k == 'crossover_points':
@@ -132,6 +134,9 @@ class Agent:
                     phenotype_list[i] = phenotype_value
                     i += 1
     
+    def get_signature(self):
+        return get_numpy_signature(self.genotype)
+
     def compute_brain_input(self, signal_strength):
         # let n be the number of neurons in the brain
         # sensor_output shape is (2, ): [O1, O2]        

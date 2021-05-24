@@ -1,8 +1,9 @@
 """
-TODO: Missing module docstring
+Reads genotype structure from a json file and validates it.
 """
 
 import json
+
 
 def get_num_brain_neurons(genotype_structure):
     """
@@ -13,24 +14,26 @@ def get_num_brain_neurons(genotype_structure):
         if 'indexes' in neural_gains \
         else len(neural_gains['default'])
 
+
 def get_genotype_size(genotype_structure):
     """
     TODO: Missing function docstring
     """
     return 1 + max(x for v in genotype_structure.values() \
-        if 'indexes' in v for x in v['indexes'])  # last index
+                   if 'indexes' in v for x in v['indexes'])  # last index
+
 
 def check_genotype_structure(genotype_structure):
     """
     Check consistency of genotype structure
     """
     num_genes = 1 + max(x for v in genotype_structure.values() \
-        if 'indexes' in v for x in v['indexes'])  # last index
+                        if 'indexes' in v for x in v['indexes'])  # last index
     all_indexes_set = set(x for v in genotype_structure.values() \
-        if 'indexes' in v for x in v['indexes'])
+                          if 'indexes' in v for x in v['indexes'])
     assert len(all_indexes_set) == num_genes
     for k, v in genotype_structure.items():
-        if k=='crossover_points':
+        if k == 'crossover_points':
             continue
         k_split = k.split('_')
         assert len(k_split) == 2
@@ -75,5 +78,3 @@ if __name__ == "__main__":
     print("Size: {}".format(get_genotype_size(default_gs)))
     print("Neurons: {}".format(get_num_brain_neurons(default_gs)))
     print("DEFAULT_GEN_STRUCTURE: {}".format(json.dumps(default_gs, indent=3)))
-    
-
