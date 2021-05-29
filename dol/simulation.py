@@ -305,7 +305,7 @@ class Simulation:
                 # init deltas
         self.delta_tracker_target = np.zeros(self.num_data_points)
         # initi all positions and velocities of target
-        self.target_positions = self.target.compute_positions(trial=t)
+        self.target_positions = self.target.compute_positions(trial=t)        
 
         # init data of trial
         self.init_data_record_trial(t)
@@ -316,6 +316,7 @@ class Simulation:
 
             # init tracker params
         self.tracker.init_params_trial(t)
+        self.tracker.position = np.copy(self.target_positions[0])
 
         # save trial data at time 0
         self.save_data_record_step(t, 0)

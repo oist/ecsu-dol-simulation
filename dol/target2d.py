@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from numpy.random import RandomState
 from dol.params import ENV_SIZE, HALF_ENV_SIZE
 
+RANDOM_WALK = False
+
 FOCAL_DISTANCE = HALF_ENV_SIZE
 LEMNISCATE_A = FOCAL_DISTANCE * np.sqrt(2)
 
@@ -29,7 +31,7 @@ class Target2D:
             self.trial_vel = self.rs.choice([-1, 1]) * self.rs.uniform(1, max_vel, self.num_trials)
             self.trial_start_phase = self.rs.uniform(0, 2 * np.pi, self.num_trials)
 
-    def set_pos_vel(self, trial):
+    def set_phase_vel(self, trial):
         # init start_phase        
         self.start_phase = self.trial_start_phase[trial]
 
@@ -38,7 +40,12 @@ class Target2D:
 
     def compute_positions(self, trial):
 
-        self.set_pos_vel(trial)
+        if self.rs and RANDOM_WALK:
+            dxy = self.rs.uniform(low=-10, high=10, size=(self.num_data_points, 2))
+            self.positions = np.cumsum(dxy, 0)
+            return self.positions            
+
+        self.set_phase_vel(trial)
 
         # Lemniscate of Bernoulli function
         # using parametrix equation 
