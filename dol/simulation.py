@@ -316,7 +316,7 @@ class Simulation:
 
             # init tracker params
         self.tracker.init_params_trial(t)
-        self.tracker.position = np.copy(self.target_positions[0])
+        # self.tracker.position = np.copy(self.target_positions[0])
 
         # save trial data at time 0
         self.save_data_record_step(t, 0)
