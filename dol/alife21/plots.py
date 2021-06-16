@@ -164,8 +164,8 @@ def plot_alife21(indir, outdir):
     )
 
     # plot_phase_space
-    # sim1_trajectory = data_record1['agents_brain_state'][0][0]
-    # sim1_brain = sim1.agents[0].brain
+    # sim1_trajectory = data_record1['agents_brain_state'][0][0] # first trial, first agent
+    # sim1_brain = sim1.agents[0].brain # first agent brain network
     # plot_phase_space(sim1_trajectory, sim1_brain)
 
     # generalists
@@ -205,9 +205,9 @@ def plot_alife21(indir, outdir):
     )
 
     # plot_phase_space
-    # sim2_trajectory1 = data_record2['agents_brain_state'][0][0]
-    # sim2_brain1 = sim2.agents[0].brain
-    # plot_phase_space(sim2_trajectory1, sim2_brain1)
+    sim2_trajectory1 = data_record2['agents_brain_state'][0][0]
+    sim2_brain1 = sim2.agents[0].brain
+    plot_phase_space(sim2_trajectory1, sim2_brain1)
 
     # specialists
     plot_seed = '003'
