@@ -84,8 +84,13 @@ class Simulation:
         assert not self.dual_population or self.num_random_pairings > 0, \
             "In dual position num_random_pairings must be > 0"
 
-        assert self.exclusive_motors_threshold is None or self.num_dim == 1, \
+        assert self.num_dim == 1 or self.exclusive_motors_threshold is None, \
             "In 2d mode exclusive_motors mode is not appropriate"
+            # TODO: double check this
+
+        assert self.num_dim == 1 or \
+            (self.switch_agents_motor_control==False and self.dual_population==False), \
+            "2d mode has been implemented only for the individual condition"
 
     def split_population(self):
         # when population will be split in two for computing random pairs matching
