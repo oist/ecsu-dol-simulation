@@ -2,6 +2,53 @@
 
 Division of labor simulation based on joint tracking experiments.
 
+## How to guide
+
+### Main
+Runs evolutionary code and the simulation. To get the full list of option run:
+
+`python -m dol.main --help`
+
+If you provide an output directory it will generate:
+- a list of of files `evo_xxx.json` containing the parameters of `pyevolver.Evolution` object at generation `xxx` (including the genotype of the agents' population, and the fitness).
+- a file `simulation.json` with the parameters of the `dol.Simulation` that the agents go throughout evolution.
+
+### Rerun simulation
+Assuming you have a specific dir with outputs from the `dol.main` code (see above), you can rerun the simulation of a given generation and a given agent in the population. 
+
+For instance,
+
+`python -m dol.run_from_dir --dir <dirpath>`
+
+Will run the simulation of the last saved generation and the best agent in the simulation and
+
+`python -m dol.run_from_dir --dir <dirpath> --write_data` will create a subfolder `data` in the same directory with all the data from the simulation. 
+
+To get the full list of options run:
+
+`python -m dol.run_from_dir --help`
+
+You can also use this module inside a python script as follows:
+
+```python
+from dol.run_from_dir import run_simulation_from_dir
+
+perf, sim_perfs, evo, sim, data, sim_idx = run_simulation_from_dir('path/to/data')
+```
+
+where:
+- `perf`: the overall performance across multiple simulations (e.g., if an agent is undergoing x simulations with x other agents)
+- `sim_perfs`: the list perfomances for each simulation
+- `evo`: the `pyevolver.Evolution` object
+- `sim`: the `dol.Simulation` object
+- `sim_idx`: index of the simulation obtaining the best performance
+- `data`: a list of dictionaries each containing the data from the n-th simulation. Each key in the dictionary maps to the data related to that key, e.g.:  
+  - `target_position`: contains a list of `np.array` (one per simulation trial) representing the positions of the target.
+  - `agents_brain_output`: contains a list of lists where `data[s]['agents_brain_output'][t][a]` represents the brain output of agent `a` of trial `t` of simulation `s`.
+
+
+
+
 ## Alife 2021 paper
 The paper **Evolution of Neural Complexity in Division of Labor Tasks** by **Ekaterina Sangati, Soheil Keshmiri, and Federico Sangati** is based on this code.
 
