@@ -14,7 +14,7 @@ import numpy as np
 from dol.utils import get_numpy_signature
 
 
-def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
+def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx=0,
                             random_target_seed=None, random_pairing_seed=None, 
                             isolation_idx=None, write_data=False, **kwargs):
     """
