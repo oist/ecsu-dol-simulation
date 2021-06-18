@@ -39,11 +39,11 @@ def test_2n_exc_rp3_dual():
         '--cores', '7', 
         '--seed', '1',
         '--num_neurons', '2', 
+        '--num_pop', '2',
         '--popsize', '20', 
         '--max_gen', '10',        
         '--exclusive_motors_threshold', '0.1',
-        '--num_random_pairings', '3',
-        '--dual_population', 'True'
+        '--num_random_pairings', '3', 
     ])
     last_best_perf = evo.best_performances[-1]
     # print(last_best_perf)
