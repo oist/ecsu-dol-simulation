@@ -91,10 +91,10 @@ class Simulation:
         assert self.num_pop==1 or self.num_random_pairings > 0, \
             "In multiple populations, num_random_pairings must be > 0"
 
-        assert self.num_pop==1 or self.num_pop==2 or self.num_pop==self.num_random_pairings+1, \
+        assert self.num_pop<=2 or self.num_pop==self.num_random_pairings+1, \
             "In multiple populations, num_pop must be equal to 2 \
             (dual population) or num_random_pairings+1 \
-            (each agent is pair with each agent of other population)"
+            (each agent is pair with each agent at the same index of other population)"
 
         assert self.num_dim == 1 or self.exclusive_motors_threshold is None, \
             "In 2d mode exclusive_motors mode is not appropriate"
@@ -162,45 +162,52 @@ class Simulation:
         # (with n being the num of agents)
         return [None for _ in range(self.num_agents)]
 
-    def fill_rand_agent_indexes(self):
+    def fill_paired_agents_indexes(self, exaustive_pairs):
         if self.num_random_pairings in [None, 0]:
-            self.random_agent_indexes = None
+            self.paired_agents_sims_pop_idx = None
             return
 
-        self.random_agent_indexes = []
+        self.paired_agents_sims_pop_idx = []
 
+        if self.num_pop > 2:
+            if exaustive_pairs:
+                self.paired_agents_sims_pop_idx = [
+                    (pop, self.genotype_index)
+                    for pop in range(0, self.num_random_pairings+1)
+                    if pop != self.population_index # exclude itself
+                ]
+            else:
+                self.paired_agents_sims_pop_idx = [
+                    (pop, self.genotype_index)
+                    for pop in range(self.population_index+1, self.num_random_pairings+1)
+                ]
         # populations have been already shuffled
         # so we take an agent in pop A with corresponding indexes in pop B
         # and rotate on the population B for following simulations
         # 0 -> 0, 0 -> 1, 0 -> 2, .... 1 -> 1, 1 -> 2, 1 -> 3, ...
         # this works also in non dual population because in this case
         # population is split in half        
-        if self.num_pop > 2:
-            pass
-            # TODO
         elif self.population_index == 1:
             # agent is in the second half of the population
             # only applies if we want to rerun a simulation focusing on agent in second population
-            self.random_agent_indexes = [
-                (self.genotype_index - s) % self.population_size
-                for s in range(self.num_random_pairings)
-            ]
-        elif self.genotype_index < self.population_size:
-            # stardard case (agent is in the first population)
-            # also applies in dual population if population_index == 0
-            self.random_agent_indexes = [
-                (self.genotype_index + s) % self.population_size
+            self.paired_agents_sims_pop_idx = [
+                (0, (self.genotype_index - s) % self.population_size)
                 for s in range(self.num_random_pairings)
             ]
         else:
-            assert False
+            # stardard case (agent is in the first population)
+            # also applies in dual population if population_index == 0
+            self.paired_agents_sims_pop_idx = [
+                (1, (self.genotype_index + s) % self.population_size)
+                for s in range(self.num_random_pairings)
+            ]
 
     def set_agents_genotype_phenotype(self):
         '''
         Split genotype and set phenotype of the two agents
         :param np.ndarray genotypes_pair: sequence with two genotypes (one after the other)
         '''
-        self.rand_agent_idx = None  # index of second agent (if present)
+        self.paired_agent_pop_idx = None  # pop and index of other agent (if present)
         if self.num_random_pairings == 0:
             # double genotype
             first_agent_genotype = self.genotype_population[0][self.genotype_index]
@@ -211,24 +218,19 @@ class Simulation:
             first_agent_genotype = self.genotype_population[0][self.genotype_index]
             self.genotypes = [first_agent_genotype]
         else:
-            # two agents (not double)                                                           
-            self.rand_agent_idx = self.random_agent_indexes[self.sim_index]
-            if self.num_pop > 2:
-                pass
-                # TODO
-            elif self.num_pop == 2 and self.population_index == 1:
-                # dual population with current agent in second population 
+            # two agents
+            self.paired_agent_pop_idx = self.paired_agents_sims_pop_idx[self.sim_index]            
+            p_pop, p_idx = self.paired_agent_pop_idx
+            if self.population_index < p_pop:
                 self.genotypes = [
-                    self.genotype_population[0][self.rand_agent_idx],
-                    self.genotype_population[1][self.genotype_index],
+                    self.genotype_population[self.population_index][self.genotype_index],
+                    self.genotype_population[p_pop][p_idx],
                 ]
             else:
-                # stardard case (agent is in the first population)
                 self.genotypes = [
-                    self.genotype_population[0][self.genotype_index],
-                    self.genotype_population[1][self.rand_agent_idx],
+                    self.genotype_population[p_pop][p_idx],
+                    self.genotype_population[self.population_index][self.genotype_index]                    
                 ]
-
 
         self.phenotypes = [{} for _ in range(self.num_agents)]
         if self.data_record is not None:
@@ -373,7 +375,7 @@ class Simulation:
     # MAIN FUNCTION
     #################
     def run_simulation(self, genotype_population, genotype_index, random_seed,
-                       population_index=0, isolation_idx=None, data_record_list=None):
+                       population_index=0, exaustive_pairs=False, isolation_idx=None, data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
         '''
@@ -404,10 +406,10 @@ class Simulation:
             assert self.num_agents == 2, \
                 'can only force isolation if simulatin is run with 2 agents'
 
-        self.fill_rand_agent_indexes()  # random_agent_indexes
+        self.fill_paired_agents_indexes(exaustive_pairs)  # paired_agents_sims_pop_idx
 
-        num_simulations = 1 if self.random_agent_indexes is None \
-            else max(1, len(self.random_agent_indexes))
+        num_simulations = 1 if self.paired_agents_sims_pop_idx is None \
+            else max(1, len(self.paired_agents_sims_pop_idx))
 
         sim_performances = []
 
@@ -468,7 +470,7 @@ class Simulation:
             if self.data_record:
                 self.data_record['info'] = {
                     'population_index': self.population_index,
-                    'rand_agent_index': self.rand_agent_idx,                    
+                    'paired_agent_pop_idx': self.paired_agent_pop_idx,                    
                     'genotype_distance': self.agents_genotype_distance[self.sim_index],
                     'trials_performances': trial_performances,
                     'experiment_performance': exp_perf,
@@ -479,7 +481,7 @@ class Simulation:
         # SIMULATIONS END
 
         total_performance = np.mean(sim_performances)
-        return total_performance, sim_performances, self.random_agent_indexes
+        return total_performance, sim_performances, self.paired_agents_sims_pop_idx
 
     ##################
     # EVAL FUNCTION
@@ -520,16 +522,17 @@ class Simulation:
                 )  
                 
             for i, r in enumerate(run_result):
-                perf_tot, perf_sim_list, rand_idx_list = r
+                perf_tot, perf_sim_list, paired_ag_pop_idx_list = r
                 
                 # average of perf of the i-th agent of first population paired with n other agents of the second population
                 first_half_performances[i] = perf_tot  
                 
-                for j, (perf_sim, rand_idx) in enumerate(zip(perf_sim_list, rand_idx_list)):
-                    # adding single sim performance to second agent
-                    second_half_performances[j][rand_idx] = perf_sim 
-                    # j is 0 for aligned agents, 1 if first agent is one step up wrt to
-                    # second agent, ...
+                for j, (perf_sim, paired_pop_idx) in \
+                    enumerate(zip(perf_sim_list, paired_ag_pop_idx_list)):
+                        # adding single sim performance to second agent
+                        second_half_performances[j][paired_pop_idx[1]] = perf_sim 
+                        # j is 0 for aligned agents, 1 if first agent is one step up wrt to
+                        # second agent, ...
 
             # average performances on second population
             second_half_performances = \

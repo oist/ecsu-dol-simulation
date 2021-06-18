@@ -58,11 +58,14 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     # we only need to do this for the first population (index 0)
     original_genotype_idx = evo.population_sorted_indexes[population_idx][genotype_idx]
 
+    exaustive_pairs=True
+
     performance, sim_perfs, _ = sim.run_simulation(
         original_populations,
         original_genotype_idx,
         random_seed,
         population_idx,
+        exaustive_pairs,
         isolation_idx,
         data_record_list
     )
@@ -120,8 +123,8 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
             print("Sim agents genotype distance: ", sim.agents_genotype_distance[sim_idx])
         # print agents signatures
         agents_sign = [get_numpy_signature(gt) for gt in data_record_list[sim_idx]['genotypes']]
-        print('Agent(s) signature(s):', agents_sign) 
-        print(f'Population index of best agent: {sim.population_index}')
+        print('Agent(s) signature(s):', agents_sign)         
+        # print(f'Population index of selected agent: {sim.population_index}')
 
 
     if kwargs.get('compute_complexity', False):

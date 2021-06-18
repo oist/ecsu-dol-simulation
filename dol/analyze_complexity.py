@@ -25,7 +25,7 @@ def get_test_data():
         'agents_sensors': [
             [
                 [
-                    ['t{}_a{}_p{}_sens{}'.format(t, a, p, s) for s in range(num_sensors)]
+                    ['t{}_a{}_p{}_sens{}'.format(t, a, p, s) for s in range(num_sensors_motors)]
                     for p in range(num_data_points)
                 ]
                 for a in range(num_agents)
@@ -492,16 +492,16 @@ def single_agent(init_value='random'):
     rs = RandomState(1)
     if init_value == 'random':
         run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
-            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
+            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(num_dim, num_neurons),
             rs=rs
         )
     else:
         run_result, sim, data_record_list = simulation.get_simulation_data_from_filled_agent(
-            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
+            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(num_dim, num_neurons),
             value=init_value,
             rs=rs
         )
-    total_performance, sim_perfs, random_agent_indexes = run_result
+    total_performance, sim_perfs, paired_agents_sims_pop_idx = run_result
 
     nc = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
@@ -554,7 +554,7 @@ def single_paired_agents(input_dir='data'):
     data_record_list = []
 
     performance, sim_perfs, _ = sim.run_simulation(
-        best_two_agent_pop, 0, 0, 0, None,
+        best_two_agent_pop, 0, 0, 0, True, None,
         data_record_list
     )
 
