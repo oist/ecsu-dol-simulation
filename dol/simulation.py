@@ -457,7 +457,7 @@ class Simulation:
 
                     # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
                 performance_t = self.max_mean_distance - np.mean(np.abs(self.delta_tracker_target))
-                assert performance_t >= 0
+                assert performance_t >= 0, f"Found performance trial < 0: {performance_t}"
 
                 trial_performances.append(performance_t)
 
