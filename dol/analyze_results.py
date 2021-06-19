@@ -76,16 +76,16 @@ def get_last_performance_runs(base_dir, print_values, print_stats, plot, export_
     if plot:
         # print("seeds:",seeds)
         fig, ax = plt.subplots()
-        ind = np.arange(len(seeds))
-        width = 0.35
+        ind = np.arange(len(seeds))        
         num_bars = len(best_exp_performance[0])
+        width = 0.7 / num_bars
         for p in range(num_bars):
             p_series = [b[p] for b in best_exp_performance]
             x_pos = ind + p * width
             if num_bars == 1:
                 x_pos = x_pos + width / 2  # center bar on ticks if there is only one bar
             ax.bar(x_pos, p_series, width)
-        ax.set_xticks(ind + width / 2)
+        ax.set_xticks(ind + 0.7 / 2)
         ax.set_xticklabels(seeds)
         # plt.ylim(4500, 5000)
         plt.xlabel('Seeds')
