@@ -52,7 +52,7 @@ def test_2n_exc_rp3_np2():
 
 def test_2n_exc_rp3_np4_switch():
     sim, evo = main([             
-        '--dir', './data/tmp', 
+        # '--dir', './data/tmp', 
         '--cores', '7', 
         '--seed', '1',
         '--num_neurons', '2', 
