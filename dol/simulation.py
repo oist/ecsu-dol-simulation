@@ -208,15 +208,15 @@ class Simulation:
         :param np.ndarray genotypes_pair: sequence with two genotypes (one after the other)
         '''
         self.paired_agent_pop_idx = None  # pop and index of other agent (if present)
-        if self.num_random_pairings == 0:
+        if self.num_random_pairings is None:
+            # single genotype
+            first_agent_genotype = self.genotype_population[0][self.genotype_index]
+            self.genotypes = [first_agent_genotype]
+        elif self.num_random_pairings == 0:
             # double genotype
             first_agent_genotype = self.genotype_population[0][self.genotype_index]
             genotypes_pair = first_agent_genotype
-            self.genotypes = np.array_split(genotypes_pair, 2)
-        elif self.num_random_pairings is None:
-            # isolation
-            first_agent_genotype = self.genotype_population[0][self.genotype_index]
-            self.genotypes = [first_agent_genotype]
+            self.genotypes = np.array_split(genotypes_pair, 2)        
         else:
             # two agents
             self.paired_agent_pop_idx = self.paired_agents_sims_pop_idx[self.sim_index]            
@@ -375,7 +375,8 @@ class Simulation:
     # MAIN FUNCTION
     #################
     def run_simulation(self, genotype_population, genotype_index, random_seed,
-                       population_index=0, exaustive_pairs=False, isolation_idx=None, data_record_list=None):
+                       population_index=0, exaustive_pairs=False, 
+                       isolation_idx=None, data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
         '''
@@ -483,70 +484,126 @@ class Simulation:
         total_performance = np.mean(sim_performances)
         return total_performance, sim_performances, self.paired_agents_sims_pop_idx
 
+    '''
+    Run Simulation of agents of a give index across populations
+    Only applies if num_pop > 2
+    '''
+    def run_pop_simulations(self, genotype_population, genotype_index, random_seed):
+        pop_results = []
+        for pop_idx in range(self.num_pop-1): # exlude last
+            pop_results.append(
+                self.run_simulation(
+                    genotype_population, genotype_index, random_seed, pop_idx
+                )
+            )
+        return pop_results
+
     ##################
     # EVAL FUNCTION
     ##################
-
     def evaluate(self, populations, random_seed):
 
         population_size = len(populations[0])
 
-        if self.split_population():
-            assert population_size % 2 == 0
-            # we only run the first half (because of matched pairs)
-            population_size = int(population_size / 2)
+        if self.num_pop <= 2:
+            if self.split_population():
+                assert population_size % 2 == 0
+                # we only run the first half (because of matched pairs)
+                population_size = int(population_size / 2)
 
-        if self.num_cores > 1:
-            # run parallel job            
-            sim_array = [Simulation(**asdict(self)) for _ in range(self.num_cores)]
-            run_result = Parallel(n_jobs=self.num_cores)(
-                delayed(sim_array[i % self.num_cores].run_simulation)(populations, i, random_seed) \
-                for i in range(population_size)
+            if self.num_cores > 1:
+                # run parallel job            
+                sim_array = [Simulation(**asdict(self)) for _ in range(self.num_cores)]
+                run_result = Parallel(n_jobs=self.num_cores)(
+                    delayed(sim_array[i % self.num_cores].run_simulation)(populations, i, random_seed) \
+                    for i in range(population_size)
+                )
+            else:
+                # single core
+                sim = Simulation(**asdict(self))
+                run_result = [
+                    sim.run_simulation(populations, i, random_seed)
+                    for i in range(population_size)
+                ]
+
+            if self.num_random_pairings != None and self.num_random_pairings > 0:
+                # compute performance of the second (half of the) population
+                # dual or split population
+                first_half_performances = np.zeros((population_size))
+                
+                # store individual performnaces with each pairing and then compute mean
+                second_half_performances = \
+                    np.zeros(
+                        (self.num_random_pairings, population_size)
+                    )  
+                    
+                for i, r in enumerate(run_result):
+                    perf_tot, perf_sim_list, paired_ag_pop_idx_list = r
+                    
+                    # average of perf of the i-th agent of first population paired with n other agents of the second population
+                    first_half_performances[i] = perf_tot  
+                    
+                    for j, (perf_sim, paired_pop_idx) in \
+                        enumerate(zip(perf_sim_list, paired_ag_pop_idx_list)):
+                            # adding single sim performance to second agent
+                            second_half_performances[j][paired_pop_idx[1]] = perf_sim 
+                            # j is 0 for aligned agents, 1 if first agent is one step up wrt to
+                            # second agent, ...
+
+                # average performances on second population
+                second_half_performances = \
+                    np.mean(
+                        second_half_performances, axis=0
+                    )  
+                performances = np.array([first_half_performances, second_half_performances])
+                if self.num_pop == 1:
+                    # joined the two half performances in one
+                    performances = np.concatenate(performances)
+            else:
+                performances = np.array([p[0] for p in run_result])
+        else:
+            # num_pop > 2
+            if self.num_cores > 1:
+                # run parallel job            
+                sim_array = [Simulation(**asdict(self)) for _ in range(self.num_cores)]
+                pop_results = Parallel(n_jobs=self.num_cores)(
+                    delayed(sim_array[i % self.num_cores].run_pop_simulations)(populations, i, random_seed) \
+                    for i in range(population_size)
+                )
+            else:
+                # single core
+                sim = Simulation(**asdict(self))
+                pop_results = [
+                    sim.run_pop_simulations(populations, i, random_seed)
+                    for i in range(population_size)
+                ]
+
+            # compute performance of each agent in population 
+            # (paird with num_random_pairings other agents)
+            pop_performances = np.zeros(
+                (self.num_pop, self.num_random_pairings, population_size)
             )
-        else:
-            # single core
-            sim = Simulation(**asdict(self))
-            run_result = [
-                sim.run_simulation(populations, i, random_seed)
-                for i in range(population_size)
-            ]
-
-        if self.num_random_pairings != None and self.num_random_pairings > 0:
-            # compute performance of the second (half of the) population
-            first_half_performances = np.zeros((population_size))
             
-            # store individual performnaces with each pairing and then compute mean
-            second_half_performances = \
-                np.zeros(
-                    (self.num_random_pairings, population_size)
-                )  
-                
-            for i, r in enumerate(run_result):
-                perf_tot, perf_sim_list, paired_ag_pop_idx_list = r
-                
-                # average of perf of the i-th agent of first population paired with n other agents of the second population
-                first_half_performances[i] = perf_tot  
-                
-                for j, (perf_sim, paired_pop_idx) in \
-                    enumerate(zip(perf_sim_list, paired_ag_pop_idx_list)):
-                        # adding single sim performance to second agent
-                        second_half_performances[j][paired_pop_idx[1]] = perf_sim 
-                        # j is 0 for aligned agents, 1 if first agent is one step up wrt to
-                        # second agent, ...
+            for i, pop_r in enumerate(pop_results):
+                # pop_r contains the results from run_pop_simulations 
+                # relative to agent at index i
+                # pop_r is a list of num_pop - 1 tuples: 
+                # (perf_tot, perf_sim_list, paired_ag_pop_idx_list)
+                for p, r in enumerate(pop_r):
+                    # p is the population_index of current pop_r
+                    perf_tot, perf_sim_list, paired_ag_pop_idx_list = r
+                    
+                    for j, (perf_sim, paired_pop_idx) in \
+                        enumerate(zip(perf_sim_list, paired_ag_pop_idx_list)):
+                            # adding single sim performance to second agent
+                            paired_pop, paired_i = paired_pop_idx
+                            pop_performances[p][j+p][i] = perf_sim # current agent
+                            assert paired_i == i
+                            pop_performances[paired_pop][p][i] = perf_sim # paired agent
 
-            # average performances on second population
-            second_half_performances = \
-                np.mean(
-                    second_half_performances, axis=0
-                )  
-            performances = np.array([first_half_performances, second_half_performances])
-            if self.num_pop == 1:
-                # joined the two half performances in one
-                performances = np.concatenate(performances)
-        else:
-            performances = np.array([p[0] for p in run_result])
+            # average performances in each population across pairs
+            performances = np.mean(pop_performances, axis=1)  
 
-        # todo: return array of performances based on number of populations
         return performances
 
     def normalize_performance(self, performance):

@@ -33,7 +33,7 @@ def test_2n_exc_rp3_switch():
     assert last_best_perf == [4905.150000000001]
     print('✅ test_2n_exc_rp3_switch')
 
-def test_2n_exc_rp3_dual():
+def test_2n_exc_rp3_np2():
     sim, evo = main([             
         # '--dir', './data/tmp', 
         '--cores', '7', 
@@ -48,9 +48,28 @@ def test_2n_exc_rp3_dual():
     last_best_perf = evo.best_performances[-1]
     # print(last_best_perf)
     assert last_best_perf == [4908.040022980634, 4906.640307404024]
-    print('✅ test_2n_exc_rp3_dual')
+    print('✅ test_2n_exc_rp3_np2')
+
+def test_2n_exc_rp3_np4_switch():
+    sim, evo = main([             
+        '--dir', './data/tmp', 
+        '--cores', '7', 
+        '--seed', '1',
+        '--num_neurons', '2', 
+        '--num_pop', '4',
+        '--popsize', '20', 
+        '--max_gen', '10',        
+        '--exclusive_motors_threshold', '0.1',
+        '--num_random_pairings', '3', 
+        '--switch_agents_motor_control', 'True'
+    ])
+    last_best_perf = evo.best_performances[-1]
+    # print(last_best_perf)
+    assert last_best_perf == [4910.783614989738, 4907.230666158143, 4907.164935824626, 4907.1259334325105]
+    print('✅ test_2n_exc_rp3_np4_switch')
 
 if __name__ == "__main__":
     test_2n_exc()
     test_2n_exc_rp3_switch()
-    test_2n_exc_rp3_dual()
+    test_2n_exc_rp3_np2()
+    test_2n_exc_rp3_np4_switch()

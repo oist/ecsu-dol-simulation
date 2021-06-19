@@ -66,13 +66,15 @@ def main(raw_args=None):
     if args.dir is not None:
         # create default path if it specified dir already exists
         if os.path.isdir(args.dir):
-            subdir = f'{args.num_pop}p_{args.num_dim}d_{args.num_neurons}n'
+            subdir = f'{args.num_dim}d_{args.num_neurons}n'
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             if args.gen_zfill:
                 subdir += '_zfill'
             if args.num_random_pairings is not None:
                 subdir += '_rp-{}'.format(args.num_random_pairings)
+            if args.num_pop > 1:
+                subdir += f'_np-{args.num_pop}'
             if args.switch_agents_motor_control:
                 subdir += '_switch'
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
