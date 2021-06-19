@@ -26,7 +26,7 @@ python3 -m dol.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --dir $tempdir \
 --gen_zfill True \
---num_pop 4,
+--num_pop 4 \
 --popsize 24 \
 --max_gen 5000 \
 --num_neurons 2 \
