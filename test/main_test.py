@@ -12,8 +12,9 @@ def test_2n_exc():
         '--exclusive_motors_threshold', '0.1'
     ])
     last_best_perf = evo.best_performances[-1]
-    # print(last_best_perf)
-    assert last_best_perf == [4911.746627237504]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    # print(normalized_perf)
+    assert normalized_perf == [88.25337276249593]
     print('✅ test_2n_exc')
 
 def test_2n_exc_rp3_switch():
@@ -29,8 +30,9 @@ def test_2n_exc_rp3_switch():
         '--switch_agents_motor_control', 'True'
     ])
     last_best_perf = evo.best_performances[-1]
-    # print(last_best_perf)
-    assert last_best_perf == [4905.150000000001]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    # print(normalized_perf)
+    assert normalized_perf == [94.84999999999945]
     print('✅ test_2n_exc_rp3_switch')
 
 def test_2n_exc_rp3_np2():
@@ -46,8 +48,9 @@ def test_2n_exc_rp3_np2():
         '--num_random_pairings', '3', 
     ])
     last_best_perf = evo.best_performances[-1]
-    # print(last_best_perf)
-    assert last_best_perf == [4908.040022980634, 4906.640307404024]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    # print(normalized_perf)
+    assert normalized_perf == [91.9599770193663, 93.35969259597641]
     print('✅ test_2n_exc_rp3_np2')
 
 def test_2n_exc_rp3_np4_switch():
@@ -64,8 +67,9 @@ def test_2n_exc_rp3_np4_switch():
         '--switch_agents_motor_control', 'True'
     ])
     last_best_perf = evo.best_performances[-1]
-    # print(last_best_perf)
-    assert last_best_perf == [4910.783614989738, 4907.230666158143, 4907.164935824626, 4907.1259334325105]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    # print(normalized_perf)
+    assert normalized_perf == [89.21638501026155, 92.76933384185668, 92.8350641753741, 92.87406656748954]
     print('✅ test_2n_exc_rp3_np4_switch')
 
 if __name__ == "__main__":
