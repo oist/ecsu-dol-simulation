@@ -32,7 +32,7 @@ def test_2n_exc_rp3_switch():
     last_best_perf = evo.best_performances[-1]
     normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
     # print(normalized_perf)
-    assert normalized_perf == [94.84999999999945]
+    assert normalized_perf == [94.84999999999854]
     print('✅ test_2n_exc_rp3_switch')
 
 def test_2n_exc_rp3_np2():
@@ -50,7 +50,7 @@ def test_2n_exc_rp3_np2():
     last_best_perf = evo.best_performances[-1]
     normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
     # print(normalized_perf)
-    assert normalized_perf == [91.9599770193663, 93.35969259597641]
+    assert normalized_perf == [91.95997701936722, 93.35969259597732]
     print('✅ test_2n_exc_rp3_np2')
 
 def test_2n_exc_rp3_np4_switch():
@@ -69,7 +69,7 @@ def test_2n_exc_rp3_np4_switch():
     last_best_perf = evo.best_performances[-1]
     normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
     # print(normalized_perf)
-    assert normalized_perf == [89.21638501026155, 92.76933384185668, 92.8350641753741, 92.87406656748954]
+    assert normalized_perf == [89.21638501026064, 92.76933384185577, 92.83506417537319, 92.87406656749044]
     print('✅ test_2n_exc_rp3_np4_switch')
 
 if __name__ == "__main__":

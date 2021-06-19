@@ -59,7 +59,7 @@ class Simulation:
 
         self.__check_params__()
 
-        self.max_mean_distance = 5000 if self.num_dim==1 else 10000
+        self.max_mean_distance = 10000
 
         self.num_sensors_motors = 2 * self.num_dim
 
