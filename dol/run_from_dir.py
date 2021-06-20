@@ -34,6 +34,10 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     sim = Simulation.load_from_file(sim_json_filepath)
     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
 
+    if sim.num_random_pairings == 0:
+        population_idx_rp0 = population_idx
+        population_idx = 0 # there is only 1 population for evo        
+
     data_record_list = []
 
     random_seed = evo.pop_eval_random_seed
@@ -123,7 +127,11 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
         # print agents signatures
         agents_sign = [get_numpy_signature(gt) for gt in data_record_list[sim_idx]['genotypes']]
         print('   Agent(s) signature(s):', agents_sign)
-        print(f'Selected agent signature: {get_numpy_signature(evo.population[population_idx][genotype_idx])}')
+        selected_agent_genome = evo.population[population_idx][genotype_idx]
+        if sim.num_random_pairings == 0:
+            selected_agent_genome = np.split(selected_agent_genome, 2)[population_idx_rp0]
+            # double genotype
+        print(f'Selected agent signature: {get_numpy_signature(selected_agent_genome)}')
 
 
     if kwargs.get('compute_complexity', False):
@@ -173,7 +181,7 @@ if __name__ == "__main__":
     parser.add_argument('--compute_complexity', action='store_true', help='Whether to plot the data')
 
     # additional args
-    parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
+    parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial (one-based)')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
     parser.add_argument('--plot_trial', type=int, help='Whether to plot a specif trial')
 
