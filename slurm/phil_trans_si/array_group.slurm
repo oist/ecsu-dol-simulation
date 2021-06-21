@@ -32,7 +32,7 @@ python3 -m dol.main \
 --num_trials 4 \
 --num_random_pairings 3 \
 --exclusive_motors_threshold 0.1 \
---switch_agents_motor_control True \
+--motor_control_mode SWITCH \
 --cores 48
 
 # copy our result back to Bucket. We use "scp" to copy the data 

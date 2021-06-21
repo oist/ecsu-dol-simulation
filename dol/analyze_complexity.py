@@ -536,7 +536,7 @@ def single_paired_agents(input_dir='data'):
 
     sim = Simulation.load_from_file(
         sim_json_filepath,
-        switch_agents_motor_control=True,  # forcing switch
+        motor_control_mode='SWITCH',  # forcing switch
         num_random_pairings=1  # forcing to play with one another
     )
 

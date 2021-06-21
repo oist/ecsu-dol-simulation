@@ -34,10 +34,17 @@ class Simulation:
     # 0    -> agents are evolved in pairs: a genotype contains a pair of agents
     # N>0  -> each agent will go though a simulation with N other agents
 
+    # for back compatibility - to be removed (now using motor_control_mode)
+    # False -> SEPARATE
+    # Ture -> SWITCH
     switch_agents_motor_control: bool = False
-    # when num_agents is 2 this decides whether the two agents switch control of L/R motors 
-    # in different trials (mix=True) or not (mix=False) in which case the first agent
-    # always control the left motor and the second the right
+
+    motor_control_mode: str = None # 'SEPARATE' # SEPARATE, SWITCH, OVERLAP
+    # when num_agents is 2 this decides whether
+    # None: not applicable (if self.num_agents==1)
+    # SEPARATE: across trials the first agent always control the left motor and the second the right
+    # SWITCH: the two agents switch control of L/R motors in different trials
+    # OVERLAP: both agents control L/R motors (for a factor o half)
 
     exclusive_motors_threshold: float = None
 
@@ -53,17 +60,21 @@ class Simulation:
 
     def __post_init__(self):
 
+        self.num_agents = 1 if self.num_random_pairings is None else 2
+
         if self.dual_population:
             # for back compatibility
-            self.num_pop = 2
+            self.num_pop = 2 
+
+        if self.switch_agents_motor_control:
+            # for back compatibility
+            self.motor_control_mode = None if self.num_agents==1 else 'SEPARATE'
 
         self.__check_params__()
 
         self.max_mean_distance = 10000
 
         self.num_sensors_motors = 2 * self.num_dim
-
-        self.num_agents = 1 if self.num_random_pairings is None else 2
 
         self.num_brain_neurons = gen_structure.get_num_brain_neurons(self.genotype_structure)
         self.num_data_points = int(self.trial_duration / self.brain_step_size)
@@ -91,6 +102,18 @@ class Simulation:
         assert self.num_pop==1 or self.num_random_pairings > 0, \
             "In multiple populations, num_random_pairings must be > 0"
 
+        assert self.num_agents==2 or self.motor_control_mode==None, \
+            "With one agent motor_control_mode must be None"
+
+        assert self.num_agents==1 or self.motor_control_mode!=None, \
+            "With two agents motor_control_mode must not be None"
+        
+        utils.assert_string_in_values(
+            self.motor_control_mode, 
+            'motor_control_mode',
+            [None, 'SEPARATE', 'SWITCH', 'OVERLAP']
+        )        
+
         assert self.num_pop<=2 or self.num_pop==self.num_random_pairings+1, \
             "In multiple populations, num_pop must be equal to 2 \
             (dual population) or num_random_pairings+1 \
@@ -100,9 +123,8 @@ class Simulation:
             "In 2d mode exclusive_motors mode is not appropriate"
             # TODO: double check this
 
-        assert self.num_dim == 1 or \
-            (self.switch_agents_motor_control==False and self.num_pop==1), \
-            "2d mode has been implemented only for the individual condition"        
+        assert self.num_dim == 1 or self.num_pop==1, \
+            "2d mode has been implemented only for the isolated condition"        
 
     def split_population(self):
         # when population will be split in two for computing random pairs matching
@@ -309,12 +331,20 @@ class Simulation:
         if self.num_agents == 2:
             if self.isolation_idx is not None:
                 # forcing control by one agents
-                self.agents_motors_control_indexes = [self.isolation_idx] * 2  # [0,0] or [1,1]
-            elif self.switch_agents_motor_control and t % 2 == 1:
-                # invert controller in switch mode on odd trials
-                self.agents_motors_control_indexes = [1, 0]
-            else:
+                self.agents_motors_control_indexes = [self.isolation_idx] * 2  # [0,0] or [1,1]                
+            elif self.motor_control_mode=='SWITCH':
+                if t % 2 == 0:
+                    self.agents_motors_control_indexes = [0, 1]                    
+                else:
+                    # invert controller in switch mode on odd trial indexes
+                    self.agents_motors_control_indexes = [1, 0]
+            elif self.motor_control_mode=='SEPARATE':
+                # first agent controls left motor, second agent controls right motor
                 self.agents_motors_control_indexes = [0, 1]
+            else:
+                # self.motor_control_mode=='OVERLAP'
+                # both agents control both motors (for a factor of half)
+                self.agents_motors_control_indexes = None 
 
                 # init deltas
         self.delta_tracker_target = np.zeros(self.num_data_points)
@@ -353,12 +383,18 @@ class Simulation:
         if self.num_agents == 1:
             motors = np.copy(self.agents[0].motors)
         else:
-            motors = np.array(
-                [
-                    self.agents[a].motors[i]
-                    for i, a in enumerate(self.agents_motors_control_indexes)
-                ]
-            )
+            if self.motor_control_mode == 'OVERLAP':
+                motors = np.array([ # [[a1_m1, a1_m2],[a2_m1, a2_m2]
+                    self.agents[a].motors
+                    for a in range(2)
+                ]).mean(0) # mean across rows
+            else:                
+                motors = np.array(
+                    [
+                        self.agents[a].motors[i]
+                        for i, a in enumerate(self.agents_motors_control_indexes)
+                    ]
+                )
         if self.exclusive_motors_threshold is not None:
             if len(np.where(motors > self.exclusive_motors_threshold)[0]) == 2:
                 # when both are more than threshold freeze
