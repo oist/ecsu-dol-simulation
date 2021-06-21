@@ -150,6 +150,18 @@ def plot_scatter_multi_keys(data_record, keys, title, log=False):
             ax.plot(trial_data[:, 0], trial_data[:, 1])
     plt.show()
 
+def plot_genotype_distance(sim):
+    if sim.num_agents != 2:
+        return
+    genotypes = np.array(sim.genotypes)
+    genotypes = utils.linmap(genotypes, params.EVOLVE_GENE_RANGE, (0,1))    
+    distance = np.abs(genotypes[0]-genotypes[1])
+    distance = distance.reshape(1, -1) # row vector
+    cmap_inv = plt.cm.get_cmap('viridis_r')        
+    plt.imshow(distance, cmap=cmap_inv)       
+    plt.clim(0, 1) 
+    plt.colorbar()
+    plt.show()
 
 def plot_population_genotype_distance(evo, sim):
     """
@@ -193,6 +205,8 @@ def plot_results(evo, sim, trial, data_record):
         plot_performances(evo, sim, log=True)
         # plot_performances(evo, sim, log=False, only_best=True)
         plot_population_genotype_distance(evo, sim)
+
+    plot_genotype_distance(sim)
 
     # scatter agents
     # plot_data_scatter(data_record, 'agents_brain_output')
