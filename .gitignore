@@ -1,14 +1,1 @@
-.venv/
-.ipynb_checkpoints
-data/
-*.eps
-dol/__pycache__
-rstats/.Rproj.user
-rstats/packrat/lib*/
-rstats/packrat/src
-.Rhistory
-.Rprofile
-plots
-.Rproj.user
-simulation_notes.txt
-scripts
+.DS_Store
