@@ -459,7 +459,8 @@ class Simulation:
 
             if self.data_record:
                 self.data_record['info'] = {
-                    'rand_agent_index': self.rand_agent_idx,
+                    'population_index': self.population_index,
+                    'rand_agent_index': self.rand_agent_idx,                    
                     'genotype_distance': self.agents_genotype_distance[self.sim_index],
                     'trials_performances': trial_performances,
                     'experiment_performance': exp_perf,
