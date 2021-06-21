@@ -14,7 +14,7 @@ class infoAnalysis:
 			self.initiJVM()
 
 			self.generation = 5000
-			self.acceptedSeeds = [2, 3, 6, 10, 11, 12, 13, 14, 15, 16, 18, 19]
+			self.acceptedSeeds = [2, 3, 6, 10, 11, 12, 13, 14, 15, 16, 18, 19]  ## This is the list of valid seeds
 
 		except Exception as e:
 			print('@ infoAnalysis() init -- ', e)
