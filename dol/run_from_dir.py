@@ -20,7 +20,6 @@ def run_simulation_from_dir(dir, generation, genotype_idx=0, population_idx=0,
     """
     Utitity function to get data from a simulation
     """
-
     evo_files = sorted([f for f in os.listdir(dir) if f.startswith('evo_')])
     assert len(evo_files) > 0, "Can't find evo files in dir {}".format(dir)
     file_num_zfill = len(evo_files[0].split('_')[1].split('.')[0])
