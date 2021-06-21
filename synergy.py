@@ -10,6 +10,8 @@ from dol.synergyAnalysisClass import infoAnalysis
 
 if __name__ == "__main__":
 	try:
+		resultFolder = './results_MultVarMI_CondMi_CoInfo/'
+		
 		Obj = infoAnalysis()
 		
 		for seed in Obj.acceptedSeeds:
@@ -34,9 +36,6 @@ if __name__ == "__main__":
 					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['condMultVarMI'] = condMultVarMI
 					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['multVarMI'] = multVarMI
 					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['coinformation'] = condMultVarMI - multVarMI  #### a.k.a interaction information, net synergy, and integration
-			
-
-			resultFolder = './results_MultVarMI_CondMi_CoInfo/'
 
 			Obj.saveResults(resultFolder, f'seed_{str(seed).zfill(3)}', results)
 
