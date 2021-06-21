@@ -89,7 +89,7 @@ def get_last_performance_runs(base_dir, print_values, print_stats, plot, export_
         ax.set_xticklabels(seeds)
         # plt.ylim(4500, 5000)
         plt.xlabel('Seeds')
-        plt.ylabel('Performance')
+        plt.ylabel('Error')
         plt.show()
     # return dict(zip(seeds, best_exp_performance))
 

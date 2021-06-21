@@ -151,27 +151,28 @@ def plot_scatter_multi_keys(data_record, keys, title, log=False):
     plt.show()
 
 
-def plot_genotype_similarity(evo, sim):
+def plot_population_genotype_distance(evo, sim):
     """
-    Heatmap of genotype similarity within the population.
+    Heatmap of genotype distance within the population.
     """
     from sklearn.metrics.pairwise import pairwise_distances    
     population = evo.population
     genotype_length = len(evo.population[0][0])
     if len(evo.population) > 1:
         population = np.concatenate(evo.population)
-        population = np.expand_dims(population, 0)
+    else:
+        population = population[0]
+        if sim.num_random_pairings == 0:
+            # genotypes evolved in pairs
+            # we need to split the population in two subpopulation
+            population = np.hsplit(population,2)
+            population = np.concatenate(population)
+        
+    # map genotype in range 0,1
     population_norm = utils.linmap(population, params.EVOLVE_GENE_RANGE, (0,1))    
-    dist = pairwise_distances(population_norm[0])
-    max_dist = np.sqrt(genotype_length)
+    dist = pairwise_distances(population_norm)
+    max_dist = np.sqrt(genotype_length) # length of unary vector of dim = genotype_length
     dist_norm = utils.linmap(dist, (0,max_dist), (0,1))
-
-    if sim.num_random_pairings == 0:
-        # genotypes evolved in pairs
-        dist_norm = np.zeros((1, len(population)))
-        for i, pair in enumerate(population):
-            a, b = np.array_split(pair, 2)
-            dist_norm[0][i] = utils.genotype_distance(a,b)
 
     assert 0 <= dist_norm.all() <= 1
     cmap_inv = plt.cm.get_cmap('viridis_r')        
@@ -191,7 +192,7 @@ def plot_results(evo, sim, trial, data_record):
     if evo is not None:
         plot_performances(evo, sim, log=True)
         # plot_performances(evo, sim, log=False, only_best=True)
-        plot_genotype_similarity(evo, sim)
+        plot_population_genotype_distance(evo, sim)
 
     # scatter agents
     # plot_data_scatter(data_record, 'agents_brain_output')

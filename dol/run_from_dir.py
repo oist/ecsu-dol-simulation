@@ -81,8 +81,8 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     if verbose:
         perf_orig = evo.performances[population_idx][genotype_idx]
         perf_orig = sim.normalize_performance(perf_orig)
-        print("Performace original: {}".format(perf_orig))
-        print("Performace recomputed: {}".format(performance))
+        print("Error original: {}".format(perf_orig))
+        print("Error recomputed: {}".format(performance))
         if expect_same_results:
             diff_perfomance = abs(perf_orig - performance)
             if diff_perfomance > 1e-5:
