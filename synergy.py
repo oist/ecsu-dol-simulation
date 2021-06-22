@@ -26,7 +26,7 @@ if __name__ == "__main__":
 					results['sim' + str(simIndex + 1)] = {}
 				for trialIndex in range(len(data_record_list[simIndex]['agents_brain_output'])):
 					print('Trial # ', (trialIndex + 1))
-					agent1, agent2, target = Obj.returnAgentsTargetData(data_record_list[simIndex], ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position'], trialIndex)			
+					agent1, agent2, target = Obj.returnAgentsTargetData(data_record_list[simIndex], self.includedNodes, trialIndex)			
 					# print(agent1.shape, '  ', agent2.shape, '  ', target.shape)
 					condMultVarMI = Obj.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target, axis = 0).T)
 					multVarMI = Obj.computeMultiVariateMutualInfo(agent1, agent2)

@@ -26,6 +26,8 @@ class infoAnalysis:
 			self.BonferroniCorrection = float(0.05 / 3) ## divided by three since we have three settings 
 			self.whichNormalization = 1   ## 1 : Z-Score Normalization 2 : [0 .. 1] Scaling
 
+			self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
+
 		except Exception as e:
 			print('@ infoAnalysis() init -- ', e)
 			sys.exit()
