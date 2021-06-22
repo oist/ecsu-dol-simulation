@@ -5,8 +5,15 @@ import sys
 import os
 import numpy as np
 import pickle
+import matplotlib.pyplot as plt
+import seaborn as sb
 
 import jpype as jp
+
+from sklearn import preprocessing
+
+from statsmodels.stats.diagnostic import lilliefors
+from scipy.stats import friedmanchisquare, ranksums, f_oneway
 
 class infoAnalysis:
 	def __init__(self):
@@ -15,6 +22,9 @@ class infoAnalysis:
 
 			self.generation = 5000
 			self.acceptedSeeds = [2, 3, 6, 10, 11, 12, 13, 14, 15, 16, 18, 19]  ## This is the list of valid seeds
+			self.lillieforsPValue = 0.05
+			self.BonferroniCorrection = float(0.05 / 3) ## divided by three since we have three settings 
+			self.whichNormalization = 1   ## 1 : Z-Score Normalization 2 : [0 .. 1] Scaling
 
 		except Exception as e:
 			print('@ infoAnalysis() init -- ', e)
@@ -132,15 +142,103 @@ class infoAnalysis:
 			print('@ saveResults() :  ', e)
 			sys.exit()
 
-	def showResults(self, addr):
-		try:
+	def prepareDataForAnalysis(self, addr):
+		try:			
+			condMultVarMI = []
+			multVarMI = []
+			coinformation = []
 			for seed in self.acceptedSeeds:
 				with open(addr + f'seed_{str(seed).zfill(3)}' + '/resultsDic.pickle', 'rb') as handle:
 					data = pickle.load(handle)						
 					handle.close()	
 					print('====   ', f'seed_{str(seed).zfill(3)}')
-					print(data)						
+					# print(data)
+					simData = []
+					for i in range(3):
+						tmp = []
+						# print('Sim' + str(i + 1))
+						for j in range(4):
+							tmp.append([data['sim' + str(i + 1)]['trial' + str(j + 1)]['condMultVarMI'], data['sim' + str(i + 1)]['trial' + str(j + 1)]['multVarMI'], \
+								data['sim' + str(i + 1)]['trial' + str(j + 1)]['coinformation']])
+						simData.append(np.array(tmp).mean(axis = 0).tolist())					
+					condMultVarMI.append(np.array(simData)[:, 0].tolist())
+					multVarMI.append(np.array(simData)[:, 1].tolist())
+					coinformation.append(np.array(simData)[:, 2].tolist())
+			
+			print('Multivariate Conditional Mututal Information: ', np.array(condMultVarMI).shape)
+			print('Multivariate Mututal Information: ', np.array(multVarMI).shape)
+			print('Net-Synergy: ', np.array(coinformation).shape)
+
+			return np.array(condMultVarMI), np.array(multVarMI), np.array(coinformation)
 		except Exception as e:
-			print('@ showResults() :  ', e)
+			print('@ prepareDataForAnalysis() :  ', e)
 			sys.exit()
+
+	def normalizeData(self, M, whichScaling):
+		try:
+			scaler = preprocessing.StandardScaler().fit(M) if whichScaling == 1 else preprocessing.MinMaxScaler().fit(M)
+
+			return scaler.transform(M)
+		except Exception as e:
+			print('@ normalizeData() :  ', e)
+			sys.exit()
+
+	def checkDataNormality(self, M, whichData):
+		try:
+			[ksstats, pV] = lilliefors(M)
+			print(whichData + ' KS-stats = ', ksstats, '  p-value = ', pV)											
+			return pV
+		except Exception as e:
+			print('@ checkDataNormality() :  ', e)
+			sys.exit()
+
+	def performFriedman_n_PosthocWilcoxonTest(self, M, whichData, ylabel):
+		try:
+			self.plotBoxPlotList(M, ['Sim1', 'Sim2', 'Sim3'], whichData, ylabel)
+			# sys.exit()
+			print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
+			[s, p] = friedmanchisquare(M[:, 0], M[:, 1], M[:, 2])			
+			# print(s, p)
+			# sys.exit()
+			if p < 1:#self.BonferroniCorrection:
+				print(whichData, '  stat = ', s, '  p = ', p)
+				for i in range(2):
+					for j in range(i + 1, 3, 1):
+						[sW, pW] = ranksums(M[i], M[j])
+						print('Sim ' + str(i + 1) + ' vs. Sim' + str(j + 1), '  s = ', sW, '  p = ', pW, '  effect-size = ', sW/np.sqrt(M.shape[0]))
+						self.showDescriptiveStatistics(M[i], i + 1)
+						self.showDescriptiveStatistics(M[j], j + 1)
+		except Exception as e:
+			print('performFriedman_n_PosthocWilcoxonTest() :  ', e)
+			sys.exit()
+
+	def showDescriptiveStatistics(self, data, whichOne):
+		try:
+			print('M' + str(whichOne), ' = ', np.mean(data), ' SD' + str(whichOne), ' = ', np.std(data), '  Mdn' + str(whichOne), ' = ', np.median(data), \
+				'  CI_95%_' + str(whichOne) + ' = ', [np.percentile(data, 2.5), np.percentile(data, 97.5)])
+		except Exception as e:
+			print('@ showDescriptiveStatistics() :  ', e)
+			sys.exit()
+
+	def plotBoxPlotList(self, data, labels, ttle, yLabel):
+		try:
+			plt.figure(figsize = (40, 13))
+			sb.boxplot(data = data, showmeans = True,
+				meanprops={"marker" : "o",
+				"markerfacecolor" : "white", 
+				"markeredgecolor" : "black",
+				"markersize" : "10"})
+			sb.stripplot(color='black', data = data)
+			# plt.boxplot(a)
+			# x = []
+			# plot(x, a, 'r.', alpha=0.2)
+			plt.xticks(range(0, len(labels)), labels, rotation = 90)
+			plt.xticks(fontsize = 15)
+			plt.yticks(fontsize = 15)
+			plt.title(ttle)
+			plt.ylabel(yLabel, fontsize = 20)
+			plt.show()						
+		except Exception as e:
+			print('plotBoxPlotList() :  ', e)
+			sys.exit()			
 

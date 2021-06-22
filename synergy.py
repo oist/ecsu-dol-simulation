@@ -39,7 +39,21 @@ if __name__ == "__main__":
 
 			Obj.saveResults(resultFolder, f'seed_{str(seed).zfill(3)}', results)
 
-		Obj.showResults(resultFolder)
+		condMultVarMI, multVarMI, coinformation = Obj.prepareDataForAnalysis(resultFolder)
+		condMultVarMI = Obj.normalizeData(condMultVarMI, Obj.whichNormalization) 
+		multVarMI = Obj.normalizeData(multVarMI, Obj.whichNormalization)
+		coinformation = Obj.normalizeData(coinformation, Obj.whichNormalization)
+
+		# Obj.checkDataNormality(condMultVarMI.flatten().tolist(), 'Multivariate Conditional Mutual Information')
+		# Obj.checkDataNormality(multVarMI.flatten().tolist(), 'Multivariate Mutual Information')
+		# Obj.checkDataNormality(coinformation.flatten().tolist(), 'Net-Synergy')
+
+		Obj.performFriedman_n_PosthocWilcoxonTest(condMultVarMI, 'Multivariate Conditional Mutual Information', 'Z-Scored Multivariate Conditional Mutual Information' \
+			if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Conditional Mutual Information')
+		Obj.performFriedman_n_PosthocWilcoxonTest(multVarMI, 'Multivariate Mutual Information', 'Z-Scored Multivariate Mutual Information' \
+			if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Mutual Information')
+		Obj.performFriedman_n_PosthocWilcoxonTest(coinformation, 'Net-Synergy', 'Z-Scored Net-Synergy' \
+			if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Net-Synergy')
 
 		Obj.shutdownJVM()			
 		
