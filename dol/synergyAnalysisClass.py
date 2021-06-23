@@ -24,7 +24,7 @@ class infoAnalysis:
 			self.acceptedSeeds = [2, 3, 6, 10, 11, 12, 13, 14, 15, 16, 18, 19]  ## This is the list of valid seeds
 			self.lillieforsPValue = 0.05
 			self.BonferroniCorrection = float(0.05 / 3) ## divided by three since we have three settings 
-			self.whichNormalization = 1   ## 1 : Z-Score Normalization 2 : [0 .. 1] Scaling
+			self.whichNormalization = 2   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling
 
 			self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
 
@@ -200,10 +200,8 @@ class infoAnalysis:
 			# sys.exit()
 			print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
 			[s, p] = friedmanchisquare(M[:, 0], M[:, 1], M[:, 2])			
-			# print(s, p)
-			# sys.exit()
-			if p < 1:#self.BonferroniCorrection:
-				print(whichData, '  stat = ', s, '  p = ', p)
+			print('Friedman Test -  ', whichData, ':  stat = ', s, '  p = ', p)
+			if p < self.BonferroniCorrection:				
 				for i in range(2):
 					for j in range(i + 1, 3, 1):
 						[sW, pW] = ranksums(M[i], M[j])
@@ -234,7 +232,7 @@ class infoAnalysis:
 			# plt.boxplot(a)
 			# x = []
 			# plot(x, a, 'r.', alpha=0.2)
-			plt.xticks(range(0, len(labels)), labels, rotation = 90)
+			plt.xticks(range(0, len(labels)), labels, rotation = 0)
 			plt.xticks(fontsize = 15)
 			plt.yticks(fontsize = 15)
 			plt.title(ttle)

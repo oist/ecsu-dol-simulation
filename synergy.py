@@ -26,7 +26,7 @@ if __name__ == "__main__":
 					results['sim' + str(simIndex + 1)] = {}
 				for trialIndex in range(len(data_record_list[simIndex]['agents_brain_output'])):
 					print('Trial # ', (trialIndex + 1))
-					agent1, agent2, target = Obj.returnAgentsTargetData(data_record_list[simIndex], self.includedNodes, trialIndex)			
+					agent1, agent2, target = Obj.returnAgentsTargetData(data_record_list[simIndex], Obj.includedNodes, trialIndex)			
 					# print(agent1.shape, '  ', agent2.shape, '  ', target.shape)
 					condMultVarMI = Obj.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target, axis = 0).T)
 					multVarMI = Obj.computeMultiVariateMutualInfo(agent1, agent2)
@@ -40,9 +40,11 @@ if __name__ == "__main__":
 			Obj.saveResults(resultFolder, f'seed_{str(seed).zfill(3)}', results)
 
 		condMultVarMI, multVarMI, coinformation = Obj.prepareDataForAnalysis(resultFolder)
-		condMultVarMI = Obj.normalizeData(condMultVarMI, Obj.whichNormalization) 
-		multVarMI = Obj.normalizeData(multVarMI, Obj.whichNormalization)
-		coinformation = Obj.normalizeData(coinformation, Obj.whichNormalization)
+
+		if Obj.whichNormalization != 0:
+			condMultVarMI = Obj.normalizeData(condMultVarMI, Obj.whichNormalization) 
+			multVarMI = Obj.normalizeData(multVarMI, Obj.whichNormalization)
+			coinformation = Obj.normalizeData(coinformation, Obj.whichNormalization)
 
 		# Obj.checkDataNormality(condMultVarMI.flatten().tolist(), 'Multivariate Conditional Mutual Information')
 		# Obj.checkDataNormality(multVarMI.flatten().tolist(), 'Multivariate Mutual Information')
