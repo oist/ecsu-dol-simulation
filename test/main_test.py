@@ -14,7 +14,7 @@ def test_2n_exc():
     last_best_perf = evo.best_performances[-1]
     normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
     # print(normalized_perf)
-    assert normalized_perf == [88.25337276249593]
+    assert normalized_perf == [88.39240922352474]
     print('✅ test_2n_exc')
 
 def test_2n_exc_rp3_switch():
@@ -49,7 +49,7 @@ def test_2n_exc_rp3_overlap():
     last_best_perf = evo.best_performances[-1]
     normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
     # print(normalized_perf)
-    assert normalized_perf == [91.92176593412114]
+    assert normalized_perf == [2.0250736246180168]
     print('✅ test_2n_exc_rp3_overlap')
 
 def test_2n_exc_rp3_np2():
@@ -68,7 +68,7 @@ def test_2n_exc_rp3_np2():
     last_best_perf = evo.best_performances[-1]
     normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
     # print(normalized_perf)
-    assert normalized_perf == [91.95997701936722, 93.35969259597732]
+    assert normalized_perf == [94.84999999999854, 94.84999999999854]
     print('✅ test_2n_exc_rp3_np2')
 
 def test_2n_exc_rp3_np4_switch():
@@ -87,7 +87,7 @@ def test_2n_exc_rp3_np4_switch():
     last_best_perf = evo.best_performances[-1]
     normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
     # print(normalized_perf)
-    assert normalized_perf == [89.21638501026064, 92.76933384185577, 92.83506417537319, 92.87406656749044]
+    assert normalized_perf == [90.97311493634516, 93.7696582732533, 93.5070923210551, 93.3720965701068]
     print('✅ test_2n_exc_rp3_np4_switch')
 
 if __name__ == "__main__":

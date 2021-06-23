@@ -308,11 +308,13 @@ class Simulation:
     def save_data_record_step(self, t, i):
         if self.data_record is None:
             return
+
         self.data_record['tracker_position'][t][i] = self.tracker.position
         self.data_record['tracker_angle'][t][i] = self.tracker.angle
         self.data_record['tracker_wheels'][t][i] = self.tracker.wheels
         self.data_record['tracker_velocity'][t][i] = self.tracker.velocity
         self.data_record['tracker_signals'][t][i] = self.tracker.signals_strength
+        
         for a, o in enumerate(self.agents):
             self.data_record['agents_sensors'][t][a][i] = o.sensors
             self.data_record['agents_brain_input'][t][a][i] = o.brain.input
@@ -320,7 +322,7 @@ class Simulation:
             self.data_record['agents_derivatives'][t][a][i] = o.brain.dy_dt
             self.data_record['agents_brain_output'][t][a][i] = o.brain.output
             self.data_record['agents_motors'][t][a][i] = o.motors
-            self.timing.add_time('SIM_save_data', self.tim)
+        self.timing.add_time('SIM_save_data', self.tim)
 
     def prepare_trial(self, t):
 
@@ -363,7 +365,7 @@ class Simulation:
         # self.tracker.position = np.copy(self.target_positions[0])
 
         # save trial data at time 0
-        self.save_data_record_step(t, 0)
+        # self.save_data_record_step(t, 0)
 
         self.timing.add_time('SIM_prepare_agents_for_trials', self.tim)
 
@@ -377,7 +379,7 @@ class Simulation:
             o.brain.euler_step()  # this sets agent.brain.output (2-dim vector)
         self.timing.add_time('SIM_euler_step', self.tim)
 
-    def move_tracker_one_step(self):
+    def compute_motor_outputs_and_wheels(self):        
         for o in self.agents:
             o.compute_motor_outputs()  # compute wheels from motor output
         if self.num_agents == 1:
@@ -403,8 +405,7 @@ class Simulation:
         if self.num_dim == 1:
             self.tracker.wheels = motors
         else:
-            self.tracker.wheels = np.array([motors[1]-motors[0], motors[3]-motors[2]])
-        self.tracker.move_one_step()
+            self.tracker.wheels = np.array([motors[1]-motors[0], motors[3]-motors[2]])        
         self.timing.add_time('SIM_move_one_step', self.tim)
 
     #################
@@ -475,9 +476,11 @@ class Simulation:
                 # setup trial
                 self.prepare_trial(t)
 
-                for i in range(1, self.num_data_points):
+                # replace with range(1, self.num_data_points) to reproduce old results
+                for i in range(self.num_data_points): 
                     # 1) Agent senses strength of emitter from the two sensors
                     self.tracker.compute_signal_strength_and_delta_target(self.target_positions[i])
+                    
                     self.delta_tracker_target[i] = self.tracker.delta_target
 
                     # 2) compute brain input
@@ -486,10 +489,13 @@ class Simulation:
                     # 3) Update agent's neural system
                     self.compute_brain_euler_step_agents()
 
-                    # 4) Move one step  agents
-                    self.move_tracker_one_step()
+                    # 4) Compute agent's motor output and wheels
+                    self.compute_motor_outputs_and_wheels()   
 
                     self.save_data_record_step(t, i)
+
+                    # 5) Move tracker one step
+                    self.tracker.move_one_step()                 
 
                     # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
                 performance_t = self.max_mean_distance - np.mean(np.abs(self.delta_tracker_target))
