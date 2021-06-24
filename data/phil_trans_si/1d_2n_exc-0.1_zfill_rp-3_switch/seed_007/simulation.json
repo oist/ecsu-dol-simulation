@@ -1,0 +1,111 @@
+{
+   "genotype_structure": {
+      "sensor_gains": {
+         "indexes": [
+            0
+         ],
+         "range": [
+            1,
+            20
+         ]
+      },
+      "sensor_biases": {
+         "indexes": [
+            1
+         ],
+         "range": [
+            -3,
+            3
+         ]
+      },
+      "sensor_weights": {
+         "indexes": [
+            2,
+            3,
+            4,
+            5
+         ],
+         "range": [
+            -8,
+            8
+         ]
+      },
+      "neural_taus": {
+         "indexes": [
+            6
+         ],
+         "range": [
+            1,
+            2
+         ]
+      },
+      "neural_biases": {
+         "indexes": [
+            7
+         ],
+         "range": [
+            -3,
+            3
+         ]
+      },
+      "neural_gains": {
+         "default": [
+            1.0,
+            1.0
+         ]
+      },
+      "neural_weights": {
+         "indexes": [
+            8,
+            9,
+            10,
+            11
+         ],
+         "range": [
+            -8,
+            8
+         ]
+      },
+      "motor_gains": {
+         "indexes": [
+            12
+         ],
+         "range": [
+            1,
+            20
+         ]
+      },
+      "motor_biases": {
+         "indexes": [
+            13
+         ],
+         "range": [
+            -3,
+            3
+         ]
+      },
+      "motor_weights": {
+         "indexes": [
+            14,
+            15,
+            16,
+            17
+         ],
+         "range": [
+            -8,
+            8
+         ]
+      }
+   },
+   "num_dim": 1,
+   "num_random_pairings": 3,
+   "switch_agents_motor_control": true,
+   "exclusive_motors_threshold": 0.1,
+   "dual_population": false,
+   "brain_step_size": 0.1,
+   "num_trials": 4,
+   "trial_duration": 50,
+   "num_cores": 48,
+   "random_seed": 0,
+   "timeit": false
+}
