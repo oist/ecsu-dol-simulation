@@ -156,6 +156,18 @@ class infoAnalysis:
 					print('====   ', f'seed_{str(seed).zfill(3)}')
 					# print(data)
 					simData = []
+					for j in range(4):
+						tmp.append([data[list(data.keys())[0]]['trial' + str(j + 1)]['condMultVarMI'], data[list(data.keys())[0]]['trial' + str(j + 1)]['multVarMI'], \
+							data[list(data.keys())[0]]['trial' + str(j + 1)]['coinformation']])
+					print(np.array(tmp))
+					simData.append(np.array(tmp).mean(axis = 0).tolist())
+					np.array(tmp).mean(axis = 0).tolist()
+
+					sys.exit()
+					# for j in range(4):
+					# 	print(data.keys)
+
+
 					for i in range(3):
 						tmp = []
 						# print('Sim' + str(i + 1))
