@@ -14,7 +14,41 @@ if __name__ == "__main__":
 		resultFolder = './results/MultVarMI_CondMi_CoInfo/'
 		
 		Obj = infoAnalysis()
-		
+
+		for dataFolderIndex in range(len(Obj.dataFolders)):
+			seeds = list(set(os.listdir('./data/phil_trans_si/' + Obj.dataFolders[dataFolderIndex])))
+			if '.DS_Store' in seeds:
+				seeds.remove('.DS_Store')
+			for seed in seeds:
+				dir = './data/phil_trans_si/' + Obj.dataFolders[dataFolderIndex] + '/' + seed
+				# print(dir)
+				perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir = dir, generation = Obj.generation)
+				results = {}		
+				simIndex = sim_perfs.index(max(sim_perfs))	
+				print(f'======  @ seed_{str(seed).zfill(3)}', '   ', simIndex)
+				if 'sim' + str(simIndex + 1) not in results:
+					results['sim' + str(simIndex + 1)] = {}
+				for trialIndex in range(len(data_record_list[simIndex]['agents_brain_output'])):
+					print('Trial # ', (trialIndex + 1))
+					agent1, agent2, target = Obj.returnAgentsTargetData(data_record_list[simIndex], Obj.includedNodes, trialIndex)			
+					# print(agent1.shape, '  ', agent2.shape, '  ', target.shape)
+					condMultVarMI = Obj.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target, axis = 0).T)
+					multVarMI = Obj.computeMultiVariateMutualInfo(agent1, agent2)
+
+					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)] = {}
+					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['condMultVarMI'] = condMultVarMI
+					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['multVarMI'] = multVarMI
+					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['coinformation'] = condMultVarMI - multVarMI  #### a.k.a interaction information, net synergy, and integration					
+
+			Obj.saveResults(resultFolder + Obj.dataFolders[dataFolderIndex] + '/', seed, results)
+
+			# print()
+			# seeds = os.listdir()		
+			# dir = Obj.dataFolders[dataFolderIndex] + f'/seed_{str(seed).zfill(3)}'
+			# print(dir)
+		sys.exit()
+
+
 		for seed in Obj.acceptedSeeds:
 			dir = f'data/phil_trans_si/1d_2n_exc-0.1_zfill_rp-3_switch/seed_{str(seed).zfill(3)}'		
 			perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir = dir, generation = Obj.generation)

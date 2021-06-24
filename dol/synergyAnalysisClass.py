@@ -22,6 +22,7 @@ class infoAnalysis:
 
 			self.generation = 5000
 			self.acceptedSeeds = [2, 3, 6, 10, 11, 12, 13, 14, 15, 16, 18, 19]  ## This is the list of valid seeds
+			self.dataFolders = ['1d_2n_exc-0.1_zfill_rp-0_switch', '1d_2n_exc-0.1_zfill_rp-3_np-4_switch', '1d_2n_exc-0.1_zfill_rp-3_switch']
 			self.lillieforsPValue = 0.05
 			self.BonferroniCorrection = float(0.05 / 3) ## divided by three since we have three settings 
 			self.whichNormalization = 2   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling
