@@ -14,7 +14,9 @@ import numpy as np
 import pandas as pd
 from dol.simulation import Simulation
 
-def get_last_performance_runs(base_dir, print_values, print_stats, plot, export_to_csv):
+CONVERGENCE_THRESHOLD = 5.
+
+def get_last_performance_runs(base_dir, print_values, plot, export_to_csv):
     exp_dirs = sorted([d for d in os.listdir(base_dir) if d.startswith('seed_')])
     best_exp_performance = []  # the list of best performances of last generation for all seeds
     all_gen_best_performances = [] # all best performances for all seeds for all generations
@@ -51,8 +53,14 @@ def get_last_performance_runs(base_dir, print_values, print_stats, plot, export_
             best_exp_performance.append(last_best_performance)
             all_gen_best_performances.append(gen_best_perf)
 
-    if print_stats:        
-        print(stats.describe(best_exp_performance))
+    converged_seeds = [s for s,p in zip(seeds,best_exp_performance) if (p<CONVERGENCE_THRESHOLD).any()]
+    non_converged_seeds = [s for s in seeds if s not in converged_seeds]
+
+    print('Num seeds:', len(best_exp_performance))
+    print('Stats:', stats.describe(best_exp_performance))
+    print(f'Converged ({len(converged_seeds)}):', converged_seeds)
+    print(f'Non converged ({len(non_converged_seeds)}):', non_converged_seeds)
+
 
     if export_to_csv:
         # save file to csv
@@ -103,14 +111,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('--dir', type=str, help='Directory path')
-    parser.add_argument('--print_values', type=bool, default=False, help='Whether to export results to csv in same dir')
-    parser.add_argument('--print_stats', type=bool, default=False, help='Whether to export results to csv in same dir')
-    parser.add_argument('--plot', type=bool, default=True, help='Whether to export results to csv in same dir')
-    parser.add_argument('--csv', type=bool, default=False, help='Whether to export results to csv in same dir')
+    parser.add_argument('--print_values', action='store_true', default=False, help='Whether to export results to csv in same dir')
+    parser.add_argument('--plot', action='store_true', default=False, help='Whether to export results to csv in same dir')
+    parser.add_argument('--csv', action='store_true', default=False, help='Whether to export results to csv in same dir')
 
     args = parser.parse_args()
 
     get_last_performance_runs(
         args.dir, args.print_values, 
-        args.print_stats, args.plot, args.csv
+        args.plot, args.csv
     )

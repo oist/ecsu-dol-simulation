@@ -26,7 +26,7 @@ source env/bin/activate
 python3 -m dol.main \
 --seed ${seed} \
 --dir $tempdir \
---gen_zfill True \
+--gen_zfill \
 --num_pop 4 \
 --popsize 24 \
 --max_gen 5000 \
