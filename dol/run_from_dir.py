@@ -33,6 +33,10 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     sim = Simulation.load_from_file(sim_json_filepath)
     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
 
+    if sim.num_random_pairings == 0:
+        population_idx_rp0 = population_idx
+        population_idx = 0 # there is only 1 population for evo        
+
     data_record_list = []
 
     random_seed = evo.pop_eval_random_seed
@@ -57,25 +61,28 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     # we only need to do this for the first population (index 0)
     original_genotype_idx = evo.population_sorted_indexes[population_idx][genotype_idx]
 
+    exaustive_pairs=True
+
     performance, sim_perfs, _ = sim.run_simulation(
         original_populations,
         original_genotype_idx,
         random_seed,
         population_idx,
+        exaustive_pairs,
         isolation_idx,
         data_record_list
     )
 
     performance = sim.normalize_performance(performance)
+    sim_perfs = [sim.normalize_performance(p) for p in sim_perfs]
 
     verbose = not kwargs.get('quiet', False)
 
     if verbose:
-        if genotype_idx == 0:            
-            perf_orig = evo.best_performances[generation][population_idx]
-            perf_orig = sim.normalize_performance(perf_orig)
-            print("Performace original: {}".format(perf_orig))
-        print("Performace recomputed: {}".format(performance))
+        perf_orig = evo.performances[population_idx][genotype_idx]
+        perf_orig = sim.normalize_performance(perf_orig)
+        print("Error original: {}".format(perf_orig))
+        print("Error recomputed: {}".format(performance))
         if expect_same_results:
             diff_perfomance = abs(perf_orig - performance)
             if diff_perfomance > 1e-5:
@@ -103,7 +110,7 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     
     if kwargs.get('select_sim', None) is None:
         # select best one
-        sim_idx = np.argmax(sim_perfs)
+        sim_idx = np.argmin(sim_perfs)
         # if sim.num_random_pairings != None and sim.num_random_pairings > 0:
         if verbose:
             print("Best sim (random pairings)", sim_idx+1)
@@ -114,13 +121,17 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
 
     if verbose:
         sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
-        print(f"Performance recomputed (sim {sim_idx+1}): ", sim_perf)
+        print(f"   Performance recomputed (sim {sim_idx+1}): ", sim_perf)
         if sim.num_agents == 2:
-            print("Sim agents genotype distance: ", sim.agents_genotype_distance[sim_idx])
+            print("   Sim agents genotype distance: ", sim.agents_genotype_distance[sim_idx])
         # print agents signatures
         agents_sign = [get_numpy_signature(gt) for gt in data_record_list[sim_idx]['genotypes']]
-        print('Agent(s) signature(s):', agents_sign) 
-        print(f'Population index of best agent: {sim.population_index}')
+        print('   Agent(s) signature(s):', agents_sign)
+        selected_agent_genome = evo.population[population_idx][genotype_idx]
+        if sim.num_random_pairings == 0:
+            selected_agent_genome = np.split(selected_agent_genome, 2)[population_idx_rp0]
+            # double genotype
+        print(f'Selected agent signature: {get_numpy_signature(selected_agent_genome)}')
 
 
     if kwargs.get('compute_complexity', False):
@@ -170,7 +181,7 @@ if __name__ == "__main__":
     parser.add_argument('--compute_complexity', action='store_true', help='Whether to plot the data')
 
     # additional args
-    parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial')
+    parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial (one-based)')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
     parser.add_argument('--plot_trial', type=int, help='Whether to plot a specif trial')
 

@@ -28,6 +28,7 @@ def main(raw_args=None):
                         help='Performance objective')  # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
     parser.add_argument('--gen_zfill', type=bool, default=False,
                         help='whether to fill geotipes with zeros (True) or random (false - default)')
+    parser.add_argument('--num_pop', type=int, default=1, help='Number of populations')
     parser.add_argument('--popsize', type=int, default=96, help='Population size')
     parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')
 
@@ -40,16 +41,17 @@ def main(raw_args=None):
                         help='None -> agents are alone in the simulation (default). '
                              '0    -> agents are evolved in pairs: a genotype contains a pair of agents. '
                              'n>0  -> each agent will go though a simulation with N other agents (randomly chosen).')
-    parser.add_argument('--switch_agents_motor_control', type=bool, default=False,
+    parser.add_argument('--motor_control_mode', type=str, default=None,
+                        choices=[None, 'SEPARATE', 'SWITCH', 'OVERLAP'],
                         help=
-                        'when num_agents is 2 this decides whether the two agents switch control of L/R motors '
-                        'in different trials (switch=True) or not (switch=False) in which case the first agent '
-                        'always control the left motor and the second the right')
+                        'Type of motor control'
+                        'None: not applicable (if single agent)'
+                        'SEPARATE: across trials the first agent always control the left motor and the second the right'
+                        'SWITCH: the two agents switch control of L/R motors in different trials'
+                        'OVERLAP: both agents control L/R motors (for a factor o half)')
+
     parser.add_argument('--exclusive_motors_threshold', type=float, default=None,
-                        help='prevent motors to run at the same time')
-    parser.add_argument('--dual_population', type=bool, default=False,
-                        help='If to evolve two separate populations, one always controlling the left '
-                             'motor and the other the right')
+                        help='prevent motors to run at the same time')    
     parser.add_argument('--cores', type=int, default=1, help='Number of cores')
 
     # Gather the provided arguements as an array.
@@ -65,17 +67,17 @@ def main(raw_args=None):
     if args.dir is not None:
         # create default path if it specified dir already exists
         if os.path.isdir(args.dir):
-            subdir = '{}d_{}n'.format(args.num_dim, args.num_neurons)
+            subdir = f'{args.num_dim}d_{args.num_neurons}n'
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             if args.gen_zfill:
                 subdir += '_zfill'
             if args.num_random_pairings is not None:
                 subdir += '_rp-{}'.format(args.num_random_pairings)
-            if args.switch_agents_motor_control:
-                subdir += '_switch'
-            if args.dual_population:
-                subdir += '_dual'
+            if args.num_pop > 1:
+                subdir += f'_np-{args.num_pop}'
+            if args.motor_control_mode!=None:
+                subdir += f'_{args.motor_control_mode.lower()}'
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
             outdir = os.path.join(args.dir, subdir, seed_dir)
         else:
@@ -89,13 +91,13 @@ def main(raw_args=None):
 
     sim = Simulation(
         genotype_structure=genotype_structure,
+        num_pop=args.num_pop,
         num_dim=args.num_dim,
         num_trials=args.num_trials,
         trial_duration=args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
         num_random_pairings=args.num_random_pairings,
-        switch_agents_motor_control=args.switch_agents_motor_control,
+        motor_control_mode=args.motor_control_mode,
         exclusive_motors_threshold=args.exclusive_motors_threshold,
-        dual_population=args.dual_population,
         num_cores=args.cores
     )
 
@@ -106,20 +108,18 @@ def main(raw_args=None):
     if args.num_random_pairings == 0:
         genotype_size *= 2  # two agents per genotype
 
-    num_populations = 2 if args.dual_population else 1
-
     population = None  # by default randomly initialized in evolution
 
     if args.gen_zfill:
         # all genotypes initialized with zeros
         population = np.zeros(
-            (num_populations, args.popsize, genotype_size)
+            (args.num_pop, args.popsize, genotype_size)
         )
 
     evo = Evolution(
         random_seed=args.seed,
         population=population,
-        num_populations=num_populations,
+        num_populations=args.num_pop,
         population_size=args.popsize,
         genotype_size=genotype_size,
         evaluation_function=sim.evaluate,
