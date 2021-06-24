@@ -26,8 +26,8 @@ def main(raw_args=None):
     parser.add_argument('--dir', type=str, default=None, help='Output directory')
     parser.add_argument('--perf_obj', default='MAX',
                         help='Performance objective')  # 'MAX', 'MIN', 'ZERO', 'ABS_MAX' or float value
-    parser.add_argument('--gen_zfill', type=bool, default=False,
-                        help='whether to fill geotipes with zeros (True) or random (false - default)')
+    parser.add_argument('--gen_zfill', action='store_true', default=False,
+                        help='whether to fill geotipes with zeros otherwize random (default)')
     parser.add_argument('--num_pop', type=int, default=1, help='Number of populations')
     parser.add_argument('--popsize', type=int, default=96, help='Population size')
     parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')
