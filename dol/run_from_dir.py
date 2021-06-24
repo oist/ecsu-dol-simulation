@@ -74,6 +74,7 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     )
 
     performance = sim.normalize_performance(performance)
+    sim_perfs = [sim.normalize_performance(p) for p in sim_perfs]
 
     verbose = not kwargs.get('quiet', False)
 
@@ -109,7 +110,7 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     
     if kwargs.get('select_sim', None) is None:
         # select best one
-        sim_idx = np.argmax(sim_perfs)
+        sim_idx = np.argmin(sim_perfs)
         # if sim.num_random_pairings != None and sim.num_random_pairings > 0:
         if verbose:
             print("Best sim (random pairings)", sim_idx+1)

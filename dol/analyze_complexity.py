@@ -71,7 +71,7 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index, sim_
         data_keys.append('agents_motors')  # dim = num motors = 2
 
     if sim_idx is None:
-        sim_idx = np.argmax(sim_perfs)
+        sim_idx = np.argmin(sim_perfs)
 
     num_trials = sim.num_trials
     num_agents = sim.num_agents
