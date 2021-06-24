@@ -131,7 +131,7 @@ class infoAnalysis:
 				print('Seed Name is Missing!')
 				sys.exit()				
 			if not os.path.exists(addr):
-				os.mkdir(addr)
+				os.makedirs(addr)
 
 			if not os.path.exists(addr + seedName):
 				os.mkdir(addr + seedName)				
