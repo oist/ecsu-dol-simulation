@@ -4,7 +4,7 @@ import os
 
 phil_trans_si_data = os.path.join('data', 'phil_trans_si')
 
-phil_trans_si_data_overlap = {
+phil_trans_si_data_exclusive_switch = {
     'group': os.path.join( # 8 seeds converged: [1, 5, 8, 9, 12, 14, 15, 19]
         phil_trans_si_data, 
         '1d_2n_exc-0.1_zfill_rp-3_switch'
