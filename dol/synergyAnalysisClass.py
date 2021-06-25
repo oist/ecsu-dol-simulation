@@ -64,7 +64,7 @@ class infoAnalysis:
 
 			# ['genotypes', 'phenotypes', 'delta_tracker_target', 'target_position', 'target_velocity', 'tracker_position', 'tracker_angle', 'tracker_wheels', 'tracker_velocity', 'tracker_signals', 'agents_motors_control_indexes', 'agents_sensors', \
 			# 'agents_brain_input', 'agents_brain_state', 'agents_derivatives', 'agents_brain_output', 'agents_motors', 'info']
-			
+
 			self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
 			self.xTicksLabel = ['Individual', 'Group', 'Joint']
 
@@ -109,9 +109,26 @@ class infoAnalysis:
 				sys.exit()
 			# print(data.keys())		
 			# sys.exit()
-			agent1 = np.concatenate((data[selectedKeys[0]][trialIndex][0], np.concatenate((data[selectedKeys[1]][trialIndex][0], data[selectedKeys[2]][trialIndex][0]), axis = 1)), axis = 1)
-			agent2 = np.concatenate((data[selectedKeys[0]][trialIndex][1], np.concatenate((data[selectedKeys[1]][trialIndex][1], data[selectedKeys[2]][trialIndex][1]), axis = 1)), axis = 1)
-			target = data[selectedKeys[3]][trialIndex]
+			# print(selectedKeys)
+			agent1 = []
+			agent2 = []
+			for keyIndex in range(len(selectedKeys) - 1):
+				if len(agent1) == 0:
+					agent1 = data[selectedKeys[keyIndex]][trialIndex][0]
+				else:
+					agent1 = np.concatenate((agent1, data[selectedKeys[keyIndex]][trialIndex][0]), axis = 1)
+				if len(agent2) == 0:
+					agent2 = data[selectedKeys[keyIndex]][trialIndex][1]
+				else:
+					agent2 = np.concatenate((agent2, data[selectedKeys[keyIndex]][trialIndex][1]), axis = 1)					
+			print(agent1.shape, '  ', agent2.shape)
+
+			# agent1 = np.concatenate((data[selectedKeys[0]][trialIndex][0], np.concatenate((data[selectedKeys[1]][trialIndex][0], data[selectedKeys[2]][trialIndex][0]), axis = 1)), axis = 1)
+			# agent2 = np.concatenate((data[selectedKeys[0]][trialIndex][1], np.concatenate((data[selectedKeys[1]][trialIndex][1], data[selectedKeys[2]][trialIndex][1]), axis = 1)), axis = 1)
+
+			target = data[selectedKeys[len(selectedKeys) - 1]][trialIndex]
+			# print(target.shape)			
+			# sys.exit()
 			return agent1, agent2, target
 		except Exception as e:
 			print('@ returnAgentsData() :  ', e)
