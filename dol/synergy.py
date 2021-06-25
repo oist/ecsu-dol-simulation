@@ -10,28 +10,31 @@ import sys
 
 
 if __name__ == "__main__":
-	try:
-		resultFolder = './results/MultVarMI_CondMi_CoInfo/'
-		
-		Obj = infoAnalysis()
+	try:		
+		Obj = infoAnalysis(2)   #### 1 : Switch Setting   2 : Overlap Setting
 
-		for dataFolderIndex in range(len(Obj.dataFolders)):
-			seeds = list(set(os.listdir('./data/phil_trans_si/' + Obj.dataFolders[dataFolderIndex])))
+		simulationSettings = list(Obj.dataFolders.keys())
+		for settingIndex in range(len(simulationSettings)):
+			print('Processing ', simulationSettings[settingIndex])
+
+			seeds = list(set(os.listdir(Obj.dataFolders[simulationSettings[settingIndex]])))
 			if '.DS_Store' in seeds:
 				seeds.remove('.DS_Store')
 			for seed in seeds:
-				dir = './data/phil_trans_si/' + Obj.dataFolders[dataFolderIndex] + '/' + seed
+				dir = Obj.dataFolders[simulationSettings[settingIndex]] + '/' + seed
 				# print(dir)
+				# sys.exit()
 				perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir = dir, generation = Obj.generation)
 				results = {}		
-				simIndex = sim_perfs.index(max(sim_perfs))	
-				print(f'======  @ seed_{str(seed).zfill(3)}', '   ', simIndex)
+				simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'
+				print(f'======  @ seed_{str(seed).zfill(3)}', '   Sim', simIndex)
 				if 'sim' + str(simIndex + 1) not in results:
 					results['sim' + str(simIndex + 1)] = {}
 				for trialIndex in range(len(data_record_list[simIndex]['agents_brain_output'])):
 					print('Trial # ', (trialIndex + 1))
 					agent1, agent2, target = Obj.returnAgentsTargetData(data_record_list[simIndex], Obj.includedNodes, trialIndex)			
 					# print(agent1.shape, '  ', agent2.shape, '  ', target.shape)
+					# sys.exit()
 					condMultVarMI = Obj.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target, axis = 0).T)
 					multVarMI = Obj.computeMultiVariateMutualInfo(agent1, agent2)
 
@@ -40,7 +43,12 @@ if __name__ == "__main__":
 					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['multVarMI'] = multVarMI
 					results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['coinformation'] = condMultVarMI - multVarMI  #### a.k.a interaction information, net synergy, and integration					
 
-			Obj.saveResults(resultFolder + Obj.dataFolders[dataFolderIndex] + '/', seed, results)
+				print(results)
+				# print(Obj.resultFolder + Obj.dataFolders[simulationSettings[settingIndex]][Obj.dataFolders[simulationSettings[settingIndex]].find('_si/') + 4 : \
+				# 	len(Obj.dataFolders[simulationSettings[settingIndex]])] + '/', seed)
+				# sys.exit()
+				Obj.saveResults(Obj.resultFolder + Obj.dataFolders[simulationSettings[settingIndex]][Obj.dataFolders[simulationSettings[settingIndex]].find('_si/') + 4 : \
+					len(Obj.dataFolders[simulationSettings[settingIndex]])] + '/', seed, results)
 
 		sys.exit()
 		

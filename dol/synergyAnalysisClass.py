@@ -16,18 +16,55 @@ from statsmodels.stats.diagnostic import lilliefors
 from scipy.stats import friedmanchisquare, ranksums, f_oneway
 
 class infoAnalysis:
-	def __init__(self):
+	def __init__(self, whichSimSetup):
 		try:
 			self.initiJVM()
 
+			phil_trans_si_data = os.path.join('data', 'phil_trans_si')
+
+			if whichSimSetup == 1:
+				print('Switch Setting')
+				self.dataFolders = {
+				    'group': os.path.join( # 8 seeds converged: [1, 5, 8, 9, 12, 14, 15, 19]
+				        phil_trans_si_data, 
+				        '1d_2n_exc-0.1_zfill_rp-3_switch'
+				    ),
+				    'joint': os.path.join(
+				        phil_trans_si_data, # 1 seed converged: [6]
+				        '1d_2n_exc-0.1_zfill_rp-0_switch'
+				    ),
+				    'individual': os.path.join(
+				        phil_trans_si_data, # 0 seeds converged: []
+				        '1d_2n_exc-0.1_zfill_rp-3_np-4_switch'
+				    )
+				}
+			elif whichSimSetup == 2:
+				print('Overlap Setting')
+				self.dataFolders = {
+				    'group': os.path.join( # 20/20 seeds converged
+				        phil_trans_si_data, 
+				        '1d_2n_zfill_rp-3_overlap'
+				    ),
+				    'joint': os.path.join( # 20/20 seeds converged
+				        phil_trans_si_data, 
+				        '1d_2n_zfill_rp-0_overlap'
+				    ),
+				    'individual': os.path.join( # 20/20 seeds converged
+				        phil_trans_si_data, 
+				        '1d_2n_zfill_rp-3_np-4_overlap'
+				    )
+				}
+
 			self.generation = 5000
-			self.acceptedSeeds = [2, 3, 6, 10, 11, 12, 13, 14, 15, 16, 18, 19]  ## This is the list of valid seeds
-			self.dataFolders = ['1d_2n_exc-0.1_zfill_rp-0_switch', '1d_2n_exc-0.1_zfill_rp-3_np-4_switch', '1d_2n_exc-0.1_zfill_rp-3_switch']
+			# self.acceptedSeeds = [2, 3, 6, 10, 11, 12, 13, 14, 15, 16, 18, 19]  ## This is the list of valid seeds
+			# self.dataFolders = ['1d_2n_exc-0.1_zfill_rp-0_switch', '1d_2n_exc-0.1_zfill_rp-3_np-4_switch', '1d_2n_exc-0.1_zfill_rp-3_switch']
 			self.lillieforsPValue = 0.05
 			self.BonferroniCorrection = float(0.05 / 3) ## divided by three since we have three settings 
 			self.whichNormalization = 2   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling
 
 			self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
+
+			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
 
 		except Exception as e:
 			print('@ infoAnalysis() init -- ', e)
