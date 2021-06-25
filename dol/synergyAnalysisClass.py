@@ -53,16 +53,20 @@ class infoAnalysis:
 				        phil_trans_si_data, 
 				        '1d_2n_zfill_rp-3_np-4_overlap'
 				    )
-				}
+				}				
 
 			self.generation = 5000
 			# self.acceptedSeeds = [2, 3, 6, 10, 11, 12, 13, 14, 15, 16, 18, 19]  ## This is the list of valid seeds
 			# self.dataFolders = ['1d_2n_exc-0.1_zfill_rp-0_switch', '1d_2n_exc-0.1_zfill_rp-3_np-4_switch', '1d_2n_exc-0.1_zfill_rp-3_switch']
 			self.lillieforsPValue = 0.05
 			self.BonferroniCorrection = float(0.05 / 3) ## divided by three since we have three settings 
-			self.whichNormalization = 2   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling
+			self.whichNormalization = 0   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling
 
+			# ['genotypes', 'phenotypes', 'delta_tracker_target', 'target_position', 'target_velocity', 'tracker_position', 'tracker_angle', 'tracker_wheels', 'tracker_velocity', 'tracker_signals', 'agents_motors_control_indexes', 'agents_sensors', \
+			# 'agents_brain_input', 'agents_brain_state', 'agents_derivatives', 'agents_brain_output', 'agents_motors', 'info']
+			
 			self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
+			self.xTicksLabel = ['Individual', 'Group', 'Joint']
 
 			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
 
@@ -81,6 +85,16 @@ class infoAnalysis:
 			print('@ initiJVM() :  ', e)
 			sys.exit()
 
+	def checkIfResultsGenerated(self):
+		try:
+			# print(list(os.listdir(self.resultFolder)))
+			tmp = list(os.listdir(self.resultFolder))
+			if '.DS_Store' in tmp:
+				tmp.remove('.DS_Store')
+			return len(tmp)
+		except Exception as e:
+			print('@ checkIfResultsGenerated() :  ', e)
+			sys.exit()
 	def shutdownJVM(self):
 		try:
 			jp.shutdownJVM()
@@ -183,47 +197,34 @@ class infoAnalysis:
 			sys.exit()
 
 	def prepareDataForAnalysis(self, addr):
-		try:			
-			condMultVarMI = []
-			multVarMI = []
-			coinformation = []
-			for seed in self.acceptedSeeds:
-				with open(addr + f'seed_{str(seed).zfill(3)}' + '/resultsDic.pickle', 'rb') as handle:
+		try:
+			simData = []
+			acceptedSeeds = list(os.listdir(addr))
+			print('++++   ', addr)
+			for seed in acceptedSeeds:
+				with open(addr + '/' + seed + '/resultsDic.pickle', 'rb') as handle:
 					data = pickle.load(handle)						
 					handle.close()	
 					print('====   ', f'seed_{str(seed).zfill(3)}')
-					# print(data)
-					simData = []
+					# print(data)					
+					tmp = []
 					for j in range(4):
 						tmp.append([data[list(data.keys())[0]]['trial' + str(j + 1)]['condMultVarMI'], data[list(data.keys())[0]]['trial' + str(j + 1)]['multVarMI'], \
 							data[list(data.keys())[0]]['trial' + str(j + 1)]['coinformation']])
-					print(np.array(tmp))
+					# print(np.array(tmp))					
 					simData.append(np.array(tmp).mean(axis = 0).tolist())
-					np.array(tmp).mean(axis = 0).tolist()
+			# print(np.array(simData), '   ', np.array(simData).shape)
 
-					sys.exit()
-					# for j in range(4):
-					# 	print(data.keys)
-
-
-					for i in range(3):
-						tmp = []
-						# print('Sim' + str(i + 1))
-						for j in range(4):
-							tmp.append([data['sim' + str(i + 1)]['trial' + str(j + 1)]['condMultVarMI'], data['sim' + str(i + 1)]['trial' + str(j + 1)]['multVarMI'], \
-								data['sim' + str(i + 1)]['trial' + str(j + 1)]['coinformation']])
-						simData.append(np.array(tmp).mean(axis = 0).tolist())					
-					condMultVarMI.append(np.array(simData)[:, 0].tolist())
-					multVarMI.append(np.array(simData)[:, 1].tolist())
-					coinformation.append(np.array(simData)[:, 2].tolist())
-			
-			print('Multivariate Conditional Mututal Information: ', np.array(condMultVarMI).shape)
-			print('Multivariate Mututal Information: ', np.array(multVarMI).shape)
-			print('Net-Synergy: ', np.array(coinformation).shape)
-
-			return np.array(condMultVarMI), np.array(multVarMI), np.array(coinformation)
+			return np.array(simData)
 		except Exception as e:
 			print('@ prepareDataForAnalysis() :  ', e)
+			sys.exit()
+
+	def extract_n_CombineGivenMeasureValues(self, M1, M2, M3, measureIndex):
+		try:
+			return np.array([M1[:, measureIndex], M2[:, measureIndex], M3[:, measureIndex]]).T
+		except Exception as e:
+			print('@ extract_n_CombineGivenMeasureValues() :  ', e)
 			sys.exit()
 
 	def normalizeData(self, M, whichScaling):
@@ -246,7 +247,8 @@ class infoAnalysis:
 
 	def performFriedman_n_PosthocWilcoxonTest(self, M, whichData, ylabel):
 		try:
-			self.plotBoxPlotList(M, ['Sim1', 'Sim2', 'Sim3'], whichData, ylabel)
+			print('\n====================================',  whichData, '\n')
+			self.plotBoxPlotList(M, self.xTicksLabel, whichData, ylabel)
 			# sys.exit()
 			print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
 			[s, p] = friedmanchisquare(M[:, 0], M[:, 1], M[:, 2])			
