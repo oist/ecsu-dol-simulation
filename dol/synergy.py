@@ -10,7 +10,10 @@ import sys
 
 
 if __name__ == "__main__":
-	try:		
+	try:
+		#############  At present and due to the small and unbalanced number of seeds in Switch Setting, the code is primarily meant and tested 
+		############# on Overlap Setting. Given the zero # of converged seeds in the case individual in Switch Setting, the code will not proceed
+		############# to analysis.
 		whichSetting = 2  #### 1 : Switch Setting   2 : Overlap Setting
 		Obj = infoAnalysis(whichSetting)
 		# print(Obj.checkIfResultsGenerated())
