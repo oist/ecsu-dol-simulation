@@ -15,6 +15,8 @@ from sklearn import preprocessing
 from statsmodels.stats.diagnostic import lilliefors
 from scipy.stats import friedmanchisquare, ranksums, kruskal
 
+import scipy.special as special
+
 class infoAnalysis:
 	def __init__(self, whichSimSetup):
 		try:
@@ -333,7 +335,7 @@ class infoAnalysis:
 						self.showDescriptiveStatistics(M[i], self.xTicksLabel[i])
 						self.showDescriptiveStatistics(M[j], self.xTicksLabel[j])
 		except Exception as e:
-			print('performFriedman_n_PosthocWilcoxonTest() :  ', e)
+			print('performKruskalWallis_n_PosthocWilcoxonTest() :  ', e)
 			sys.exit()	
 
 	def showDescriptiveStatistics(self, data, whichOne):
