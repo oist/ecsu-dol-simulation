@@ -13,7 +13,7 @@ import jpype as jp
 from sklearn import preprocessing
 
 from statsmodels.stats.diagnostic import lilliefors
-from scipy.stats import friedmanchisquare, ranksums, f_oneway
+from scipy.stats import friedmanchisquare, ranksums, kruskal
 
 class infoAnalysis:
 	def __init__(self, whichSimSetup):
@@ -87,11 +87,15 @@ class infoAnalysis:
 
 	def checkIfResultsGenerated(self):
 		try:
-			# print(list(os.listdir(self.resultFolder)))
-			tmp = list(os.listdir(self.resultFolder))
-			if '.DS_Store' in tmp:
-				tmp.remove('.DS_Store')
-			return len(tmp)
+			if not os.path.exists(self.resultFolder):
+				os.makedirs(self.resultFolder)
+				return 0
+			return 1
+			# # print(list(os.listdir(self.resultFolder)))
+			# tmp = list(os.listdir(self.resultFolder))
+			# if '.DS_Store' in tmp:
+			# 	tmp.remove('.DS_Store')
+			# return len(tmp)
 		except Exception as e:
 			print('@ checkIfResultsGenerated() :  ', e)
 			sys.exit()
@@ -267,7 +271,7 @@ class infoAnalysis:
 			print('\n====================================',  whichData, '\n')
 			self.plotBoxPlotList(M, self.xTicksLabel, whichData, ylabel)
 			# sys.exit()
-			print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
+			# print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
 			[s, p] = friedmanchisquare(M[:, 0], M[:, 1], M[:, 2])			
 			print('Friedman Test -  ', whichData, ':  stat = ', s, '  p = ', p)
 			if p < self.BonferroniCorrection:				
@@ -281,10 +285,61 @@ class infoAnalysis:
 			print('performFriedman_n_PosthocWilcoxonTest() :  ', e)
 			sys.exit()
 
+	def interpretObservedEffectSize(self, effectSize, whichOne):
+		try:
+			if whichOne == 1: #####  Eta^2 OR Epsilon^2
+				if effectSize <= 0.01:					
+					return 'Very Small Effect'
+				elif 0.01 < effectSize < 0.06:					
+					return 'Small Effect'
+				elif 0.06 <= effectSize < 0.14:					
+					return 'Medium Effect'
+				elif effectSize >= 0.14:
+					return 'Large Effect'
+			elif whichOne == 2:				
+				if effectSize < 0.1:					
+					return 'Very Small Effect'
+				elif 0.01 <= effectSize < 0.3:					
+					return 'Small Effect'
+				elif 0.3 <= effectSize < 0.5:					
+					return 'Medium Effect'
+				elif effectSize >= 0.5:
+					return 'Large Effect'				
+
+		except Exception as e:
+			print('@ interpretObservedEffectSize() :  ', e)
+			sys.exit()
+
+	def performKruskalWallis_n_PosthocWilcoxonTest(self, M, whichData, ylabel):
+		try:
+			print('\n====================================',  whichData, '\n')
+			self.plotBoxPlotList(M, self.xTicksLabel, whichData, ylabel)
+			# sys.exit()
+			# print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
+			[h, p] = kruskal(M[:, 0], M[:, 1], M[:, 2])
+			etaSquaredEffectSize = (h - M.shape[1] + 1)/((M.shape[0] * M.shape[1]) - M.shape[1])
+			epsilonSquaredEffectSize = h/(((M.shape[0] * M.shape[1])**2 - 1)/((M.shape[0] * M.shape[1]) + 1))
+
+			print('Kruskal-Wallis Test -  ', whichData, ':  H-statistic = ', h, '  p = ', p, '  eta^2 = ', etaSquaredEffectSize, '(', \
+				self.interpretObservedEffectSize(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
+				self.interpretObservedEffectSize(etaSquaredEffectSize, 1), ')')
+			if p < self.BonferroniCorrection:				
+				for i in range(2):
+					for j in range(i + 1, 3, 1):
+						[sW, pW] = ranksums(M[i], M[j])
+						effectSize = abs(sW/np.sqrt(M.shape[0]))
+						print(self.xTicksLabel[i], ' vs. ', self.xTicksLabel[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
+							self.interpretObservedEffectSize(effectSize, 2), ')')
+						self.showDescriptiveStatistics(M[i], self.xTicksLabel[i])
+						self.showDescriptiveStatistics(M[j], self.xTicksLabel[j])
+		except Exception as e:
+			print('performFriedman_n_PosthocWilcoxonTest() :  ', e)
+			sys.exit()	
+
 	def showDescriptiveStatistics(self, data, whichOne):
 		try:
-			print('M' + str(whichOne), ' = ', np.mean(data), ' SD' + str(whichOne), ' = ', np.std(data), '  Mdn' + str(whichOne), ' = ', np.median(data), \
-				'  CI_95%_' + str(whichOne) + ' = ', [np.percentile(data, 2.5), np.percentile(data, 97.5)])
+			print('M-' + whichOne, ' = ', np.mean(data), ' SD-' + whichOne, ' = ', np.std(data), '  Mdn-' + whichOne, ' = ', np.median(data), \
+				'  CI_95%-' + whichOne + ' = ', [np.percentile(data, 2.5), np.percentile(data, 97.5)])
 		except Exception as e:
 			print('@ showDescriptiveStatistics() :  ', e)
 			sys.exit()
@@ -302,10 +357,10 @@ class infoAnalysis:
 			# x = []
 			# plot(x, a, 'r.', alpha=0.2)
 			plt.xticks(range(0, len(labels)), labels, rotation = 0)
-			plt.xticks(fontsize = 15)
-			plt.yticks(fontsize = 15)
+			plt.xticks(fontsize = 30)
+			plt.yticks(fontsize = 25)
 			plt.title(ttle)
-			plt.ylabel(yLabel, fontsize = 20)
+			plt.ylabel(yLabel, fontsize = 25)
 			plt.show()						
 		except Exception as e:
 			print('plotBoxPlotList() :  ', e)

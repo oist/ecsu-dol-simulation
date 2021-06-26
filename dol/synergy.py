@@ -17,6 +17,7 @@ if __name__ == "__main__":
 		whichSetting = 2  #### 1 : Switch Setting   2 : Overlap Setting
 		Obj = infoAnalysis(whichSetting)
 		# print(Obj.checkIfResultsGenerated())
+		# sys.exit()
 		if Obj.checkIfResultsGenerated() == 0:
 			simulationSettings = list(Obj.dataFolders.keys())
 			for settingIndex in range(len(simulationSettings)):
@@ -70,11 +71,11 @@ if __name__ == "__main__":
 					joint = Obj.prepareDataForAnalysis(Obj.resultFolder + simResultsDirs[resultDirIndex])
 		# print(individual.shape)
 		# print(group.shape)
-		# print(joint.shape)
+		# print(joint.shape)		
 
 		condMultVarMI = Obj.extract_n_CombineGivenMeasureValues(individual, group, joint, 0)
 		multVarMI = Obj.extract_n_CombineGivenMeasureValues(individual, group, joint, 1)
-		coinformation = Obj.extract_n_CombineGivenMeasureValues(individual, group, joint, 2)
+		coinformation = Obj.extract_n_CombineGivenMeasureValues(individual, group, joint, 2)		
 
 		# print(np.array(condMultVarMI).shape)
 		# print(np.array(multVarMI).shape)
@@ -89,12 +90,22 @@ if __name__ == "__main__":
 		# print(multVarMI)
 		# print(coinformation)
 
-		Obj.performFriedman_n_PosthocWilcoxonTest(condMultVarMI, 'Multivariate Conditional Mutual Information', 'Z-Scored Multivariate Conditional Mutual Information' \
-			if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Conditional Mutual Information')
-		Obj.performFriedman_n_PosthocWilcoxonTest(multVarMI, 'Multivariate Mutual Information', 'Z-Scored Multivariate Mutual Information' \
-			if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Mutual Information')
-		Obj.performFriedman_n_PosthocWilcoxonTest(coinformation, 'Net-Synergy', 'Z-Scored Net-Synergy' \
-			if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Net-Synergy')
+		# Obj.performFriedman_n_PosthocWilcoxonTest(condMultVarMI, 'Multivariate Conditional Mutual Information', 'Z-Scored Multivariate Conditional Mutual Information' \
+		# 	if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Conditional Mutual Information')
+		# Obj.performFriedman_n_PosthocWilcoxonTest(multVarMI, 'Multivariate Mutual Information', 'Z-Scored Multivariate Mutual Information' \
+		# 	if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Mutual Information')
+		# Obj.performFriedman_n_PosthocWilcoxonTest(coinformation, 'Net-Synergy', 'Z-Scored Net-Synergy' \
+		# 	if Obj.whichNormalization == 1 else '[0 ..1] Scaled Multivariate Net-Synergy')
+
+		if Obj.whichNormalization == 0:
+			yLabel = ''			
+		elif Obj.whichNormalization == 1:
+			yLabel = 'Z-Scored '
+		elif Obj.whichNormalization == 2:
+			yLabel = '[0 ..1] Scaled '
+		Obj.performKruskalWallis_n_PosthocWilcoxonTest(condMultVarMI, 'Multivariate Conditional Mutual Information', yLabel + 'Multivariate Conditional Mutual Information')
+		Obj.performKruskalWallis_n_PosthocWilcoxonTest(multVarMI, 'Multivariate Mutual Information', yLabel + 'Multivariate Mutual Information')
+		Obj.performKruskalWallis_n_PosthocWilcoxonTest(coinformation, 'Net-Synergy', yLabel + 'Net-Synergy')		
 
 		Obj.shutdownJVM()				
 
