@@ -279,10 +279,12 @@ class infoAnalysis:
 			if p < self.BonferroniCorrection:				
 				for i in range(2):
 					for j in range(i + 1, 3, 1):
-						[sW, pW] = ranksums(M[i], M[j])
-						print('Sim ' + str(i + 1) + ' vs. Sim' + str(j + 1), '  s = ', sW, '  p = ', pW, '  effect-size = ', sW/np.sqrt(M.shape[0]))
-						self.showDescriptiveStatistics(M[i], i + 1)
-						self.showDescriptiveStatistics(M[j], j + 1)
+						[sW, pW] = ranksums(M[:, i], M[:, j])
+						effectSize = abs(sW/np.sqrt(M.shape[0]))
+						print(self.xTicksLabel[i], ' vs. ', self.xTicksLabel[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
+							self.interpretObservedEffectSize(effectSize, 2), ')')
+						self.showDescriptiveStatistics(M[:, i], self.xTicksLabel[i])
+						self.showDescriptiveStatistics(M[:, j], self.xTicksLabel[j])
 		except Exception as e:
 			print('performFriedman_n_PosthocWilcoxonTest() :  ', e)
 			sys.exit()
@@ -328,12 +330,12 @@ class infoAnalysis:
 			if p < self.BonferroniCorrection:				
 				for i in range(2):
 					for j in range(i + 1, 3, 1):
-						[sW, pW] = ranksums(M[i], M[j])
+						[sW, pW] = ranksums(M[:, i], M[:, j])
 						effectSize = abs(sW/np.sqrt(M.shape[0]))
 						print(self.xTicksLabel[i], ' vs. ', self.xTicksLabel[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
 							self.interpretObservedEffectSize(effectSize, 2), ')')
-						self.showDescriptiveStatistics(M[i], self.xTicksLabel[i])
-						self.showDescriptiveStatistics(M[j], self.xTicksLabel[j])
+						self.showDescriptiveStatistics(M[:, i], self.xTicksLabel[i])
+						self.showDescriptiveStatistics(M[:, j], self.xTicksLabel[j])
 		except Exception as e:
 			print('performKruskalWallis_n_PosthocWilcoxonTest() :  ', e)
 			sys.exit()	
