@@ -29,7 +29,7 @@ python3 -m dol.main \
 --num_pop 4 \
 --popsize 24 \
 --max_gen 5000 \
---num_neurons 2 \
+--num_neurons 3 \
 --num_trials 4 \
 --num_random_pairings 3 \
 --exclusive_motors_threshold 0.1 \
