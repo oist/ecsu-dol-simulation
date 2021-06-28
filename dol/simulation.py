@@ -227,18 +227,19 @@ class Simulation:
     def set_agents_genotype_phenotype(self):
         '''
         Split genotype and set phenotype of the two agents
-        :param np.ndarray genotypes_pair: sequence with two genotypes (one after the other)
+        It sets self.paired_agent_pop_idx (tuple with pop and index of paired agent, if it exists)     
         '''
-        self.paired_agent_pop_idx = None  # pop and index of other agent (if present)
         if self.num_random_pairings is None:
             # single genotype
             first_agent_genotype = self.genotype_population[0][self.genotype_index]
             self.genotypes = [first_agent_genotype]
+            self.paired_agent_pop_idx = None # no paired agent
         elif self.num_random_pairings == 0:
             # double genotype
             first_agent_genotype = self.genotype_population[0][self.genotype_index]
             genotypes_pair = first_agent_genotype
             self.genotypes = np.array_split(genotypes_pair, 2)        
+            self.paired_agent_pop_idx = (0, self.genotype_index)
         else:
             # two agents
             self.paired_agent_pop_idx = self.paired_agents_sims_pop_idx[self.sim_index]            
@@ -431,7 +432,6 @@ class Simulation:
 
         if self.split_population():
             # split pop in two (to allow for pair matching)
-            self.num_pop = 2
             self.genotype_population = np.split(self.genotype_population[0], 2)
             if self.genotype_index > len(self.genotype_population[0]):
                 # keep track current agent is in the second part of population     
@@ -547,6 +547,8 @@ class Simulation:
 
         population_size = len(populations[0])
 
+        sim_copy = Simulation(**asdict(self))
+
         if self.num_pop <= 2:
             if self.split_population():
                 assert population_size % 2 == 0
@@ -555,16 +557,14 @@ class Simulation:
 
             if self.num_cores > 1:
                 # run parallel job            
-                sim_array = [Simulation(**asdict(self)) for _ in range(self.num_cores)]
                 run_result = Parallel(n_jobs=self.num_cores)(
-                    delayed(sim_array[i % self.num_cores].run_simulation)(populations, i, random_seed) \
+                    delayed(sim_copy.run_simulation)(populations, i, random_seed) \
                     for i in range(population_size)
                 )
             else:
                 # single core
-                sim = Simulation(**asdict(self))
                 run_result = [
-                    sim.run_simulation(populations, i, random_seed)
+                    sim_copy.run_simulation(populations, i, random_seed)
                     for i in range(population_size)
                 ]
 
@@ -607,16 +607,14 @@ class Simulation:
             # num_pop > 2
             if self.num_cores > 1:
                 # run parallel job            
-                sim_array = [Simulation(**asdict(self)) for _ in range(self.num_cores)]
                 pop_results = Parallel(n_jobs=self.num_cores)(
-                    delayed(sim_array[i % self.num_cores].run_pop_simulations)(populations, i, random_seed) \
+                    delayed(sim_copy.run_pop_simulations)(populations, i, random_seed) \
                     for i in range(population_size)
                 )
             else:
-                # single core
-                sim = Simulation(**asdict(self))
+                # single core                
                 pop_results = [
-                    sim.run_pop_simulations(populations, i, random_seed)
+                    sim_copy.run_pop_simulations(populations, i, random_seed)
                     for i in range(population_size)
                 ]
 

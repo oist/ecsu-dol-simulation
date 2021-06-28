@@ -35,6 +35,24 @@ def test_2n_exc_rp3_switch():
     assert normalized_perf == [94.84999999999854]
     print('✅ test_2n_exc_rp3_switch')
 
+def test_3n_exc_rp3_switch():
+    sim, evo = main([             
+        # '--dir', './data/tmp', 
+        '--cores', '7', 
+        '--seed', '5',
+        '--num_neurons', '3', 
+        '--popsize', '20', 
+        '--max_gen', '10',        
+        '--exclusive_motors_threshold', '0.1',
+        '--num_random_pairings', '3',
+        '--motor_control_mode', 'SWITCH'
+    ])
+    last_best_perf = evo.best_performances[-1]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    # print(normalized_perf)
+    assert normalized_perf == [94.07571341165567]
+    print('✅ test_3n_exc_rp3_switch')
+
 def test_2n_exc_rp3_overlap():
     sim, evo = main([             
         # '--dir', './data/tmp', 
@@ -93,6 +111,7 @@ def test_2n_exc_rp3_np4_switch():
 if __name__ == "__main__":
     test_2n_exc()
     test_2n_exc_rp3_switch()
+    test_3n_exc_rp3_switch()
     test_2n_exc_rp3_overlap()
     test_2n_exc_rp3_np2()
     test_2n_exc_rp3_np4_switch()
