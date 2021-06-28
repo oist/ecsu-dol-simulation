@@ -511,13 +511,13 @@ class Simulation:
             self.agents_genotype_distance[self.sim_index] = self.get_genotypes_distance()
 
             if self.data_record:
-                self.data_record['info'] = {
-                    'population_index': self.population_index,
+                self.data_record.update({
+                    'current_agent_pop_idx': (self.population_index, self.genotype_index),
                     'paired_agent_pop_idx': self.paired_agent_pop_idx,                    
                     'genotype_distance': self.agents_genotype_distance[self.sim_index],
                     'trials_performances': trial_performances,
-                    'experiment_performance': exp_perf,
-                }
+                    'sim_performance': exp_perf,
+                })
 
             sim_performances.append(exp_perf)
 

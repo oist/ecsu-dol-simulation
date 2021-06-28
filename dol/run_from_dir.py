@@ -76,6 +76,12 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     performance = sim.normalize_performance(performance)
     sim_perfs = [sim.normalize_performance(p) for p in sim_perfs]
 
+    for sim_data in data_record_list:        
+        sim_data['trials_performances'] = [
+            sim.normalize_performance(p) for p in sim_data['trials_performances']
+        ]
+        sim_data['sim_performance'] = sim.normalize_performance(sim_data['sim_performance'])
+
     verbose = not kwargs.get('quiet', False)
 
     if verbose:
