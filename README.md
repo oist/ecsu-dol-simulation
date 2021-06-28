@@ -37,14 +37,34 @@ perf, sim_perfs, evo, sim, data, sim_idx = run_simulation_from_dir('path/to/data
 ```
 
 where:
-- `perf`: the overall performance across multiple simulations (e.g., if an agent is undergoing x simulations with x other agents)
-- `sim_perfs`: the list perfomances for each simulation
-- `evo`: the `pyevolver.Evolution` object
-- `sim`: the `dol.Simulation` object
-- `sim_idx`: index of the simulation obtaining the best performance
-- `data`: a list of dictionaries each containing the data from the n-th simulation. Each key in the dictionary maps to the data related to that key, e.g.:  
-  - `target_position`: contains a list of `np.array` (one per simulation trial) representing the positions of the target.
-  - `agents_brain_output`: contains a list of lists where `data[s]['agents_brain_output'][t][a]` represents the brain output of agent `a` of trial `t` of simulation `s`.
+- `perf`: the overall performance of the best agent across multiple simulations computed as the average of the performances across all the pairs of agents (`np.mean(sim_perfs)`).
+- `sim_perfs`: the list of perfomances for each simulation (i.e., a list of `n` values, if an agent is undergoing `n` simulations with `n` other agents). Each performance is obtain as the average performances across trials (see `trials_performances` and `sim_performance` below). If the simulation is perfomed by a single gent `sim_perfs` is a list with a single value equaling `perf`.
+- `evo`: the `pyevolver.Evolution` object.
+- `sim`: the `dol.Simulation` object.
+- `sim_idx`: index of the simulation obtaining the best performance (`np.argmin(sim_perfs)`).
+- `data`: a list of dictionaries each containing the data from each of the `n` simulations (one per paired agent). In each dictionary contains the following keys:  
+  - `trials_performances`: list of performances for each trial between the two agents of the current simulation, computed as the average of the distance between `tracker`  and `target` within each trial (see `delta_tracker_target` below).
+  - `sim_performance`: the average across trial performances (`np.mean(trials_performances)`.
+  - `current_agent_pop_idx`: a tuple `(pop_idx, p_idx)` where `pop_idx` is the index of the population of the current agent and `p_idx` the index of the current agent within the population.
+  - `paired_agent_pop_idx`: analogous to above for the paired agent. If the simulation is perfomed by a single agent this is `None`.
+  - `genotypes`: genotypes of the agent(s) in the current simulation.
+  - `phenotypes`: phenotypes of the agent(s) in the current simulation.
+  - `genotype_distance`: distance between the genotypes of the current agent and the paired one (`None` if there is only a single agent).  
+  - `delta_tracker_target`: a list of arrays (one per trial) each containing data points, one for each step of the simulation representing the distance between `tracker` and `target` at that step.
+  - `target_position`: contains a list of `np.array` (one per simulation trial) representing the positions of the target throughout the simulation.
+  - `target_velocity`: as above wrt target velocity.
+  - `tracker_position`: as above wrt target position.
+  - `tracker_angle`: as above wrt target angle (only relevant in `2d` mode with `XY_MODE` disabled).
+  - `tracker_wheels`: as above wrt tracker wheels.
+  - `tracker_velocity`: as above wrt tracker velocity (difference between the wheels).
+  - `tracker_signals`: : as above wrt tracker signal.
+  - `agents_brain_output`: contains a list of arrays (one per simulation trial) where each array contains the brain output values in the corresponding trial.
+  - `agents_brain_input`: as above, wrt agent brain input.
+  - `agents_sensors`: as above, wrt agent sensors.  
+  - `agents_brain_state`: as above, wrt agent brain state.
+  - `agents_derivatives`: as above, wrt agent brain derivatives.
+  - `agents_motors`: as above, wrt agent motors.
+  - `agents_motors_control_indexes`: a tuple `(l,r)` where `l` is the index of the agent whose left output is controlling the left motor and `r` is the index of the agent whose right output is controlling the right motor.
 
 
 
