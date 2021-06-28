@@ -67,7 +67,8 @@ class infoAnalysis:
 			# ['genotypes', 'phenotypes', 'delta_tracker_target', 'target_position', 'target_velocity', 'tracker_position', 'tracker_angle', 'tracker_wheels', 'tracker_velocity', 'tracker_signals', 'agents_motors_control_indexes', 'agents_sensors', \
 			# 'agents_brain_input', 'agents_brain_state', 'agents_derivatives', 'agents_brain_output', 'agents_motors', 'info']
 
-			self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
+			# self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
+			self.includedNodes = ['agents_sensors', 'agents_brain_output', 'target_position']
 			self.xTicksLabel = ['Individual', 'Group', 'Joint']
 
 			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
