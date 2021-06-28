@@ -70,10 +70,9 @@ if __name__ == "__main__":
 				elif resultDirIndex == 2:
 					joint, meanDistJoint, stdDistJoint = Obj.prepareDataForAnalysis(Obj.resultFolder + simResultsDirs[resultDirIndex])
 
-		print(individual.shape, '  ', len(meanDistIndividual), '  ', len(stdDistIndividual))
-		print(group.shape, '  ', len(meanDistGroup), '   ', len(stdDistGroup))
-		print(joint.shape, '   ', len(meanDistJoint), '   ', len(stdDistJoint))
-
+		# print(individual.shape, '  ', len(meanDistIndividual), '  ', len(stdDistIndividual))
+		# print(group.shape, '  ', len(meanDistGroup), '   ', len(stdDistGroup))
+		# print(joint.shape, '   ', len(meanDistJoint), '   ', len(stdDistJoint))
 
 		condMultVarMI = Obj.extract_n_CombineGivenMeasureValues(individual, group, joint, 0)
 		multVarMI = Obj.extract_n_CombineGivenMeasureValues(individual, group, joint, 1)
@@ -110,13 +109,23 @@ if __name__ == "__main__":
 
 		# Obj.checkDataNormality(condMultVarMI.flatten().tolist(), 'Multivariate Conditional Mutual Information')
 		# Obj.checkDataNormality(multVarMI.flatten().tolist(), 'Multivariate Mutual Information')
-		# Obj.checkDataNormality(coinformation.flatten().tolist(), 'Net-Synergy')	
-
-		Obj.computeSpearmanCorr(condMultVarMI, 'Multivariate Conditional Mutual Information', yLabel + 'Multivariate Conditional Mutual Information')
+		# Obj.checkDataNormality(coinformation.flatten().tolist(), 'Net-Synergy')			
 
 		Obj.performKruskalWallis_n_PosthocWilcoxonTest(condMultVarMI, 'Multivariate Conditional Mutual Information', yLabel + 'Multivariate Conditional Mutual Information')
 		Obj.performKruskalWallis_n_PosthocWilcoxonTest(multVarMI, 'Multivariate Mutual Information', yLabel + 'Multivariate Mutual Information')
 		Obj.performKruskalWallis_n_PosthocWilcoxonTest(coinformation, 'Net-Synergy', yLabel + 'Net-Synergy')		
+
+		print('\n\n Spearman Correlation Based on Target-Tracker Mean Distance')
+
+		Obj.computeSpearmanCorr(individual, meanDistIndividual, 'Individual - Mean Target-Tracker Disatnce', Obj.whichNormalization)  ##### 1 : z-scored   2 : [0 .. 1] scaled
+		Obj.computeSpearmanCorr(group, meanDistGroup, 'Group - Mean Target-Tracker Disatnce', Obj.whichNormalization)		
+		Obj.computeSpearmanCorr(joint, meanDistJoint, 'Joint - Mean Target-Tracker Disatnce', Obj.whichNormalization)		
+
+		print('\n\n Spearman Correlation Based on Target-Tracker SD Distance')
+
+		Obj.computeSpearmanCorr(individual, stdDistIndividual, 'Individual - SD Target-Tracker Disatnce', Obj.whichNormalization)		
+		Obj.computeSpearmanCorr(group, stdDistGroup, 'Group - SD Target-Tracker Disatnce', Obj.whichNormalization)		
+		Obj.computeSpearmanCorr(joint, stdDistJoint, 'Joint - SD Target-Tracker Disatnce', Obj.whichNormalization)						
 
 		Obj.shutdownJVM()						
 		

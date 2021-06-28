@@ -67,8 +67,8 @@ class infoAnalysis:
 			# ['genotypes', 'phenotypes', 'delta_tracker_target', 'target_position', 'target_velocity', 'tracker_position', 'tracker_angle', 'tracker_wheels', 'tracker_velocity', 'tracker_signals', 'agents_motors_control_indexes', 'agents_sensors', \
 			# 'agents_brain_input', 'agents_brain_state', 'agents_derivatives', 'agents_brain_output', 'agents_motors', 'info']
 
-			# self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
-			self.includedNodes = ['agents_sensors', 'agents_brain_output', 'target_position']
+			self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
+			# self.includedNodes = ['agents_sensors', 'agents_brain_output', 'target_position']
 			self.xTicksLabel = ['Individual', 'Group', 'Joint']
 
 			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
@@ -359,9 +359,24 @@ class infoAnalysis:
 			print('@ showDescriptiveStatistics() :  ', e)
 			sys.exit()
 
-	def computeSpearmanCorr(self, M, distance, whichData, ylabel):
+	def computeSpearmanCorr(self, M, distance, whichScenario, whichScaling):
 		try:
-			print(stats.spearmanr(xint))
+			if whichScaling != 0:
+				if whichScaling == 1:
+					meanDistGroup = [(val - np.mean(meanDistGroup))/np.std(meanDistGroup) for val in meanDistGroup]
+				else:
+					meanDistGroup = [(val - min(meanDistGroup))/(max(meanDistGroup) - min(meanDistGroup)) for val in meanDistGroup]			
+			whichMeasure = ['Conditional Mutual Information', 'Mutual Information', 'Co-Information']
+			print('=======================  ', whichScenario, '  =======================')
+			for i in range(M.shape[1]):
+				[r, p] = spearmanr(M[:, i], distance)
+				if p < 0.05 and p < self.BonferroniCorrection:
+					print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Significant)')
+				else:
+					if p < 0.05 and p >= self.BonferroniCorrection:
+						print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant After Bonferroni Correction)')
+					else:
+						print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant)')
 		except Exception as e:
 			print('@ computeSpearmanCorr() :  ', e)
 			sys.exit()
