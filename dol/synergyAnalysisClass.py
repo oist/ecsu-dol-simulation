@@ -13,7 +13,7 @@ import jpype as jp
 from sklearn import preprocessing
 
 from statsmodels.stats.diagnostic import lilliefors
-from scipy.stats import friedmanchisquare, ranksums, kruskal, spearmanr
+from scipy.stats import friedmanchisquare, ranksums, kruskal, spearmanr, pearsonr
 
 import scipy.special as special
 
