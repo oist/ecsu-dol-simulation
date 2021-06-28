@@ -31,13 +31,16 @@ if __name__ == "__main__":
 					# print(dir)
 					# sys.exit()
 					perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir = dir, generation = Obj.generation)
+
 					results = {}		
 					simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'
 					print(f'======  @ seed_{str(seed).zfill(3)}', '   Sim', simIndex)
 					if 'sim' + str(simIndex + 1) not in results:
 						results['sim' + str(simIndex + 1)] = {}
+
 					for trialIndex in range(len(data_record_list[simIndex]['agents_brain_output'])):
 						print('Trial # ', (trialIndex + 1))
+
 						agent1, agent2, target = Obj.returnAgentsTargetData(data_record_list[simIndex], Obj.includedNodes, trialIndex)			
 						# print(agent1.shape, '  ', agent2.shape, '  ', target.shape)
 						# sys.exit()
@@ -48,11 +51,8 @@ if __name__ == "__main__":
 						results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['condMultVarMI'] = condMultVarMI
 						results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['multVarMI'] = multVarMI
 						results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['coinformation'] = condMultVarMI - multVarMI  #### a.k.a interaction information, net synergy, and integration					
+						results['sim' + str(simIndex + 1)]['trial' + str(trialIndex + 1)]['trackerTargetDist'] = data_record_list[simIndex]['delta_tracker_target'][trialIndex]												
 
-					# print(results)
-					# print(Obj.resultFolder + Obj.dataFolders[simulationSettings[settingIndex]][Obj.dataFolders[simulationSettings[settingIndex]].find('_si/') + 4 : \
-					# 	len(Obj.dataFolders[simulationSettings[settingIndex]])] + '/', seed)
-					# sys.exit()
 					Obj.saveResults(Obj.resultFolder + Obj.dataFolders[simulationSettings[settingIndex]][Obj.dataFolders[simulationSettings[settingIndex]].find('_si/') + 4 : \
 						len(Obj.dataFolders[simulationSettings[settingIndex]])] + '/', seed, results)
 
@@ -64,14 +64,16 @@ if __name__ == "__main__":
 			# print(simResultsDirs[resultDirIndex], '  ', Obj.resultFolder + simResultsDirs[resultDirIndex])
 			if whichSetting == 2:
 				if resultDirIndex == 0:
-					individual = Obj.prepareDataForAnalysis(Obj.resultFolder + simResultsDirs[resultDirIndex])
+					individual, meanDistIndividual, stdDistIndividual = Obj.prepareDataForAnalysis(Obj.resultFolder + simResultsDirs[resultDirIndex])
 				elif resultDirIndex == 1:
-					group = Obj.prepareDataForAnalysis(Obj.resultFolder + simResultsDirs[resultDirIndex])
+					group, meanDistGroup, stdDistGroup = Obj.prepareDataForAnalysis(Obj.resultFolder + simResultsDirs[resultDirIndex])
 				elif resultDirIndex == 2:
-					joint = Obj.prepareDataForAnalysis(Obj.resultFolder + simResultsDirs[resultDirIndex])
-		# print(individual.shape)
-		# print(group.shape)
-		# print(joint.shape)		
+					joint, meanDistJoint, stdDistJoint = Obj.prepareDataForAnalysis(Obj.resultFolder + simResultsDirs[resultDirIndex])
+
+		print(individual.shape, '  ', len(meanDistIndividual), '  ', len(stdDistIndividual))
+		print(group.shape, '  ', len(meanDistGroup), '   ', len(stdDistGroup))
+		print(joint.shape, '   ', len(meanDistJoint), '   ', len(stdDistJoint))
+
 
 		condMultVarMI = Obj.extract_n_CombineGivenMeasureValues(individual, group, joint, 0)
 		multVarMI = Obj.extract_n_CombineGivenMeasureValues(individual, group, joint, 1)
@@ -109,6 +111,8 @@ if __name__ == "__main__":
 		# Obj.checkDataNormality(condMultVarMI.flatten().tolist(), 'Multivariate Conditional Mutual Information')
 		# Obj.checkDataNormality(multVarMI.flatten().tolist(), 'Multivariate Mutual Information')
 		# Obj.checkDataNormality(coinformation.flatten().tolist(), 'Net-Synergy')	
+
+		Obj.computeSpearmanCorr(condMultVarMI, 'Multivariate Conditional Mutual Information', yLabel + 'Multivariate Conditional Mutual Information')
 
 		Obj.performKruskalWallis_n_PosthocWilcoxonTest(condMultVarMI, 'Multivariate Conditional Mutual Information', yLabel + 'Multivariate Conditional Mutual Information')
 		Obj.performKruskalWallis_n_PosthocWilcoxonTest(multVarMI, 'Multivariate Mutual Information', yLabel + 'Multivariate Mutual Information')

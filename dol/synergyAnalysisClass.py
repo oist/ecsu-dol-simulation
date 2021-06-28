@@ -13,7 +13,7 @@ import jpype as jp
 from sklearn import preprocessing
 
 from statsmodels.stats.diagnostic import lilliefors
-from scipy.stats import friedmanchisquare, ranksums, kruskal
+from scipy.stats import friedmanchisquare, ranksums, kruskal, spearmanr
 
 import scipy.special as special
 
@@ -223,6 +223,9 @@ class infoAnalysis:
 	def prepareDataForAnalysis(self, addr):
 		try:
 			simData = []
+			meanDist = []
+			stdDist = []
+
 			acceptedSeeds = list(os.listdir(addr))
 			print('++++   ', addr)
 			for seed in acceptedSeeds:
@@ -230,16 +233,23 @@ class infoAnalysis:
 					data = pickle.load(handle)						
 					handle.close()	
 					print('====   ', f'seed_{str(seed).zfill(3)}')
-					# print(data)					
+					# print(data)
+					# sys.exit()					
 					tmp = []
+					dM = []
+					dSTD = []
 					for j in range(4):
 						tmp.append([data[list(data.keys())[0]]['trial' + str(j + 1)]['condMultVarMI'], data[list(data.keys())[0]]['trial' + str(j + 1)]['multVarMI'], \
 							data[list(data.keys())[0]]['trial' + str(j + 1)]['coinformation']])
+						dM.append(data[list(data.keys())[0]]['trial' + str(j + 1)]['trackerTargetDist'].mean())
+						dSTD.append(data[list(data.keys())[0]]['trial' + str(j + 1)]['trackerTargetDist'].std())						
 					# print(np.array(tmp))					
 					simData.append(np.array(tmp).mean(axis = 0).tolist())
-			# print(np.array(simData), '   ', np.array(simData).shape)
+					meanDist.append(np.mean(dM))
+					stdDist.append(np.std(dSTD))
+			print(np.array(simData), '   ', np.array(simData).shape, '   ', len(meanDist), '  ', len(stdDist))
 
-			return np.array(simData)
+			return np.array(simData), meanDist, stdDist
 		except Exception as e:
 			print('@ prepareDataForAnalysis() :  ', e)
 			sys.exit()
@@ -347,6 +357,13 @@ class infoAnalysis:
 				'  CI_95%-' + whichOne + ' = ', [np.percentile(data, 2.5), np.percentile(data, 97.5)])
 		except Exception as e:
 			print('@ showDescriptiveStatistics() :  ', e)
+			sys.exit()
+
+	def computeSpearmanCorr(self, M, distance, whichData, ylabel):
+		try:
+			print(stats.spearmanr(xint))
+		except Exception as e:
+			print('@ computeSpearmanCorr() :  ', e)
 			sys.exit()
 
 	def plotBoxPlotList(self, data, labels, ttle, yLabel):
