@@ -126,8 +126,7 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
             print("Selecting simulation", sim_idx+1)
 
     if verbose:
-        sim_perf = sim.normalize_performance(sim_perfs[sim_idx])
-        print(f"   Performance recomputed (sim {sim_idx+1}): ", sim_perf)
+        print(f"   Performance recomputed (sim {sim_idx+1}): ", sim_perfs[sim_idx])
         if sim.num_agents == 2:
             print("   Sim agents genotype distance: ", sim.agents_genotype_distance[sim_idx])
         # print agents signatures
