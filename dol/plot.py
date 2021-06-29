@@ -222,7 +222,7 @@ def plot_results(evo, sim, trial, data_record):
     # plot_motor_time(sim, data_record, 'agents_motors', trial)
 
     # time tracker
-    # plot_data_time(data_record, 'tracker_wheels', trial)
+    plot_data_time(data_record, 'tracker_wheels', trial)
     # plot_data_time(data_record, 'tracker_velocity', trial)
     # plot_data_time(data_record, 'tracker_signals', trial)
 
