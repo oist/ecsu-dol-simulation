@@ -134,7 +134,7 @@ if __name__ == "__main__":
 		Obj.computeSpearmanCorr(group, stdDistGroup, 'Group - SD Target-Tracker Disatnce', Obj.whichNormalization)		
 		Obj.computeSpearmanCorr(joint, stdDistJoint, 'Joint - SD Target-Tracker Disatnce', Obj.whichNormalization)						
 		
-		Obj.computeDistanceMetrics('cosine')
+		Obj.computeDistanceMetrics('cosine', 0)   ###  0 : use original data   1 : Z-score normalization     2 : Scale within [0 .. 1] interval
 
 		# import pickle
 		# import numpy as np

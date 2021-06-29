@@ -437,7 +437,7 @@ class infoAnalysis:
 			print('@ returnAgentsAverageDataFileNames() :  ', e)
 			sys.exit()
 
-	def computeDistanceMetrics(self, whichDistance):
+	def computeDistanceMetrics(self, whichDistance, normalizationFlag):
 		try:
 			agentsFiles = self.returnAgentsAverageDataFileNames()
 			for fName in agentsFiles:
@@ -452,8 +452,10 @@ class infoAnalysis:
 					print(agentsM.shape)			
 
 					agentsM = squareform(pdist(agentsM, whichDistance))
-					# data = (data - data.min())/(data.max() - data.min())
-					# print(data.max())
+
+					if normalizationFlag != 0:
+						self.normalizeData(agentsM, normalizationFlag)
+
 					labels = []
 					cnt = 0
 					for i in range(agentsM.shape[0]):
