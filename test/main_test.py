@@ -1,6 +1,22 @@
 from dol.main import main
 import numpy as np
 
+def test_1n_exc():
+    sim, evo = main([             
+        # '--dir', './data/tmp', 
+        '--cores', '7', 
+        '--seed', '1',
+        '--num_neurons', '1', 
+        '--popsize', '20', 
+        '--max_gen', '10',
+        '--exclusive_motors_threshold', '0.1'
+    ])
+    last_best_perf = evo.best_performances[-1]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    # print(normalized_perf)
+    assert normalized_perf == [93.94248760669507]
+    print('✅ test_1n_exc')
+
 def test_2n_exc():
     sim, evo = main([             
         # '--dir', './data/tmp', 
@@ -109,6 +125,7 @@ def test_2n_exc_rp3_np4_switch():
     print('✅ test_2n_exc_rp3_np4_switch')
 
 if __name__ == "__main__":
+    test_1n_exc()
     test_2n_exc()
     test_2n_exc_rp3_switch()
     test_3n_exc_rp3_switch()
