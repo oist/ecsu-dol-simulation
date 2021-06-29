@@ -23,6 +23,9 @@ if __name__ == "__main__":
 			for settingIndex in range(len(simulationSettings)):
 				print('Processing ', simulationSettings[settingIndex])
 
+				A1 = []
+				A2 = []
+
 				seeds = list(set(os.listdir(Obj.dataFolders[simulationSettings[settingIndex]])))
 				if '.DS_Store' in seeds:
 					seeds.remove('.DS_Store')
@@ -42,6 +45,8 @@ if __name__ == "__main__":
 						print('Trial # ', (trialIndex + 1))
 
 						agent1, agent2, target = Obj.returnAgentsTargetData(data_record_list[simIndex], Obj.includedNodes, trialIndex)			
+						A1.append(agent1)
+						A2.append(agent2)
 						# print(agent1.shape, '  ', agent2.shape, '  ', target.shape)
 						# sys.exit()
 						condMultVarMI = Obj.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target, axis = 0).T)
@@ -55,6 +60,8 @@ if __name__ == "__main__":
 
 					Obj.saveResults(Obj.resultFolder + Obj.dataFolders[simulationSettings[settingIndex]][Obj.dataFolders[simulationSettings[settingIndex]].find('_si/') + 4 : \
 						len(Obj.dataFolders[simulationSettings[settingIndex]])] + '/', seed, results)
+
+				Obj.saveAgentsAveragedDataOverAllSeeds_n_Trials(A1, A2, simulationSettings[settingIndex])
 
 		simResultsDirs = list(os.listdir(Obj.resultFolder))				
 		if '.DS_Store' in simResultsDirs:
@@ -126,6 +133,20 @@ if __name__ == "__main__":
 		Obj.computeSpearmanCorr(individual, stdDistIndividual, 'Individual - SD Target-Tracker Disatnce', Obj.whichNormalization)		
 		Obj.computeSpearmanCorr(group, stdDistGroup, 'Group - SD Target-Tracker Disatnce', Obj.whichNormalization)		
 		Obj.computeSpearmanCorr(joint, stdDistJoint, 'Joint - SD Target-Tracker Disatnce', Obj.whichNormalization)						
+		
+		Obj.computeDistanceMetrics('cosine')
+
+		# import pickle
+		# import numpy as np
+		# for fName in agentsFiles:
+		# 	print(fName)
+		# 	with open(Obj.resultFolder[0 : Obj.resultFolder.index('Mult')] + fName, 'rb') as handle:
+		# 		data = pickle.load(handle)
+		# 		handle.close()
+		# 		A1 = np.array(data['A1']).mean(axis = 0)
+		# 		A2 = np.array(data['A2']).mean(axis = 0)
+		# 		print(A1.shape, '  ', A2.shape)
+		# 		print(np.concatenate((A1, A2), axis = 1).T.shape)
 
 		Obj.shutdownJVM()						
 		

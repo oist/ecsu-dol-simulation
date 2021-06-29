@@ -6,6 +6,8 @@ import os
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+from matplotlib import cm
+
 import seaborn as sb
 
 import jpype as jp
@@ -16,6 +18,8 @@ from statsmodels.stats.diagnostic import lilliefors
 from scipy.stats import friedmanchisquare, ranksums, kruskal, spearmanr, pearsonr
 
 import scipy.special as special
+
+from scipy.spatial.distance import pdist, squareform
 
 class infoAnalysis:
 	def __init__(self, whichSimSetup):
@@ -403,3 +407,89 @@ class infoAnalysis:
 			print('plotBoxPlotList() :  ', e)
 			sys.exit()			
 
+	def saveAgentsAveragedDataOverAllSeeds_n_Trials(self, A1, A2, whichScenario):
+		try:
+			# print(np.array(A1).shape, '  ', np.array(A2).shape)
+			# print(np.array(A1).mean(axis = 0).shape, '  ', np.array(A2).mean(axis = 0).shape)
+			# print(np.array(A1).mean(axis = 0))
+			# print('++++++++++++++++++++++++++')
+			# print(np.array(A2).mean(axis = 0))
+			agentsData = {'A1' : A1, 'A2' : A2}
+
+			with open(self.resultFolder[0 : self.resultFolder.index('Mult')] + whichScenario + '_AgentsAllSeedsTrialsAvgNodes.pickle', 'wb') as handle:
+				pickle.dump(agentsData, handle, protocol = pickle.HIGHEST_PROTOCOL)
+				handle.close()			
+		except Exception as e:
+			print('@ saveAgentsAveragedDataOverAllSeeds_n_Trials() :  ', e)
+			sys.exit()
+
+	def returnAgentsAverageDataFileNames(self):
+		try:
+			tmp = os.listdir(self.resultFolder[0 : self.resultFolder.index('Mult')])
+			if '.DS_Store' in tmp:
+				tmp.remove('.DS_Store')
+			agentsFiles = []			
+			for fName in tmp:
+				if 'AgentsAllSeedsTrialsAvgNodes' in fName:
+					agentsFiles.append(fName)
+			return agentsFiles
+		except Exception as e:
+			print('@ returnAgentsAverageDataFileNames() :  ', e)
+			sys.exit()
+
+	def computeDistanceMetrics(self, whichDistance):
+		try:
+			agentsFiles = self.returnAgentsAverageDataFileNames()
+			for fName in agentsFiles:
+				print(fName)
+				with open(self.resultFolder[0 : self.resultFolder.index('Mult')] + fName, 'rb') as handle:
+					data = pickle.load(handle)
+					handle.close()
+					A1 = np.array(data['A1']).mean(axis = 0)
+					A2 = np.array(data['A2']).mean(axis = 0)
+					print(A1.shape, '  ', A2.shape)
+					agentsM = np.concatenate((A1, A2), axis = 1).T
+					print(agentsM.shape)			
+
+					agentsM = squareform(pdist(agentsM, whichDistance))
+					# data = (data - data.min())/(data.max() - data.min())
+					# print(data.max())
+					labels = []
+					cnt = 0
+					for i in range(agentsM.shape[0]):
+						if i < 6:
+							labels.append('Node1_' + str(cnt + 1))
+						else:
+							if i == 6:
+								cnt = 0
+							labels.append('Node2_' + str(cnt + 1))
+						cnt += 1
+
+					self.generateHeatMap(agentsM, labels, fName[0 : fName.index('_')] + '  -  ' + whichDistance + ' Distance')								
+
+		except Exception as e:
+			print('@ computeDistanceMetrics() :  ', e)
+			sys.exit()
+
+
+	def generateHeatMap(self, data, labels, ttle):
+		try:			
+			fig = plt.figure(figsize = (40, 13))
+			ax = fig.add_subplot(111)
+			cax = ax.matshow(data, cmap = cm.Spectral_r, interpolation = 'nearest')
+			fig.colorbar(cax)
+
+			xaxis = np.arange(len(labels))
+			ax.set_xticks(xaxis)
+			ax.set_yticks(xaxis)
+			ax.set_xticklabels(labels, rotation = 90)
+			ax.xaxis.set_ticks_position('bottom')
+			ax.set_yticklabels(labels)
+			plt.xticks(fontsize = 15)
+			plt.yticks(fontsize = 15)
+			plt.title(ttle)
+
+			plt.show()				
+		except Exception as e:
+			print('@ generateHeatMap() :  ', e)
+			sys.exit()			
