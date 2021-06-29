@@ -454,7 +454,7 @@ class infoAnalysis:
 					agentsM = squareform(pdist(agentsM, whichDistance))
 
 					if normalizationFlag != 0:
-						self.normalizeData(agentsM, normalizationFlag)
+						agentsM = self.normalizeData(agentsM, normalizationFlag)
 
 					labels = []
 					cnt = 0
