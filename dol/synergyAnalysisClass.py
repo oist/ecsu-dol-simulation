@@ -78,7 +78,7 @@ class infoAnalysis:
 			self.xTicksLabel = ['Individual', 'Group', 'Joint']
 
 			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
-			self.recomputeFlag = 0
+			self.recomputeFlag = 1
 
 			self.distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   ####  correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
 
