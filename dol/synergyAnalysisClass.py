@@ -76,6 +76,7 @@ class infoAnalysis:
 			self.xTicksLabel = ['Individual', 'Group', 'Joint']
 
 			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
+			self.recomputeFlag = 1
 
 		except Exception as e:
 			print('@ infoAnalysis() init -- ', e)
@@ -94,15 +95,13 @@ class infoAnalysis:
 
 	def checkIfResultsGenerated(self):
 		try:
+			if self.recomputeFlag == 1:
+				return 0
 			if not os.path.exists(self.resultFolder):
 				os.makedirs(self.resultFolder)
 				return 0
 			return 1
-			# # print(list(os.listdir(self.resultFolder)))
-			# tmp = list(os.listdir(self.resultFolder))
-			# if '.DS_Store' in tmp:
-			# 	tmp.remove('.DS_Store')
-			# return len(tmp)
+
 		except Exception as e:
 			print('@ checkIfResultsGenerated() :  ', e)
 			sys.exit()
