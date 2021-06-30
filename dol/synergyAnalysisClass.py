@@ -78,7 +78,9 @@ class infoAnalysis:
 			self.xTicksLabel = ['Individual', 'Group', 'Joint']
 
 			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
-			self.recomputeFlag = 1
+			self.recomputeFlag = 0
+
+			self.distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   ####  correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
 
 		except Exception as e:
 			print('@ infoAnalysis() init -- ', e)
@@ -514,10 +516,10 @@ class infoAnalysis:
 			agent1, agent2, target = self.returnAgentsTargetData(data_record_list[simIndex], self.includedNodes, (whichTrial - 1))			
 			agentsM = np.concatenate((agent1, agent2), axis = 1).T
 
-			agentsM = squareform(pdist(agentsM, whichDistance))
-
 			if normalizationFlag != 0:
-				agentsM = self.normalizeData(agentsM, normalizationFlag)
+				agentsM = self.normalizeData(agentsM, normalizationFlag)			
+
+			agentsM = squareform(pdist(agentsM, whichDistance))
 
 			labels = []
 			cnt = 0
@@ -530,7 +532,7 @@ class infoAnalysis:
 					labels.append('Node2_' + str(cnt + 1))
 				cnt += 1
 
-			self.generateHeatMap(agentsM, labels, whichSetting + ' ' + whichSeed + '  Trial' + str(whichTrial) + ' Distance')
+			self.generateHeatMap(agentsM, labels, whichSetting + ' ' + whichSeed + '  Trial' + str(whichTrial) + '  ' + whichDistance + '  Distance')
 
 		except Exception as e:
 			print('@ computeDistanceMetricsForSpecificSeed() :  ', e)
