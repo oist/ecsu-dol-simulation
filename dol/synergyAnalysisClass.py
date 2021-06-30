@@ -21,6 +21,8 @@ import scipy.special as special
 
 from scipy.spatial.distance import pdist, squareform
 
+from dol.run_from_dir import run_simulation_from_dir
+
 class infoAnalysis:
 	def __init__(self, whichSimSetup):
 		try:
@@ -494,3 +496,42 @@ class infoAnalysis:
 		except Exception as e:
 			print('@ generateHeatMap() :  ', e)
 			sys.exit()			
+
+	def computeDistanceMetricsForSpecificSeed(self, whichSetting, whichSeed, whichTrial, normalizationFlag, whichDistance):
+		try:
+			if not whichSeed in list(set(os.listdir(self.dataFolders[whichSetting]))):
+				print(whichSeed, '  Is Not a Valid Seed')				
+				sys.exit()
+			if whichTrial < 1 or whichTrial > 4: 
+				print(whichTrial, ' Is Not a Valid Trial Number')
+				sys.exit()
+
+			dir = self.dataFolders[whichSetting] + '/' + whichSeed
+			perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir = dir, generation = self.generation)			
+
+			simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'			
+			
+			agent1, agent2, target = self.returnAgentsTargetData(data_record_list[simIndex], self.includedNodes, (whichTrial - 1))			
+			agentsM = np.concatenate((agent1, agent2), axis = 1).T
+
+			agentsM = squareform(pdist(agentsM, whichDistance))
+
+			if normalizationFlag != 0:
+				agentsM = self.normalizeData(agentsM, normalizationFlag)
+
+			labels = []
+			cnt = 0
+			for i in range(agentsM.shape[0]):
+				if i < 6:
+					labels.append('Node1_' + str(cnt + 1))
+				else:
+					if i == 6:
+						cnt = 0
+					labels.append('Node2_' + str(cnt + 1))
+				cnt += 1
+
+			self.generateHeatMap(agentsM, labels, whichSetting + ' ' + whichSeed + '  Trial' + str(whichTrial) + ' Distance')
+
+		except Exception as e:
+			print('@ computeDistanceMetricsForSpecificSeed() :  ', e)
+			sys.exit()

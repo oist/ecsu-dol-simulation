@@ -136,17 +136,8 @@ if __name__ == "__main__":
 		
 		Obj.computeDistanceMetrics('cosine', 0)   ###  0 : use original data   1 : Z-score normalization     2 : Scale within [0 .. 1] interval
 
-		# import pickle
-		# import numpy as np
-		# for fName in agentsFiles:
-		# 	print(fName)
-		# 	with open(Obj.resultFolder[0 : Obj.resultFolder.index('Mult')] + fName, 'rb') as handle:
-		# 		data = pickle.load(handle)
-		# 		handle.close()
-		# 		A1 = np.array(data['A1']).mean(axis = 0)
-		# 		A2 = np.array(data['A2']).mean(axis = 0)
-		# 		print(A1.shape, '  ', A2.shape)
-		# 		print(np.concatenate((A1, A2), axis = 1).T.shape)
+		 ### 3rd Parameter = Trial No.| 4th Parameter: 0 : use original data | 1 : Z-score normalization | 2 : Scale within [0 .. 1] interval  | 5th Parameter : Distance Measure
+		Obj.computeDistanceMetricsForSpecificSeed('individual', 'seed_010', 1, 0, 'cosine')
 
 		Obj.shutdownJVM()						
 		
