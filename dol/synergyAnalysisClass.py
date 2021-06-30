@@ -6,6 +6,8 @@ import os
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+from matplotlib import cm
+
 import seaborn as sb
 
 import jpype as jp
@@ -13,9 +15,13 @@ import jpype as jp
 from sklearn import preprocessing
 
 from statsmodels.stats.diagnostic import lilliefors
-from scipy.stats import friedmanchisquare, ranksums, kruskal
+from scipy.stats import friedmanchisquare, ranksums, kruskal, spearmanr, pearsonr
 
 import scipy.special as special
+
+from scipy.spatial.distance import pdist, squareform
+
+from dol.run_from_dir import run_simulation_from_dir
 
 class infoAnalysis:
 	def __init__(self, whichSimSetup):
@@ -68,9 +74,11 @@ class infoAnalysis:
 			# 'agents_brain_input', 'agents_brain_state', 'agents_derivatives', 'agents_brain_output', 'agents_motors', 'info']
 
 			self.includedNodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output', 'target_position']
+			# self.includedNodes = ['agents_sensors', 'agents_brain_output', 'target_position']
 			self.xTicksLabel = ['Individual', 'Group', 'Joint']
 
 			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
+			self.recomputeFlag = 1
 
 		except Exception as e:
 			print('@ infoAnalysis() init -- ', e)
@@ -89,15 +97,13 @@ class infoAnalysis:
 
 	def checkIfResultsGenerated(self):
 		try:
+			if self.recomputeFlag == 1:
+				return 0
 			if not os.path.exists(self.resultFolder):
 				os.makedirs(self.resultFolder)
 				return 0
 			return 1
-			# # print(list(os.listdir(self.resultFolder)))
-			# tmp = list(os.listdir(self.resultFolder))
-			# if '.DS_Store' in tmp:
-			# 	tmp.remove('.DS_Store')
-			# return len(tmp)
+
 		except Exception as e:
 			print('@ checkIfResultsGenerated() :  ', e)
 			sys.exit()
@@ -222,6 +228,9 @@ class infoAnalysis:
 	def prepareDataForAnalysis(self, addr):
 		try:
 			simData = []
+			meanDist = []
+			stdDist = []
+
 			acceptedSeeds = list(os.listdir(addr))
 			print('++++   ', addr)
 			for seed in acceptedSeeds:
@@ -229,16 +238,23 @@ class infoAnalysis:
 					data = pickle.load(handle)						
 					handle.close()	
 					print('====   ', f'seed_{str(seed).zfill(3)}')
-					# print(data)					
+					# print(data)
+					# sys.exit()					
 					tmp = []
+					dM = []
+					dSTD = []
 					for j in range(4):
 						tmp.append([data[list(data.keys())[0]]['trial' + str(j + 1)]['condMultVarMI'], data[list(data.keys())[0]]['trial' + str(j + 1)]['multVarMI'], \
 							data[list(data.keys())[0]]['trial' + str(j + 1)]['coinformation']])
+						dM.append(data[list(data.keys())[0]]['trial' + str(j + 1)]['trackerTargetDist'].mean())
+						dSTD.append(data[list(data.keys())[0]]['trial' + str(j + 1)]['trackerTargetDist'].std())						
 					# print(np.array(tmp))					
 					simData.append(np.array(tmp).mean(axis = 0).tolist())
-			# print(np.array(simData), '   ', np.array(simData).shape)
+					meanDist.append(np.mean(dM))
+					stdDist.append(np.std(dSTD))
+			print(np.array(simData), '   ', np.array(simData).shape, '   ', len(meanDist), '  ', len(stdDist))
 
-			return np.array(simData)
+			return np.array(simData), meanDist, stdDist
 		except Exception as e:
 			print('@ prepareDataForAnalysis() :  ', e)
 			sys.exit()
@@ -348,6 +364,28 @@ class infoAnalysis:
 			print('@ showDescriptiveStatistics() :  ', e)
 			sys.exit()
 
+	def computeSpearmanCorr(self, M, distance, whichScenario, whichScaling):
+		try:
+			if whichScaling != 0:
+				if whichScaling == 1:
+					meanDistGroup = [(val - np.mean(meanDistGroup))/np.std(meanDistGroup) for val in meanDistGroup]
+				else:
+					meanDistGroup = [(val - min(meanDistGroup))/(max(meanDistGroup) - min(meanDistGroup)) for val in meanDistGroup]			
+			whichMeasure = ['Conditional Mutual Information', 'Mutual Information', 'Co-Information']
+			print('=======================  ', whichScenario, '  =======================')
+			for i in range(M.shape[1]):
+				[r, p] = spearmanr(M[:, i], distance)
+				if p < 0.05 and p < self.BonferroniCorrection:
+					print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Significant)')
+				else:
+					if p < 0.05 and p >= self.BonferroniCorrection:
+						print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant After Bonferroni Correction)')
+					else:
+						print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant)')
+		except Exception as e:
+			print('@ computeSpearmanCorr() :  ', e)
+			sys.exit()
+
 	def plotBoxPlotList(self, data, labels, ttle, yLabel):
 		try:
 			plt.figure(figsize = (40, 13))
@@ -370,3 +408,130 @@ class infoAnalysis:
 			print('plotBoxPlotList() :  ', e)
 			sys.exit()			
 
+	def saveAgentsAveragedDataOverAllSeeds_n_Trials(self, A1, A2, whichScenario):
+		try:
+			# print(np.array(A1).shape, '  ', np.array(A2).shape)
+			# print(np.array(A1).mean(axis = 0).shape, '  ', np.array(A2).mean(axis = 0).shape)
+			# print(np.array(A1).mean(axis = 0))
+			# print('++++++++++++++++++++++++++')
+			# print(np.array(A2).mean(axis = 0))
+			agentsData = {'A1' : A1, 'A2' : A2}
+
+			with open(self.resultFolder[0 : self.resultFolder.index('Mult')] + whichScenario + '_AgentsAllSeedsTrialsAvgNodes.pickle', 'wb') as handle:
+				pickle.dump(agentsData, handle, protocol = pickle.HIGHEST_PROTOCOL)
+				handle.close()			
+		except Exception as e:
+			print('@ saveAgentsAveragedDataOverAllSeeds_n_Trials() :  ', e)
+			sys.exit()
+
+	def returnAgentsAverageDataFileNames(self):
+		try:
+			tmp = os.listdir(self.resultFolder[0 : self.resultFolder.index('Mult')])
+			if '.DS_Store' in tmp:
+				tmp.remove('.DS_Store')
+			agentsFiles = []			
+			for fName in tmp:
+				if 'AgentsAllSeedsTrialsAvgNodes' in fName:
+					agentsFiles.append(fName)
+			return agentsFiles
+		except Exception as e:
+			print('@ returnAgentsAverageDataFileNames() :  ', e)
+			sys.exit()
+
+	def computeDistanceMetrics(self, whichDistance, normalizationFlag):
+		try:
+			agentsFiles = self.returnAgentsAverageDataFileNames()
+			for fName in agentsFiles:
+				print(fName)
+				with open(self.resultFolder[0 : self.resultFolder.index('Mult')] + fName, 'rb') as handle:
+					data = pickle.load(handle)
+					handle.close()
+					A1 = np.array(data['A1']).mean(axis = 0)
+					A2 = np.array(data['A2']).mean(axis = 0)
+					print(A1.shape, '  ', A2.shape)
+					agentsM = np.concatenate((A1, A2), axis = 1).T
+					print(agentsM.shape)			
+
+					agentsM = squareform(pdist(agentsM, whichDistance))
+
+					if normalizationFlag != 0:
+						agentsM = self.normalizeData(agentsM, normalizationFlag)
+
+					labels = []
+					cnt = 0
+					for i in range(agentsM.shape[0]):
+						if i < 6:
+							labels.append('Node1_' + str(cnt + 1))
+						else:
+							if i == 6:
+								cnt = 0
+							labels.append('Node2_' + str(cnt + 1))
+						cnt += 1
+
+					self.generateHeatMap(agentsM, labels, fName[0 : fName.index('_')] + '  -  ' + whichDistance + ' Distance')								
+
+		except Exception as e:
+			print('@ computeDistanceMetrics() :  ', e)
+			sys.exit()
+
+
+	def generateHeatMap(self, data, labels, ttle):
+		try:			
+			fig = plt.figure(figsize = (40, 13))
+			ax = fig.add_subplot(111)
+			cax = ax.matshow(data, cmap = cm.Spectral_r, interpolation = 'nearest')
+			fig.colorbar(cax)
+
+			xaxis = np.arange(len(labels))
+			ax.set_xticks(xaxis)
+			ax.set_yticks(xaxis)
+			ax.set_xticklabels(labels, rotation = 90)
+			ax.xaxis.set_ticks_position('bottom')
+			ax.set_yticklabels(labels)
+			plt.xticks(fontsize = 15)
+			plt.yticks(fontsize = 15)
+			plt.title(ttle)
+
+			plt.show()				
+		except Exception as e:
+			print('@ generateHeatMap() :  ', e)
+			sys.exit()			
+
+	def computeDistanceMetricsForSpecificSeed(self, whichSetting, whichSeed, whichTrial, normalizationFlag, whichDistance):
+		try:
+			if not whichSeed in list(set(os.listdir(self.dataFolders[whichSetting]))):
+				print(whichSeed, '  Is Not a Valid Seed')				
+				sys.exit()
+			if whichTrial < 1 or whichTrial > 4: 
+				print(whichTrial, ' Is Not a Valid Trial Number')
+				sys.exit()
+
+			dir = self.dataFolders[whichSetting] + '/' + whichSeed
+			perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir = dir, generation = self.generation)			
+
+			simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'			
+			
+			agent1, agent2, target = self.returnAgentsTargetData(data_record_list[simIndex], self.includedNodes, (whichTrial - 1))			
+			agentsM = np.concatenate((agent1, agent2), axis = 1).T
+
+			agentsM = squareform(pdist(agentsM, whichDistance))
+
+			if normalizationFlag != 0:
+				agentsM = self.normalizeData(agentsM, normalizationFlag)
+
+			labels = []
+			cnt = 0
+			for i in range(agentsM.shape[0]):
+				if i < 6:
+					labels.append('Node1_' + str(cnt + 1))
+				else:
+					if i == 6:
+						cnt = 0
+					labels.append('Node2_' + str(cnt + 1))
+				cnt += 1
+
+			self.generateHeatMap(agentsM, labels, whichSetting + ' ' + whichSeed + '  Trial' + str(whichTrial) + ' Distance')
+
+		except Exception as e:
+			print('@ computeDistanceMetricsForSpecificSeed() :  ', e)
+			sys.exit()
