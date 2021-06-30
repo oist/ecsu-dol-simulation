@@ -188,7 +188,7 @@ if __name__ == "__main__":
     # additional args
     parser.add_argument('--visualize_trial', type=int, default=-1, help='Whether to visualize a certain trial (one-based)')
     parser.add_argument('--plot', action='store_true', help='Whether to plot the data')
-    parser.add_argument('--plot_trial', type=int, help='Whether to plot a specif trial')
+    parser.add_argument('--plot_trial_index', type=int, help='Whether to plot a specif trial (0-based)')
 
     args = parser.parse_args()
 
@@ -200,5 +200,5 @@ if __name__ == "__main__":
         vis = Visualization(sim) if sim.num_dim == 1 else Visualization2D(sim)
         vis.start_simulation_from_data(args.visualize_trial - 1, data_record)
     if args.plot:
-        plot.plot_results(evo, sim, args.plot_trial, data_record)
+        plot.plot_results(evo, sim, args.plot_trial_index, data_record)
 
