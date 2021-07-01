@@ -124,15 +124,15 @@ if __name__ == "__main__":
 
 		print('\n\n Spearman Correlation Based on Target-Tracker Mean Distance')
 
-		Obj.computeSpearmanCorr(individual, meanDistIndividual, 'Individual - Mean Target-Tracker Disatnce', Obj.whichNormalization)  ##### 1 : z-scored   2 : [0 .. 1] scaled
-		Obj.computeSpearmanCorr(group, meanDistGroup, 'Group - Mean Target-Tracker Disatnce', Obj.whichNormalization)		
-		Obj.computeSpearmanCorr(joint, meanDistJoint, 'Joint - Mean Target-Tracker Disatnce', Obj.whichNormalization)		
+		Obj.computeSpearmanCorr(individual, meanDistIndividual, 'Individual', Obj.whichNormalization, 'Mean Target-Tracker Disatnce')  ##### 1 : z-scored   2 : [0 .. 1] scaled
+		Obj.computeSpearmanCorr(group, meanDistGroup, 'Group', Obj.whichNormalization, 'Mean Target-Tracker Disatnce')		
+		Obj.computeSpearmanCorr(joint, meanDistJoint, 'Joint', Obj.whichNormalization, 'Mean Target-Tracker Disatnce')		
 
 		print('\n\n Spearman Correlation Based on Target-Tracker SD Distance')
 
-		Obj.computeSpearmanCorr(individual, stdDistIndividual, 'Individual - SD Target-Tracker Disatnce', Obj.whichNormalization)		
-		Obj.computeSpearmanCorr(group, stdDistGroup, 'Group - SD Target-Tracker Disatnce', Obj.whichNormalization)		
-		Obj.computeSpearmanCorr(joint, stdDistJoint, 'Joint - SD Target-Tracker Disatnce', Obj.whichNormalization)						
+		Obj.computeSpearmanCorr(individual, stdDistIndividual, 'Individual', Obj.whichNormalization, 'SD Target-Tracker Disatnce')		
+		Obj.computeSpearmanCorr(group, stdDistGroup, 'Group', Obj.whichNormalization, 'SD Target-Tracker Disatnce')		
+		Obj.computeSpearmanCorr(joint, stdDistJoint, 'Joint', Obj.whichNormalization, 'SD Target-Tracker Disatnce')						
 		
 		Obj.computeDistanceMetrics('cosine', 0)   ###  0 : use original data   1 : Z-score normalization     2 : Scale within [0 .. 1] interval
 

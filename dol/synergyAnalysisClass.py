@@ -368,7 +368,7 @@ class infoAnalysis:
 			print('@ showDescriptiveStatistics() :  ', e)
 			sys.exit()
 
-	def computeSpearmanCorr(self, M, distance, whichScenario, whichScaling):
+	def computeSpearmanCorr(self, M, distance, whichScenario, whichScaling, yLabel):
 		try:
 			fig = plt.figure(figsize = (40, 13))
 			if whichScaling != 0:
@@ -384,7 +384,11 @@ class infoAnalysis:
 				b, m = polyfit(M[:, i], distance, 1)
 				ax1.plot(M[:, i], distance, 'ro')
 				ax1.plot(M[:, i], b + m * M[:, i], 'k-')
-				ax1.set_title(whichScenario + ' : ' + whichMeasure[i])				
+				# ax1.set_title(whichScenario + ' : ' + whichMeasure[i])				
+				ax1.set_xlabel(whichScenario + ' : ' + whichMeasure[i], fontsize = 15)
+				ax1.set_ylabel(yLabel, fontsize = 15)
+				plt.xticks(fontsize = 15)
+				plt.yticks(fontsize = 15)				
 				[r, p] = spearmanr(M[:, i], distance)				
 				if p < 0.05 and p < self.BonferroniCorrection:
 					print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Significant)')
