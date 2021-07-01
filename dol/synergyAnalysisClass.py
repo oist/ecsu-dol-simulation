@@ -23,6 +23,8 @@ from scipy.spatial.distance import pdist, squareform
 
 from dol.run_from_dir import run_simulation_from_dir
 
+from numpy.polynomial.polynomial import polyfit
+
 class infoAnalysis:
 	def __init__(self, whichSimSetup):
 		try:
@@ -368,6 +370,7 @@ class infoAnalysis:
 
 	def computeSpearmanCorr(self, M, distance, whichScenario, whichScaling):
 		try:
+			fig = plt.figure(figsize = (40, 13))
 			if whichScaling != 0:
 				if whichScaling == 1:
 					meanDistGroup = [(val - np.mean(meanDistGroup))/np.std(meanDistGroup) for val in meanDistGroup]
@@ -376,7 +379,13 @@ class infoAnalysis:
 			whichMeasure = ['Conditional Mutual Information', 'Mutual Information', 'Co-Information']
 			print('=======================  ', whichScenario, '  =======================')
 			for i in range(M.shape[1]):
-				[r, p] = spearmanr(M[:, i], distance)
+				ax1 = plt.subplot2grid((3, 1), (i, 0))
+
+				b, m = polyfit(M[:, i], distance, 1)
+				ax1.plot(M[:, i], distance, 'ro')
+				ax1.plot(M[:, i], b + m * M[:, i], 'k-')
+				ax1.set_title(whichScenario + ' : ' + whichMeasure[i])				
+				[r, p] = spearmanr(M[:, i], distance)				
 				if p < 0.05 and p < self.BonferroniCorrection:
 					print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Significant)')
 				else:
@@ -384,6 +393,7 @@ class infoAnalysis:
 						print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant After Bonferroni Correction)')
 					else:
 						print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant)')
+			plt.show()
 		except Exception as e:
 			print('@ computeSpearmanCorr() :  ', e)
 			sys.exit()
