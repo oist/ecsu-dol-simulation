@@ -179,11 +179,6 @@ class Simulation:
         gen_structure.check_genotype_structure(sim.genotype_structure)
         return sim
 
-    def nn(self):
-        # shortcut for creating a list of n None 
-        # (with n being the num of agents)
-        return [None for _ in range(self.num_agents)]
-
     def fill_paired_agents_indexes(self, exaustive_pairs):
         if self.num_random_pairings in [None, 0]:
             self.paired_agents_sims_pop_idx = None
@@ -268,42 +263,30 @@ class Simulation:
     def init_data_record(self):
         if self.data_record is None:
             return
-        self.data_record['delta_tracker_target'] = [None for _ in range(self.num_trials)]
-        self.data_record['target_position'] = [None for _ in range(self.num_trials)]
-        self.data_record['target_velocity'] = [None for _ in range(self.num_trials)]
-        self.data_record['tracker_position'] = [None for _ in range(self.num_trials)]
-        self.data_record['tracker_angle'] = [None for _ in range(self.num_trials)]
-        self.data_record['tracker_wheels'] = [None for _ in range(self.num_trials)]
-        self.data_record['tracker_velocity'] = [None for _ in range(self.num_trials)]
-        self.data_record['tracker_signals'] = [None for _ in range(self.num_trials)]
+        self.data_record['delta_tracker_target'] = np.zeros((self.num_trials, self.num_data_points))
+        self.data_record['target_position'] = np.zeros((self.num_trials, self.num_data_points))
+        self.data_record['target_velocity'] = np.zeros((self.num_trials, self.num_data_points-1))
+        self.data_record['tracker_position'] = np.zeros((self.num_trials, self.num_data_points))
+        self.data_record['tracker_angle'] = np.zeros((self.num_trials, self.num_data_points))
+        self.data_record['tracker_wheels'] = np.zeros((self.num_trials, self.num_data_points, self.num_sensors_motors))
+        self.data_record['tracker_velocity'] = np.zeros((self.num_trials, self.num_data_points))
+        self.data_record['tracker_signals'] = np.zeros((self.num_trials, self.num_data_points, self.num_sensors_motors))
         self.data_record['agents_motors_control_indexes'] = [None for _ in range(self.num_trials)]
-        self.data_record['agents_sensors'] = [self.nn() for _ in range(self.num_trials)]
-        self.data_record['agents_brain_input'] = [self.nn() for _ in range(self.num_trials)]
-        self.data_record['agents_brain_state'] = [self.nn() for _ in range(self.num_trials)]
-        self.data_record['agents_derivatives'] = [self.nn() for _ in range(self.num_trials)]
-        self.data_record['agents_brain_output'] = [self.nn() for _ in range(self.num_trials)]
-        self.data_record['agents_motors'] = [self.nn() for _ in range(self.num_trials)]
+        self.data_record['agents_sensors'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_sensors_motors))
+        self.data_record['agents_brain_input'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_brain_neurons))
+        self.data_record['agents_brain_state'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_brain_neurons))
+        self.data_record['agents_derivatives'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_brain_neurons))
+        self.data_record['agents_brain_output'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_brain_neurons))
+        self.data_record['agents_motors'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_sensors_motors))
         self.timing.add_time('SIM_init_data', self.tim)
 
-    def init_data_record_trial(self, t):
+    def save_data_record_trial(self, t):
         if self.data_record is None:
             return
         self.data_record['delta_tracker_target'][t] = self.delta_tracker_target  # presaved
         self.data_record['target_position'][t] = self.target_positions  # presaved
         self.data_record['target_velocity'][t] = np.diff(self.target_positions)  # presaved
-        self.data_record['tracker_position'][t] = np.zeros((self.num_data_points, self.num_dim))
-        self.data_record['tracker_angle'][t] = np.zeros(self.num_data_points)
-        self.data_record['tracker_wheels'][t] = np.zeros((self.num_data_points, 2)) # TODO: check this in 2d
-        self.data_record['tracker_velocity'][t] = np.zeros(self.num_data_points)
-        self.data_record['tracker_signals'][t] = np.zeros((self.num_data_points, self.num_sensors_motors))
         self.data_record['agents_motors_control_indexes'][t] = self.agents_motors_control_indexes
-        for a in range(self.num_agents):
-            self.data_record['agents_sensors'][t][a] = np.zeros((self.num_data_points, self.num_sensors_motors))
-            self.data_record['agents_brain_input'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
-            self.data_record['agents_brain_state'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
-            self.data_record['agents_derivatives'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
-            self.data_record['agents_brain_output'][t][a] = np.zeros((self.num_data_points, self.num_brain_neurons))
-            self.data_record['agents_motors'][t][a] = np.zeros((self.num_data_points, self.num_sensors_motors))
         self.timing.add_time('SIM_init_trial_data', self.tim)
 
     def save_data_record_step(self, t, i):
@@ -330,7 +313,7 @@ class Simulation:
         # init motor controllers
         # agents_motors_control_indexes[0]: which agent's left output is controlling the left motor
         # agents_motors_control_indexes[1]: which agent's right output is controlling the right motor
-        self.agents_motors_control_indexes = None
+        
         if self.num_agents == 2:
             if self.isolation_idx is not None:
                 # forcing control by one agents
@@ -348,14 +331,14 @@ class Simulation:
                 # self.motor_control_mode=='OVERLAP'
                 # both agents control both motors (for a factor of half)
                 self.agents_motors_control_indexes = None 
-
-                # init deltas
+        else:
+            # single agent
+            self.agents_motors_control_indexes = [0,0]
+        
+        # init deltas
         self.delta_tracker_target = np.zeros(self.num_data_points)
         # initi all positions and velocities of target
         self.target_positions = self.target.compute_positions(trial=t)        
-
-        # init data of trial
-        self.init_data_record_trial(t)
 
         # init agents params
         for o in self.agents:
@@ -497,11 +480,14 @@ class Simulation:
                     # 5) Move tracker one step
                     self.tracker.move_one_step()                 
 
-                    # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
+                # performance_t = - np.mean(np.abs(self.delta_tracker_target)) / self.target_env_width
                 performance_t = self.max_mean_distance - np.mean(np.abs(self.delta_tracker_target))
                 assert performance_t >= 0, f"Found performance trial < 0: {performance_t}"
 
                 trial_performances.append(performance_t)
+
+                # save data of trial
+                self.save_data_record_trial(t)
 
             # TRIALS END
 

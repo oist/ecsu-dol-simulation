@@ -65,7 +65,8 @@ def plot_data_time(data_record, key, trial='all', log=False):
     fig.suptitle(title)
     for t in range(num_trials):
         trial_data = exp_data[t] if trial == 'all' else exp_data[trial - 1]
-        if type(trial_data) is list:
+        if len(trial_data) <= 2:
+        # if type(trial_data) in (list, np.ndarray):
             num_agents = len(trial_data)
             for a in range(num_agents):
                 ax = fig.add_subplot(num_agents, num_trials, (a * num_trials) + t + 1)
@@ -95,7 +96,8 @@ def plot_motor_time(sim, data_record, key, trial='all', log=False):
     for t in range(num_trials):
         trial_index = t if trial == 'all' else trial - 1
         trial_data = exp_data[trial_index]
-        if type(trial_data) is list:
+        if len(trial_data) <= 2:
+        # if type(trial_data) in (list, np.ndarray):
             num_agents = len(trial_data)
             for a in range(num_agents):
                 ax = fig.add_subplot(num_agents, num_trials, (a * num_trials) + t + 1)
