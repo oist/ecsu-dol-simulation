@@ -137,7 +137,8 @@ if __name__ == "__main__":
 		Obj.computeDistanceMetrics('cosine', 0)   ###  0 : use original data   1 : Z-score normalization     2 : Scale within [0 .. 1] interval
 
 		 ### 3rd Parameter = Trial No.| 4th Parameter: 0 : use original data | 1 : Z-score normalization | 2 : Scale within [0 .. 1] interval  | 5th Parameter : Distance Measure
-		Obj.computeDistanceMetricsForSpecificSeed('individual', 'seed_010', 1, 0, 'cosine')
+		for metric in Obj.distanceMetrics:
+			Obj.computeDistanceMetricsForSpecificSeed('individual', 'seed_010', 1, 0, metric)
 
 		Obj.shutdownJVM()						
 		

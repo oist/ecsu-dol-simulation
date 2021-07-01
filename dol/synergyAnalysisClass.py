@@ -23,6 +23,8 @@ from scipy.spatial.distance import pdist, squareform
 
 from dol.run_from_dir import run_simulation_from_dir
 
+from numpy.polynomial.polynomial import polyfit
+
 class infoAnalysis:
 	def __init__(self, whichSimSetup):
 		try:
@@ -79,6 +81,8 @@ class infoAnalysis:
 
 			self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'
 			self.recomputeFlag = 1
+
+			self.distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   ####  correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
 
 		except Exception as e:
 			print('@ infoAnalysis() init -- ', e)
@@ -366,6 +370,7 @@ class infoAnalysis:
 
 	def computeSpearmanCorr(self, M, distance, whichScenario, whichScaling):
 		try:
+			fig = plt.figure(figsize = (40, 13))
 			if whichScaling != 0:
 				if whichScaling == 1:
 					meanDistGroup = [(val - np.mean(meanDistGroup))/np.std(meanDistGroup) for val in meanDistGroup]
@@ -374,7 +379,13 @@ class infoAnalysis:
 			whichMeasure = ['Conditional Mutual Information', 'Mutual Information', 'Co-Information']
 			print('=======================  ', whichScenario, '  =======================')
 			for i in range(M.shape[1]):
-				[r, p] = spearmanr(M[:, i], distance)
+				ax1 = plt.subplot2grid((3, 1), (i, 0))
+
+				b, m = polyfit(M[:, i], distance, 1)
+				ax1.plot(M[:, i], distance, 'ro')
+				ax1.plot(M[:, i], b + m * M[:, i], 'k-')
+				ax1.set_title(whichScenario + ' : ' + whichMeasure[i])				
+				[r, p] = spearmanr(M[:, i], distance)				
 				if p < 0.05 and p < self.BonferroniCorrection:
 					print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Significant)')
 				else:
@@ -382,6 +393,7 @@ class infoAnalysis:
 						print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant After Bonferroni Correction)')
 					else:
 						print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant)')
+			plt.show()
 		except Exception as e:
 			print('@ computeSpearmanCorr() :  ', e)
 			sys.exit()
@@ -514,10 +526,10 @@ class infoAnalysis:
 			agent1, agent2, target = self.returnAgentsTargetData(data_record_list[simIndex], self.includedNodes, (whichTrial - 1))			
 			agentsM = np.concatenate((agent1, agent2), axis = 1).T
 
-			agentsM = squareform(pdist(agentsM, whichDistance))
-
 			if normalizationFlag != 0:
-				agentsM = self.normalizeData(agentsM, normalizationFlag)
+				agentsM = self.normalizeData(agentsM, normalizationFlag)			
+
+			agentsM = squareform(pdist(agentsM, whichDistance))
 
 			labels = []
 			cnt = 0
@@ -530,7 +542,7 @@ class infoAnalysis:
 					labels.append('Node2_' + str(cnt + 1))
 				cnt += 1
 
-			self.generateHeatMap(agentsM, labels, whichSetting + ' ' + whichSeed + '  Trial' + str(whichTrial) + ' Distance')
+			self.generateHeatMap(agentsM, labels, whichSetting + ' ' + whichSeed + '  Trial' + str(whichTrial) + '  ' + whichDistance + '  Distance')
 
 		except Exception as e:
 			print('@ computeDistanceMetricsForSpecificSeed() :  ', e)
