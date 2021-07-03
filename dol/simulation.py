@@ -265,7 +265,6 @@ class Simulation:
             return
         self.data_record['delta_tracker_target'] = np.zeros((self.num_trials, self.num_data_points))
         self.data_record['target_position'] = np.zeros((self.num_trials, self.num_data_points))
-        self.data_record['target_velocity'] = np.zeros((self.num_trials, self.num_data_points-1))
         self.data_record['tracker_position'] = np.zeros((self.num_trials, self.num_data_points))
         self.data_record['tracker_angle'] = np.zeros((self.num_trials, self.num_data_points))
         self.data_record['tracker_wheels'] = np.zeros((self.num_trials, self.num_data_points, self.num_sensors_motors))
@@ -285,7 +284,6 @@ class Simulation:
             return
         self.data_record['delta_tracker_target'][t] = self.delta_tracker_target  # presaved
         self.data_record['target_position'][t] = self.target_positions  # presaved
-        self.data_record['target_velocity'][t] = np.diff(self.target_positions)  # presaved
         self.data_record['agents_motors_control_indexes'][t] = self.agents_motors_control_indexes
         self.timing.add_time('SIM_init_trial_data', self.tim)
 

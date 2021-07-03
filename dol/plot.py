@@ -229,9 +229,6 @@ def plot_results(evo, sim, trial, data_record):
     # plot_data_time(data_record, 'tracker_velocity', trial)
     # plot_data_time(data_record, 'tracker_signals', trial)
 
-    # time target
-    # plot_data_time(data_record, 'target_velocity', trial)    
-
     # time tracker & target
     if sim.num_dim == 1:
         plot_data_time_multi_keys(
