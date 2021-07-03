@@ -42,31 +42,30 @@ where:
 - `evo`: the `pyevolver.Evolution` object.
 - `sim`: the `dol.Simulation` object.
 - `sim_idx`: index of the simulation obtaining the best performance (`np.argmin(sim_perfs)`).
-- `data`: a list of dictionaries each containing the data from each of the `n` simulations (one per paired agent). In each dictionary contains the following keys:  
-  - `trials_performances`: list of performances for each trial between the two agents of the current simulation, computed as the average of the distance between `tracker`  and `target` within each trial (see `delta_tracker_target` below).
-  - `sim_performance`: the average across trial performances (`np.mean(trials_performances)`.
-  - `current_agent_pop_idx`: a tuple `(pop_idx, p_idx)` where `pop_idx` is the index of the population of the current agent and `p_idx` the index of the current agent within the population.
-  - `paired_agent_pop_idx`: analogous to above for the paired agent. If the simulation is perfomed by a single agent this is `None`.
-  - `genotypes`: genotypes of the agent(s) in the current simulation.
-  - `phenotypes`: phenotypes of the agent(s) in the current simulation.
-  - `genotype_distance`: distance between the genotypes of the current agent and the paired one (`None` if there is only a single agent).  
-  - `delta_tracker_target`: a list of arrays (one per trial) each containing data points, one for each step of the simulation representing the distance between `tracker` and `target` at that step.
-  - `target_position`: contains a list of `np.array` (one per simulation trial) representing the positions of the target throughout the simulation.
-  - `target_velocity`: as above wrt target velocity.
-  - `tracker_position`: as above wrt target position.
-  - `tracker_angle`: as above wrt target angle (only relevant in `2d` mode with `XY_MODE` disabled).
-  - `tracker_wheels`: as above wrt tracker wheels.
-  - `tracker_velocity`: as above wrt tracker velocity (difference between the wheels).
-  - `tracker_signals`: : as above wrt tracker signal.
-  - `agents_brain_output`: contains a list of arrays (one per simulation trial) where each array contains the brain output values in the corresponding trial.
-  - `agents_brain_input`: as above, wrt agent brain input.
-  - `agents_sensors`: as above, wrt agent sensors.  
-  - `agents_brain_state`: as above, wrt agent brain state.
-  - `agents_derivatives`: as above, wrt agent brain derivatives.
-  - `agents_motors`: as above, wrt agent motors.
-  - `agents_motors_control_indexes`: a tuple `(l,r)` where `l` is the index of the agent whose left output is controlling the left motor and `r` is the index of the agent whose right output is controlling the right motor.
-
-
+- `data`: a list of dictionaries each containing the data from each of the `n` simulations (one per paired agent). In each dictionary contains the following keys.
+   |key|Type/Shape|Description|
+   |---|-----|-----------|
+   |`trials_performances`| `list(num_trials)`  |list of performances for each trial between the two agents of the current simulation, computed as the average of the distance between `tracker`  and `target` within each trial (see `delta_tracker_target` below)
+   `sim_performance`| `float`  |the average across trial performances (`np.mean(trials_performances)`.
+   `current_agent_pop_idx`| `tuple(2)`  |a tuple `(pop_idx, p_idx)` where `pop_idx` is the index of the population of the current agent and `p_idx` the index of the current agent within the population.
+   `paired_agent_pop_idx`|  `tuple(2)` |analogous to above for the paired agent. If the simulation is perfomed by a single agent this is `None`.
+   `genotypes`| `ndarray` with size depending on the network architecture (e.g., number of neurons) |genotypes of the agent(s) in the current simulation.
+   `phenotypes`|  `list` of 2 `dict` |phenotypes of the agent(s) in the current simulation.
+   `genotype_distance`| `float`  |distance between the genotypes of the current agent and the paired one (`None` if there is only a single agent).  
+   `delta_tracker_target`| `ndarray(num_trials, num_data_points)`  |a list of arrays (one per trial) each containing data points, one for each step of the simulation representing the distance between `tracker` and `target` at that step.
+   `target_position`|  `ndarray(num_trials, num_data_points)` |contains a list of `np.array` (one per simulation trial) representing the positions of the target throughout the simulation.
+   `tracker_position`| `ndarray(num_trials, num_data_points)`  |as above wrt target position.
+   `tracker_angle`| `ndarray(num_trials, num_data_points)` |as above wrt target angle (only relevant in `2d` mode with `XY_MODE` disabled).
+   `tracker_wheels`|  `ndarray(num_trials, num_data_points, num_motors)` |as above wrt tracker wheels.
+   `tracker_velocity`| `ndarray(num_trials, num_data_points)`  |as above wrt tracker velocity (difference between the wheels).
+   `tracker_signals`|  `ndarray(num_trials, num_data_points, num_sensors)` |as above wrt tracker signal.
+   `agents_brain_output`| `ndarray(num_trials, num_agents, num_data_points, num_brain_neurons)`  |contains a list of arrays (one per simulation trial) where each array contains the brain output values in the corresponding trial.
+   `agents_brain_input`| `ndarray(num_trials, num_agents, num_data_points, num_brain_neurons)` |as above, wrt agent brain input.
+   `agents_sensors`| `ndarray(num_trials, num_agents, num_data_points, num_sensors)`  |as above, wrt agent sensors.  
+   `agents_brain_state`| `ndarray(num_trials, num_agents, num_data_points, num_brain_neurons)` |as above, wrt agent brain state.
+   `agents_derivatives`|   |as above, wrt agent brain derivatives.
+   `agents_motors`| `ndarray(num_trials, num_agents, num_data_points, num_brain_neurons)` |as above, wrt agent motors.
+   `agents_motors_control_indexes`| `list(num_trials)` of `tuple(2)`  |a list of tuples (one per trial) where in each tuple `(l,r)`, `l` is the index of the agent whose left output is controlling the left motor and `r` is the index of the agent whose right output is controlling the right motor.
 
 
 ## Alife 2021 paper
@@ -104,7 +103,7 @@ animation and data plots of behavior and neural activity, run (see available arg
       ```
       cd rstat
       R [enter into R]
-      > install.packages(c("dplyr", "tidyr", "car", "ggplot2", "ggsignif", "ggpubr", "pastecs", "compute.es"))
+      > install.packages(c("dplyr", "tidyr", "car", "ggplot2", "ggsignif", "ggpubr", "pastecs", "compute.es")
       > q() [quit R]
       Rscript dol_complexity.R
       ```
