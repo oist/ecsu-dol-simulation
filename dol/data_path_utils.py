@@ -49,6 +49,21 @@ phil_trans_si_data_4n_exclusive_switch = {
     )
 }
 
+phil_trans_si_data_10n_exclusive_switch = {
+    'group': os.path.join( 
+        phil_trans_si_data, 
+        '1d_10n_exc-0.1_zfill_rp-3_switch'
+    ),
+    'joint': os.path.join(
+        phil_trans_si_data, 
+        '1d_10n_exc-0.1_zfill_rp-0_switch'
+    ),
+    'individual': os.path.join(
+        phil_trans_si_data, 
+        '1d_10n_exc-0.1_zfill_rp-3_np-4_switch'
+    )
+}
+
 phil_trans_si_data_2n_overlap = {
     'group': os.path.join( # 20/20 seeds converged
         phil_trans_si_data, 
@@ -67,10 +82,11 @@ phil_trans_si_data_2n_overlap = {
 if __name__ == "__main__":
     from dol.analyze_results import get_last_performance_seeds
     for name, exp_dict in [
-        ('2n (switch + exclusive motors)', phil_trans_si_data_2n_exclusive_switch),
         ('2n (overlap)', phil_trans_si_data_2n_overlap),
+        ('2n (switch + exclusive motors)', phil_trans_si_data_2n_exclusive_switch),        
         ('3n (switch + exclusive motors)', phil_trans_si_data_3n_exclusive_switch),
-        ('4n (switch + exclusive motors)', phil_trans_si_data_4n_exclusive_switch)]:
+        ('4n (switch + exclusive motors)', phil_trans_si_data_4n_exclusive_switch),
+        ('10n (switch + exclusive motors)', phil_trans_si_data_10n_exclusive_switch)]:
         
         print('————————————————————')
         print(name.upper())        

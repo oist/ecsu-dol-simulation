@@ -18,7 +18,54 @@ from dol.run_from_dir import run_simulation_from_dir
 CONVERGENCE_THRESHOLD = 20.
 VARIANCE_THRESHOLD = 1e-6
 
-def get_last_performance_seeds(base_dir, print_stats=True, print_values=False, plot=False, export_to_csv=False):
+def plot_best_exp_performance(best_exp_performance, seeds):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    fig.suptitle(f'Convergence seeds')
+    ind = np.arange(len(seeds))        
+    num_bars = len(best_exp_performance[0])
+    width = 0.7 / num_bars
+    for p in range(num_bars):
+        p_series = [b[p] for b in best_exp_performance]
+        x_pos = ind + p * width + width/2
+        ax.bar(x_pos, p_series, width, label=f'Pop{p+1}')
+    ax.set_xticks(ind + 0.7 / 2)
+    ax.set_xticklabels(seeds)
+    plt.xlabel('Seeds')
+    plt.ylabel('Error')    
+    plt.legend(bbox_to_anchor=(-0.15, 1.10), loc='upper left')
+    plt.show()
+
+def plot_conv_seeds_non_flat_neurons(seed_neurons, title):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    fig.suptitle(title)
+    seeds = seed_neurons.keys()
+    ind = np.arange(len(seeds))        
+    num_bars = len(list(seed_neurons.values())[0])
+    width = 0.7 / num_bars
+    for p in range(num_bars):
+        p_series = [b[p] for b in seed_neurons.values()]
+        x_pos = ind + p * width + width/2
+        ax.bar(x_pos, p_series, width, label=f'A{p+1}')
+    ax.set_xticks(ind + 0.7 / 2)
+    ax.set_xticklabels(seeds)
+    plt.xlabel('Seeds')
+    plt.ylabel('Flat Neurons')
+    plt.legend(bbox_to_anchor=(-0.15, 1.10), loc='upper left')
+    plt.show()    
+
+def get_non_flat_neuron_data(data_record, key):
+    brain_data = data_record[key] # shape: (num_trials, num_agents, sim_steps(500), num_dim (num_neurons))
+    brain_data = np.moveaxis(brain_data, (0,2), (2,3)) # (num_agents, num_dim (num_neurons), num_trials, sim_steps(500))
+    brain_data = brain_data[:,:,:,100:] # cut the firs 100 point in each trial (brain outputs needs few steps to converge)        
+    var = np.var(brain_data, axis=3) 
+    max_var = np.max(var, axis=2) # for each agent, each neuron what is the max variance across trials  
+    non_flat_neurons = np.sum(max_var > VARIANCE_THRESHOLD, axis=1)    
+    return non_flat_neurons
+
+def get_last_performance_seeds(base_dir, print_stats=True, 
+    print_values=False, plot=False, export_to_csv=False,
+    compute_nfn=False):
+
     exp_dirs = sorted([d for d in os.listdir(base_dir) if d.startswith('seed_')])
     best_exp_performance = []  # the list of best performances of last generation for all seeds
     all_gen_best_performances = [] # all best performances for all seeds for all generations
@@ -41,50 +88,55 @@ def get_last_performance_seeds(base_dir, print_stats=True, print_values=False, p
             sim = Simulation.load_from_file(sim_json_filepath)
             exp_evo_data = json.load(f_in)
             s = exp_evo_data['random_seed']
+            # if s>20:
+            #     continue
             seeds.append(s)
             seed_exp_dir[s] = exp_dir
-            gen_best_perf = np.array(exp_evo_data['best_performances'])
-            gen_best_perf = sim.max_mean_distance - gen_best_perf
+            gen_best_perf = np.array(exp_evo_data['best_performances']) # one per population            
 
             # make sure it's monotonic increasing(otherwise there is a bug)
             # assert all(gen_best_perf[i] <= gen_best_perf[i+1] for i in range(len(gen_best_perf)-1))
 
             perf_index = lambda a: '|'.join(['{:.5f}'.format(x) for x in a])
 
-            last_best_performance = gen_best_perf[-1]            
+            last_best_performance = gen_best_perf[-1] 
+            last_best_performance = sim.normalize_performance(last_best_performance)           
             if print_values:
-                print('{} {}'.format(exp, perf_index(last_best_performance)))
+                print('{} {}'.format(exp, perf_index(last_best_performance)))            
             best_exp_performance.append(last_best_performance)
             all_gen_best_performances.append(gen_best_perf)
 
-    converged_seeds = [s for s,p in zip(seeds,best_exp_performance) if (p<CONVERGENCE_THRESHOLD).any()]
+    converged_seeds = [s for s,p in zip(seeds,best_exp_performance) if np.min(p)<CONVERGENCE_THRESHOLD]    
     non_converged_seeds = [s for s in seeds if s not in converged_seeds]
+    conv_seeds_perf = {s:round(np.min(p),0) for s,p in zip(seeds,best_exp_performance) if s in converged_seeds}
+    non_conv_seeds_perf = {s:round(np.min(p),0) for s,p in zip(seeds,best_exp_performance) if s in non_converged_seeds}
+    conv_seeds_non_flat_neur_outputs = {}
+    conv_seeds_non_flat_neur_states = {}
+
+    if compute_nfn:
+        for s in converged_seeds:
+            s_exp_dir = seed_exp_dir[s]
+            performance, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(s_exp_dir, quiet=True)
+            data_record = data_record_list[sim_idx]        
+            conv_seeds_non_flat_neur_outputs[s] = get_non_flat_neuron_data(data_record, 'agents_brain_output')
+            conv_seeds_non_flat_neur_states[s] = get_non_flat_neuron_data(data_record, 'agents_brain_state')
 
     if print_stats:
         # print('Selected evo: {}'.format(last_evo_file))
         # print('Num seeds:', len(best_exp_performance))
         # print('Stats:', stats.describe(best_exp_performance))
         print(f'Converged ({len(converged_seeds)}):', converged_seeds)
+        print('\tConverged seed/perf.:', conv_seeds_perf)
+        print('\tNon Converged seed/perf:', non_conv_seeds_perf)
         # print(f'Non converged ({len(non_converged_seeds)}):', non_converged_seeds)
 
-        if converged_seeds:
+        if compute_nfn and converged_seeds:
             print('Non flat neurons outputs for each agent:')
-        for s in converged_seeds:
-            s_exp_dir = seed_exp_dir[s]
-            performance, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(s_exp_dir, quiet=True)
-            data_record = data_record_list[sim_idx]
-            brain_data = data_record['agents_brain_output']
-            # brain_data.shape: (num_trials, num_agents, sim_steps(500), num_dim (num_neurons))
-            brain_data = np.moveaxis(brain_data, (0,2), (2,3)) # (num_agents, num_dim (num_neurons), num_trials, sim_steps(500))
-            brain_data = brain_data[:,:,:,100:] # cut the firs 100 point in each trial (brain outputs needs few steps to converge)        
-            # print(np.shape(exp_data))
-            # print(np.shape(exp_data_var))
-            var = np.var(brain_data, axis=3) 
-            # print(var)
-            max_var = np.max(var, axis=2) # for each agent, each neuron what is the max variance across trials  
-            # print(max_var)
-            non_flat_neurons = np.sum(max_var > VARIANCE_THRESHOLD, axis=1)
-            print(f'\tSeed {str(s).zfill(3)}: {non_flat_neurons}')
+            for s in converged_seeds:
+                print(f'\tSeed {str(s).zfill(3)}: {conv_seeds_non_flat_neur_outputs[s]}')
+            print('Non flat neurons states for each agent:')
+            for s in converged_seeds:
+                print(f'\tSeed {str(s).zfill(3)}: {conv_seeds_non_flat_neur_states[s]}')
 
     if export_to_csv:
         # save file to csv
@@ -106,24 +158,10 @@ def get_last_performance_seeds(base_dir, print_stats=True, print_values=False, p
         df.to_csv(f_name, index=False)
 
     if plot:
-        # print("seeds:",seeds)
-        fig, ax = plt.subplots()
-        ind = np.arange(len(seeds))        
-        num_bars = len(best_exp_performance[0])
-        width = 0.7 / num_bars
-        for p in range(num_bars):
-            p_series = [b[p] for b in best_exp_performance]
-            x_pos = ind + p * width
-            if num_bars == 1:
-                x_pos = x_pos + width / 2  # center bar on ticks if there is only one bar
-            ax.bar(x_pos, p_series, width)
-        ax.set_xticks(ind + 0.7 / 2)
-        ax.set_xticklabels(seeds)
-        # plt.ylim(4500, 5000)
-        plt.xlabel('Seeds')
-        plt.ylabel('Error')
-        plt.show()
-    # return dict(zip(seeds, best_exp_performance))
+        plot_best_exp_performance(best_exp_performance, seeds)
+        if compute_nfn and converged_seeds:
+            plot_conv_seeds_non_flat_neurons(conv_seeds_non_flat_neur_outputs, 'Flat neurons outputs')
+            plot_conv_seeds_non_flat_neurons(conv_seeds_non_flat_neur_states, 'Flat neurons states')
 
     return converged_seeds
 
@@ -138,6 +176,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--dir', type=str, help='Directory path')
     parser.add_argument('--print_values', action='store_true', default=False, help='Whether to export results to csv in same dir')
+    parser.add_argument('--compute_nfn', action='store_true', default=False, help='Whether to export results to csv in same dir')
     parser.add_argument('--plot', action='store_true', default=False, help='Whether to export results to csv in same dir')
     parser.add_argument('--csv', action='store_true', default=False, help='Whether to export results to csv in same dir')
 
@@ -148,5 +187,6 @@ if __name__ == "__main__":
         print_stats=True, 
         print_values=args.print_values, 
         plot=args.plot, 
-        export_to_csv=args.csv
+        export_to_csv=args.csv,
+        compute_nfn=args.compute_nfn,
     )
