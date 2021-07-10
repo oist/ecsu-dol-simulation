@@ -35,21 +35,21 @@ def plot_best_exp_performance(best_exp_performance, seeds):
     plt.legend(bbox_to_anchor=(-0.15, 1.10), loc='upper left')
     plt.show()
 
-def plot_conv_seeds_non_flat_neurons(seed_neurons, title):
+def plot_conv_seeds_non_flat_data(seed_data, title):
     fig, ax = plt.subplots(figsize=(12, 6))
     fig.suptitle(title)
-    seeds = seed_neurons.keys()
+    seeds = seed_data.keys()
     ind = np.arange(len(seeds))        
-    num_bars = len(list(seed_neurons.values())[0])
+    num_bars = len(list(seed_data.values())[0])
     width = 0.7 / num_bars
     for p in range(num_bars):
-        p_series = [b[p] for b in seed_neurons.values()]
+        p_series = [b[p] for b in seed_data.values()]
         x_pos = ind + p * width + width/2
         ax.bar(x_pos, p_series, width, label=f'A{p+1}')
     ax.set_xticks(ind + 0.7 / 2)
     ax.set_xticklabels(seeds)
     plt.xlabel('Seeds')
-    plt.ylabel('Flat Neurons')
+    plt.ylabel('Flat Elements')
     plt.legend(bbox_to_anchor=(-0.15, 1.10), loc='upper left')
     plt.show()    
 
@@ -88,8 +88,8 @@ def get_last_performance_seeds(base_dir, print_stats=True,
             sim = Simulation.load_from_file(sim_json_filepath)
             exp_evo_data = json.load(f_in)
             s = exp_evo_data['random_seed']
-            # if s>20:
-            #     continue
+            if s>20:
+                continue
             seeds.append(s)
             seed_exp_dir[s] = exp_dir
             gen_best_perf = np.array(exp_evo_data['best_performances']) # one per population            
@@ -112,6 +112,7 @@ def get_last_performance_seeds(base_dir, print_stats=True,
     non_conv_seeds_perf = {s:round(np.min(p),0) for s,p in zip(seeds,best_exp_performance) if s in non_converged_seeds}
     conv_seeds_non_flat_neur_outputs = {}
     conv_seeds_non_flat_neur_states = {}
+    conv_seeds_non_flat_motors = {}
 
     if compute_nfn:
         for s in converged_seeds:
@@ -120,6 +121,7 @@ def get_last_performance_seeds(base_dir, print_stats=True,
             data_record = data_record_list[sim_idx]        
             conv_seeds_non_flat_neur_outputs[s] = get_non_flat_neuron_data(data_record, 'agents_brain_output')
             conv_seeds_non_flat_neur_states[s] = get_non_flat_neuron_data(data_record, 'agents_brain_state')
+            conv_seeds_non_flat_motors[s] = get_non_flat_neuron_data(data_record, 'agents_motors')
 
     if print_stats:
         # print('Selected evo: {}'.format(last_evo_file))
@@ -160,8 +162,9 @@ def get_last_performance_seeds(base_dir, print_stats=True,
     if plot:
         plot_best_exp_performance(best_exp_performance, seeds)
         if compute_nfn and converged_seeds:
-            plot_conv_seeds_non_flat_neurons(conv_seeds_non_flat_neur_outputs, 'Flat neurons outputs')
-            plot_conv_seeds_non_flat_neurons(conv_seeds_non_flat_neur_states, 'Flat neurons states')
+            plot_conv_seeds_non_flat_data(conv_seeds_non_flat_neur_outputs, 'Non flat neurons outputs')
+            # plot_conv_seeds_non_flat_data(conv_seeds_non_flat_neur_states, 'Non flat neurons states')
+            plot_conv_seeds_non_flat_data(conv_seeds_non_flat_motors, 'Non flat motors')
 
     return converged_seeds
 
