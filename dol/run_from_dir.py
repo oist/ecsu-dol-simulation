@@ -14,7 +14,7 @@ import numpy as np
 from dol.utils import get_numpy_signature
 
 
-def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx=0,
+def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx=None,
                             random_target_seed=None, random_pairing_seed=None, 
                             isolation_idx=None, write_data=False, **kwargs):
     """
@@ -32,6 +32,11 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     sim_json_filepath = os.path.join(dir, 'simulation.json')    
     sim = Simulation.load_from_file(sim_json_filepath)
     evo = Evolution.load_from_file(evo_json_filepath, folder_path=dir)
+
+    if population_idx is None:
+        # by default get the population with best performance
+        population_idx = np.argmax(evo.best_performances[-1])
+            
 
     if sim.num_random_pairings == 0:
         population_idx_rp0 = population_idx
@@ -168,8 +173,8 @@ if __name__ == "__main__":
     parser.add_argument('--quiet', type=str, help='Do not print extra information (e.g., originale performance)')
     parser.add_argument('--generation', type=int, help='Number of generation to load')
     parser.add_argument('--genotype_idx', type=int, default=0, help='Index of agent in population to load')
-    parser.add_argument('--population_idx', type=int, default=0,
-                        help='Index of the population, usually 0 can be 1 in dual populations')
+    parser.add_argument('--population_idx', type=int, default=None,
+                        help='Index of the population, default pop with best agent fitness')
     parser.add_argument('--random_target_seed', type=int,
                         help='Seed to re-run simulation with random target (None to obtain same results)')
     parser.add_argument('--random_pairing_seed', type=int,
