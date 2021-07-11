@@ -306,9 +306,9 @@ class InfoAnalysis:
 			print('@ showDescriptiveStatistics() :  ', e)
 			sys.exit()
 
-	def computeSpearmanCorr(self, M, distance, whichScenario, whichScaling):
+	def computeSpearmanCorr(self, M, distance, whichScenario, whichScaling, yLabel):
 		try:
-			fig = plt.figure(figsize = (10, 6))
+			fig = plt.figure(figsize = (40, 13))
 			if whichScaling != 0:
 				if whichScaling == 1:
 					meanDistGroup = [(val - np.mean(meanDistGroup))/np.std(meanDistGroup) for val in meanDistGroup]
@@ -322,7 +322,12 @@ class InfoAnalysis:
 				b, m = polyfit(M[:, i], distance, 1)
 				ax1.plot(M[:, i], distance, 'ro')
 				ax1.plot(M[:, i], b + m * M[:, i], 'k-')
-				ax1.set_title(whichScenario + ' : ' + whichMeasure[i])				
+				# ax1.set_title(whichScenario + ' : ' + whichMeasure[i])				
+				ax1.set_xlabel(whichScenario + ' : ' + whichMeasure[i], fontsize = 15)
+				ax1.set_ylabel(yLabel, fontsize = 15)
+				plt.xticks(fontsize = 15)
+				plt.yticks(fontsize = 15)				
+
 				[r, p] = spearmanr(M[:, i], distance)				
 				if p < 0.05 and p < self.BonferroniCorrection:
 					print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Significant)')
@@ -338,7 +343,7 @@ class InfoAnalysis:
 
 	def plotBoxPlotList(self, data, labels, ttle, yLabel):
 		try:
-			plt.figure(figsize = (10, 6))
+			plt.figure(figsize = (40, 13))
 			sb.boxplot(data = data, showmeans = True,
 				meanprops={"marker" : "o",
 				"markerfacecolor" : "white", 
@@ -427,7 +432,7 @@ class InfoAnalysis:
 
 	def generateHeatMap(self, data, labels, ttle):
 		try:			
-			fig = plt.figure(figsize = (10, 6))
+			fig = plt.figure(figsize = (40, 13))
 			ax = fig.add_subplot(111)
 			cax = ax.matshow(data, cmap = cm.Spectral_r, interpolation = 'nearest')
 			fig.colorbar(cax)
@@ -596,15 +601,15 @@ class InfoAnalysis:
 
 		print('\n\n Spearman Correlation Based on Target-Tracker Mean Distance')
 
-		self.computeSpearmanCorr(individual, meanDistIndividual, 'Individual - Mean Target-Tracker Disatnce', self.whichNormalization)  ##### 1 : z-scored   2 : [0 .. 1] scaled
-		self.computeSpearmanCorr(group, meanDistGroup, 'Group - Mean Target-Tracker Disatnce', self.whichNormalization)		
-		self.computeSpearmanCorr(joint, meanDistJoint, 'Joint - Mean Target-Tracker Disatnce', self.whichNormalization)		
+		self.computeSpearmanCorr(individual, meanDistIndividual, 'Individual', self.whichNormalization, 'Mean Target-Tracker Disatnce')  ##### 1 : z-scored   2 : [0 .. 1] scaled
+		self.computeSpearmanCorr(group, meanDistGroup, 'Group', self.whichNormalization, 'Mean Target-Tracker Disatnce')		
+		self.computeSpearmanCorr(joint, meanDistJoint, 'Joint', self.whichNormalization, 'Mean Target-Tracker Disatnce')		
 
 		print('\n\n Spearman Correlation Based on Target-Tracker SD Distance')
 
-		self.computeSpearmanCorr(individual, stdDistIndividual, 'Individual - SD Target-Tracker Disatnce', self.whichNormalization)		
-		self.computeSpearmanCorr(group, stdDistGroup, 'Group - SD Target-Tracker Disatnce', self.whichNormalization)		
-		self.computeSpearmanCorr(joint, stdDistJoint, 'Joint - SD Target-Tracker Disatnce', self.whichNormalization)						
+		self.computeSpearmanCorr(individual, stdDistIndividual, 'Individual', self.whichNormalization, 'SD Target-Tracker Disatnce')		
+		self.computeSpearmanCorr(group, stdDistGroup, 'Group', self.whichNormalization, 'SD Target-Tracker Disatnce')		
+		self.computeSpearmanCorr(joint, stdDistJoint, 'Joint', self.whichNormalization, 'SD Target-Tracker Disatnce')						
 		
 		self.computeDistanceMetrics('cosine', 0)   ###  0 : use original data   1 : Z-score normalization     2 : Scale within [0 .. 1] interval
 
