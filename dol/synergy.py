@@ -19,21 +19,17 @@ from dol.run_from_dir import run_simulation_from_dir
 
 class InfoAnalysis:
 
-	def __init__(self, agent_nodes, target_key, sim_type_path, distanceMetrics):
+	def __init__(self, agent_nodes, sim_type_path, whichNormalization, max_num_seeds=None):
 		self.initiJVM()
 
 		self.agent_nodes = agent_nodes
-		self.target_key = target_key
 		self.sim_type_path = sim_type_path	
 		self.simulation_types = sim_type_path.keys()
-		self.distanceMetrics = distanceMetrics	
+		self.whichNormalization = whichNormalization   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
+		self.max_num_seeds = max_num_seeds # restrict it to first n seeds (for test purpose)
 
-		self.resultFolder = './results/MultVarMI_CondMi_CoInfo/'					
-
-		self.generation = 5000
-		self.lillieforsPValue = 0.05
-		self.BonferroniCorrection = float(0.05 / 3) ## divided by three since we have three settings 
-		self.whichNormalization = 0   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
+		# self.lillieforsPValue = 0.05
+		self.BonferroniCorrection = float(0.05 / len(self.simulation_types)) ## divided by num settings 
 
 	def initiJVM(self):
 			jarLocation = os.path.join(os.getcwd(), "./", "infodynamics.jar")
@@ -80,7 +76,7 @@ class InfoAnalysis:
 
 		# num_seeds = len(info_results)
 
-		for seed, seed_info_results in info_results.items():
+		for seed_dir, seed_info_results in info_results.items():
 			seed_data = []
 			seed_tracker_mean = []
 			seed_tracker_std = []
@@ -105,8 +101,10 @@ class InfoAnalysis:
 		return simData, meanDist, stdDist
 
 
-	def normalizeData(self, M, whichScaling):
-		scaler = preprocessing.StandardScaler().fit(M) if whichScaling == 1 else preprocessing.MinMaxScaler().fit(M)
+	def normalizeData(self, M):
+		if self.whichNormalization == 0:
+			return M
+		scaler = preprocessing.StandardScaler().fit(M) if self.whichNormalization == 1 else preprocessing.MinMaxScaler().fit(M)
 		return scaler.transform(M)
 
 	def checkDataNormality(self, M, whichData):
@@ -209,7 +207,7 @@ class InfoAnalysis:
 		plt.show()
 
 	def plotBoxPlotList(self, data, labels, ttle, yLabel):
-		np.random.seed(1) # same seed to have same jitter (distribution of points along x axis)
+		np.random.seed(1) # same seed_dir to have same jitter (distribution of points along x axis)
 		plt.figure(figsize = (10, 6))
 		sb.boxplot(data = data, showmeans = True,
 			meanprops={"marker" : "o",
@@ -226,48 +224,6 @@ class InfoAnalysis:
 		plt.title(ttle)
 		plt.ylabel(yLabel)
 		plt.show()						
-
-
-	def returnAgentsAverageDataFileNames(self):
-		tmp = os.listdir(self.resultFolder[0 : self.resultFolder.index('Mult')])
-		if '.DS_Store' in tmp:
-			tmp.remove('.DS_Store')
-		agentsFiles = []			
-		for fName in tmp:
-			if 'AgentsAllSeedsTrialsAvgNodes' in fName:
-				agentsFiles.append(fName)
-		return agentsFiles
-
-	def computeDistanceMetrics(self, whichDistance, normalizationFlag):
-		agentsFiles = self.returnAgentsAverageDataFileNames()
-		for fName in agentsFiles:
-			print(fName)
-			with open(self.resultFolder[0 : self.resultFolder.index('Mult')] + fName, 'rb') as handle:
-				data = pickle.load(handle)
-				handle.close()
-				A1 = np.array(data['A1']).mean(axis = 0)
-				A2 = np.array(data['A2']).mean(axis = 0)
-				print(A1.shape, '  ', A2.shape)
-				agentsM = np.concatenate((A1, A2), axis = 1).T
-				print(agentsM.shape)			
-
-				agentsM = squareform(pdist(agentsM, whichDistance))
-
-				if normalizationFlag != 0:
-					agentsM = self.normalizeData(agentsM, normalizationFlag)
-
-				labels = []
-				cnt = 0
-				for i in range(agentsM.shape[0]):
-					if i < 6:
-						labels.append('Node1_' + str(cnt + 1))
-					else:
-						if i == 6:
-							cnt = 0
-						labels.append('Node2_' + str(cnt + 1))
-					cnt += 1
-
-				self.generateHeatMap(agentsM, labels, fName[0 : fName.index('_')] + '  -  ' + whichDistance + ' Distance')								
 
 
 	def generateHeatMap(self, data, labels, ttle):
@@ -294,20 +250,17 @@ class InfoAnalysis:
 			sys.exit()
 
 		dir = os.path.join(self.sim_type_path[whichSetting], whichSeed)
-		perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir = dir, generation = self.generation)			
+		perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir)			
 
 		simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'			
 		
 		data = data_record_list[simIndex]
 
-		# agent1, agent2, target = self.compute_trial_results(data_record_list[simIndex], (whichTrial - 1))			
 		agent1 = np.concatenate([data[node][trial_idx,0,:,:] for node in self.agent_nodes], axis=1)
 		agent2 = np.concatenate([data[node][trial_idx,1,:,:] for node in self.agent_nodes], axis=1)
-		# target = data[self.target_key][trial_idx]
 		agentsM = np.concatenate((agent1, agent2), axis = 1).T
 
-		if normalizationFlag != 0:
-			agentsM = self.normalizeData(agentsM, normalizationFlag)			
+		agentsM = self.normalizeData(agentsM)			
 
 		agentsM = squareform(pdist(agentsM, whichDistance))
 
@@ -337,33 +290,35 @@ class InfoAnalysis:
 			print('Processing ', sim_type)
 
 			seeds = sorted([d for d in os.listdir(sim_dir) if d.startswith('seed_')])
+
+			if self.max_num_seeds is not None:
+				seeds = seeds[:self.max_num_seeds]
 			
 			# dictionary mapping seeds into seed_info_results
 			# where seed_info_results is a list of num_trials tuples containig the following values:
 			# (condMultVarMI, multVarMI, coinformation, trackerTargetDist)
 			info_results = {} 
 
-			for seed in seeds:
-				if seed == 'seed_006':
-					break
-				dir = self.sim_type_path[sim_type] + '/' + seed					
+			for seed_dir in seeds:
+				
+				dir = os.path.join(self.sim_type_path[sim_type], seed_dir)
 
-				perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir = dir, generation = self.generation)
+				perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir)
 	
 				simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'
-				print(f'======  @ {seed}', '   Sim', simIndex)
+				print(f'======  @ {seed_dir}', '   Sim', simIndex)
 				
 				data = data_record_list[simIndex]
 
-				seed_info_results = info_results[seed] = []
+				seed_info_results = info_results[seed_dir] = []
 				for trialIndex in range(sim.num_trials):
 					print('Trial # ', (trialIndex + 1))
 					# for each trial we save the following tuple: (condMultVarMI, multVarMI, coinformation, trackerTargetDist)
 
 					agent1 = np.concatenate([data[node][trialIndex,0,:,:] for node in self.agent_nodes], axis=1)
 					agent2 = np.concatenate([data[node][trialIndex,1,:,:] for node in self.agent_nodes], axis=1)
-					target = data[self.target_key][trialIndex]
-					condMultVarMI = self.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target, axis = 0).T)
+					target_pos = data['target_position'][trialIndex]
+					condMultVarMI = self.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target_pos, axis = 0).T)
 					multVarMI = self.computeMultiVariateMutualInfo(agent1, agent2)
 					coinformation = condMultVarMI - multVarMI  #### a.k.a interaction information, net synergy, and integration			
 					trackerTargetDist = data['delta_tracker_target'][trialIndex]												
@@ -379,10 +334,9 @@ class InfoAnalysis:
 		multVarMI = np.array([results[sim_type][0][:,1] for sim_type in self.simulation_types]).T
 		coinformation = np.array([results[sim_type][0][:,2] for sim_type in self.simulation_types]).T
 
-		if self.whichNormalization != 0 :
-			condMultVarMI = self.normalizeData(condMultVarMI, self.whichNormalization) 
-			multVarMI = self.normalizeData(multVarMI, self.whichNormalization)
-			coinformation = self.normalizeData(coinformation, self.whichNormalization)
+		condMultVarMI = self.normalizeData(condMultVarMI) 
+		multVarMI = self.normalizeData(multVarMI)
+		coinformation = self.normalizeData(coinformation)
 
 
 		if self.whichNormalization == 0:
@@ -434,17 +388,14 @@ if __name__ == "__main__":
 	############# to analysis.
 	from dol.data_path_utils import overlap_dir_xN, exc_switch_xN_dir
 	agent_nodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
-	target_key = 'target_position'
 	overlap_data_dirs = overlap_dir_xN(2) # overlap 2 neurons
 	exc_switch_data_dirs = exc_switch_xN_dir(2) # exclusive + swtich 2 neurons
 	
-	distanceMetrics = ['cosine']
-
 	IA = InfoAnalysis(
 		agent_nodes=agent_nodes, 
-		target_key=target_key, 
 		sim_type_path=overlap_data_dirs,
-		distanceMetrics=distanceMetrics
+		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
+		max_num_seeds=5
 	)
 	
 	IA.compute_synergy()
