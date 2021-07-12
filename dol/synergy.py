@@ -343,6 +343,7 @@ class InfoAnalysis:
 
 	def plotBoxPlotList(self, data, labels, ttle, yLabel):
 		try:
+			np.random.seed(1) # same seed to have same jitter (distribution of points along x axis)
 			plt.figure(figsize = (40, 13))
 			sb.boxplot(data = data, showmeans = True,
 				meanprops={"marker" : "o",
@@ -504,8 +505,8 @@ class InfoAnalysis:
 
 				seeds = sorted([d for d in os.listdir(sim_dir) if d.startswith('seed_')])
 				for seed in seeds:
-					# if seed == 'seed_006':
-					# 	break
+					if seed == 'seed_006':
+						break
 					dir = self.dataFolders[sim_type] + '/' + seed					
 					# print(dir)
 					# sys.exit()
