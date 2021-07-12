@@ -31,6 +31,8 @@ class InfoAnalysis:
 		# self.lillieforsPValue = 0.05
 		self.BonferroniCorrection = float(0.05 / len(self.simulation_types)) ## divided by num settings 
 
+		self.data = None # dictionary sim_type -> seed_dir -> sim_data		
+
 	def initiJVM(self):
 			jarLocation = os.path.join(os.getcwd(), "./", "infodynamics.jar")
 
@@ -281,23 +283,20 @@ class InfoAnalysis:
 			f'{whichSetting} {whichSeed} Trial {trial_idx+1} {whichDistance} Distance'
 		)
 
-	def compute_synergy(self):
-
-		results = {}
+	def read_data(self):
+		
+		self.data = {} # dictionary sim_type -> seed_dir -> sim_data
 		
 		for sim_type, sim_dir in self.sim_type_path.items(): 				
-			# sim_type takes in turn the values: 'group', 'joint', 'individual'
+			
 			print('Processing ', sim_type)
+
+			self.data[sim_type] = {}
 
 			seeds = sorted([d for d in os.listdir(sim_dir) if d.startswith('seed_')])
 
 			if self.max_num_seeds is not None:
 				seeds = seeds[:self.max_num_seeds]
-			
-			# dictionary mapping seeds into seed_info_results
-			# where seed_info_results is a list of num_trials tuples containig the following values:
-			# (condMultVarMI, multVarMI, coinformation, trackerTargetDist)
-			info_results = {} 
 
 			for seed_dir in seeds:
 				
@@ -308,20 +307,36 @@ class InfoAnalysis:
 				simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'
 				print(f'======  @ {seed_dir}', '   Sim', simIndex)
 				
-				data = data_record_list[simIndex]
+				sim_data = data_record_list[simIndex]
 
+				self.data[sim_type][seed_dir] = sim_data
+
+
+	def compute_synergy(self):
+
+		results = {}
+		
+		for sim_type, seed_sim_data in self.data.items():
+
+			info_results = {} 
+
+			for seed_dir, sim_data in seed_sim_data.items():
+				
 				seed_info_results = info_results[seed_dir] = []
-				for trialIndex in range(sim.num_trials):
-					print('Trial # ', (trialIndex + 1))
+
+				num_trials = len(sim_data['trials_performances'])
+				
+				for trialIndex in range(num_trials):
+					# print('Trial # ', (trialIndex + 1))
 					# for each trial we save the following tuple: (condMultVarMI, multVarMI, coinformation, trackerTargetDist)
 
-					agent1 = np.concatenate([data[node][trialIndex,0,:,:] for node in self.agent_nodes], axis=1)
-					agent2 = np.concatenate([data[node][trialIndex,1,:,:] for node in self.agent_nodes], axis=1)
-					target_pos = data['target_position'][trialIndex]
+					agent1 = np.concatenate([sim_data[node][trialIndex,0,:,:] for node in self.agent_nodes], axis=1)
+					agent2 = np.concatenate([sim_data[node][trialIndex,1,:,:] for node in self.agent_nodes], axis=1)
+					target_pos = sim_data['target_position'][trialIndex]
 					condMultVarMI = self.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target_pos, axis = 0).T)
 					multVarMI = self.computeMultiVariateMutualInfo(agent1, agent2)
 					coinformation = condMultVarMI - multVarMI  #### a.k.a interaction information, net synergy, and integration			
-					trackerTargetDist = data['delta_tracker_target'][trialIndex]												
+					trackerTargetDist = sim_data['delta_tracker_target'][trialIndex]												
 
 					seed_info_results.append(
 						(condMultVarMI, multVarMI, coinformation, trackerTargetDist)
@@ -398,6 +413,7 @@ if __name__ == "__main__":
 		max_num_seeds=5
 	)
 	
+	IA.read_data()
 	IA.compute_synergy()
 
 	# ''' 
