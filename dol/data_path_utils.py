@@ -7,6 +7,10 @@ exc_switch_dir = os.path.join('data', 'exc_switch')
 
 
 exc_switch_xN_dir = lambda x: {
+    'individual': os.path.join(
+        exc_switch_dir,
+        f'1d_{x}n_exc-0.1_zfill_rp-3_np-4_switch'
+    ),
     'group': os.path.join( 
         exc_switch_dir, 
         f'1d_{x}n_exc-0.1_zfill_rp-3_switch'
@@ -14,14 +18,15 @@ exc_switch_xN_dir = lambda x: {
     'joint': os.path.join(
         exc_switch_dir,
         f'1d_{x}n_exc-0.1_zfill_rp-0_switch'
-    ),
-    'individual': os.path.join(
-        exc_switch_dir,
-        f'1d_{x}n_exc-0.1_zfill_rp-3_np-4_switch'
     )
+
 }
 
 overlap_dir_xN = lambda x: {
+    'individual': os.path.join( 
+        overlap_dir, 
+        f'1d_{x}n_zfill_rp-3_np-4_overlap'
+    ),
     'group': os.path.join( 
         overlap_dir, 
         f'1d_{x}n_zfill_rp-3_overlap'
@@ -29,10 +34,6 @@ overlap_dir_xN = lambda x: {
     'joint': os.path.join( 
         overlap_dir, 
         f'1d_{x}n_zfill_rp-0_overlap'
-    ),
-    'individual': os.path.join( 
-        overlap_dir, 
-        f'1d_{x}n_zfill_rp-3_np-4_overlap'
     )
 }
 
