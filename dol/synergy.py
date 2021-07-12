@@ -312,6 +312,16 @@ class InfoAnalysis:
 				self.data[sim_type][seed_dir] = sim_data
 
 
+	def save_data_to_pickle(self, pickle_file):
+		with open(pickle_file, 'wb') as handle:
+				pickle.dump(self.data, handle, protocol = pickle.HIGHEST_PROTOCOL)
+
+
+	def load_data_from_pickle(self, pickle_file):
+		with open(pickle_file, 'rb') as handle:
+			self.data = pickle.load(handle)								
+
+
 	def compute_synergy(self):
 
 		results = {}
@@ -414,6 +424,8 @@ if __name__ == "__main__":
 	)
 	
 	IA.read_data()
+	IA.save_data_to_pickle('results/synergy.pickle')
+	# IA.load_data_from_pickle('results/synergy.pickle')
 	IA.compute_synergy()
 
 	# ''' 
