@@ -339,7 +339,6 @@ class InfoAnalysis:
 				for trialIndex in range(num_trials):
 					# print('Trial # ', (trialIndex + 1))
 					# for each trial we save the following tuple: (condMultVarMI, multVarMI, coinformation, trackerTargetDist)
-
 					agent1 = np.concatenate([sim_data[node][trialIndex,0,:,:] for node in self.agent_nodes], axis=1)
 					agent2 = np.concatenate([sim_data[node][trialIndex,1,:,:] for node in self.agent_nodes], axis=1)
 					target_pos = sim_data['target_position'][trialIndex]
@@ -412,27 +411,43 @@ if __name__ == "__main__":
 	############# on Overlap Setting. Given the zero # of converged seeds in the case individual in Switch Setting, the code will not proceed
 	############# to analysis.
 	from dol.data_path_utils import overlap_dir_xN, exc_switch_xN_dir
+
 	agent_nodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
+	
+	# directory structures with experiments and seeds
+	# exp_type -> dir_path
+	# exp_types are ['individual', 'group', 'joint']
 	overlap_data_dirs = overlap_dir_xN(2) # overlap 2 neurons
 	exc_switch_data_dirs = exc_switch_xN_dir(2) # exclusive + swtich 2 neurons
 	
+	pickle_path = 'results/synergy.pickle' # where data is saved/loaded
+	
+	load_data = True # set to True if data is read from pickle (has to be saved beforehand)
+	save_data = True # set to True if data will be saved to pickle (to be loaded faster successively)
+	
 	IA = InfoAnalysis(
-		agent_nodes=agent_nodes, 
-		sim_type_path=overlap_data_dirs,
+		agent_nodes = agent_nodes, 
+		sim_type_path = overlap_data_dirs,
 		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
-		max_num_seeds=5
+		max_num_seeds = None # set to low number to test few seeds, set to None to compute all seeds
 	)
 	
-	IA.read_data()
-	IA.save_data_to_pickle('results/synergy.pickle')
-	# IA.load_data_from_pickle('results/synergy.pickle')
+	if load_data:
+		assert os.path.exists(pickle_path), f'File {pickle_path} does not exist'
+		IA.load_data_from_pickle(pickle_path)
+	else:
+		IA.read_data()
+	
+	if save_data:
+		IA.save_data_to_pickle(pickle_path)
+	
 	IA.compute_synergy()
 
-	# ''' 
-	# correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
-	# '''
-	# distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   
-	# for metric in distanceMetrics:
-	# 	IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_010', 1, 0, metric)
+	''' 
+	correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
+	'''
+	distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   
+	for metric in distanceMetrics:
+		IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_010', 1, 0, metric)
 
 	IA.shutdownJVM()						
