@@ -23,7 +23,7 @@ class InfoAnalysis:
 		0: '',
 		1: 'Z-Scored',
 		2: '[0 ..1] Scaled'
-	}
+	}	
 
 	def __init__(self, agent_nodes, sim_type_path, whichNormalization, max_num_seeds=None):
 		self.initiJVM()
@@ -39,6 +39,16 @@ class InfoAnalysis:
 
 		# self.lillieforsPValue = 0.05
 		self.BonferroniCorrection = float(0.05 / len(self.simulation_types)) ## divided by num settings 
+
+		jp_kraskov_pkg = jp.JPackage("infodynamics.measures.continuous.kraskov")
+		# http://lizier.me/joseph/software/jidt/javadocs/v1.5/
+
+		self.condMultiMICalc = jp_kraskov_pkg.ConditionalMutualInfoCalculatorMultiVariateKraskov1()
+		self.condMultiMICalc.setProperty("NOISE_LEVEL_TO_ADD", "0") # no noise for reproducibility
+
+		self.multiVarMICalc = jp_kraskov_pkg.MutualInfoCalculatorMultiVariateKraskov1()
+		self.multiVarMICalc.setProperty("NOISE_LEVEL_TO_ADD", "0") # no noise for reproducibility
+		
 
 		self.data = None # dictionary sim_type -> seed_dir -> sim_data		
 
@@ -56,13 +66,11 @@ class InfoAnalysis:
 		if agent1.size == 0 or agent2.size == 0 or target.size == 0:
 			print('Agent(s) or Traget Data Empty!')
 			sys.exit()			
+		
+		self.condMultiMICalc.initialise(agent1.shape[1], agent2.shape[1], 1)		
 
-		condMultiMICalcClass = jp.JPackage("infodynamics.measures.continuous.kraskov").ConditionalMutualInfoCalculatorMultiVariateKraskov1
-		condMultiMICalc = condMultiMICalcClass()
-		condMultiMICalc.initialise(agent1.shape[1], agent2.shape[1], 1)		
-
-		condMultiMICalc.setObservations(jp.JArray(jp.JDouble, 2)(agent1), jp.JArray(jp.JDouble, 2)(agent2), jp.JArray(jp.JDouble, 2)(target))
-		result = condMultiMICalc.computeAverageLocalOfObservations()
+		self.condMultiMICalc.setObservations(jp.JArray(jp.JDouble, 2)(agent1), jp.JArray(jp.JDouble, 2)(agent2), jp.JArray(jp.JDouble, 2)(target))
+		result = self.condMultiMICalc.computeAverageLocalOfObservations()
 
 		return result
 
@@ -70,13 +78,10 @@ class InfoAnalysis:
 		
 		assert agent1.size != 0 and agent2.size != 0, 'One or Both Agent(s) Data Empty!'
 
-		multiVarMIClass = jp.JPackage("infodynamics.measures.continuous.kraskov").MutualInfoCalculatorMultiVariateKraskov1
-		multiVarMICalc = multiVarMIClass()
+		self.multiVarMICalc.initialise(agent1.shape[1], agent2.shape[1])		
 
-		multiVarMICalc.initialise(agent1.shape[1], agent2.shape[1])		
-
-		multiVarMICalc.setObservations(jp.JArray(jp.JDouble, 2)(agent1), jp.JArray(jp.JDouble, 2)(agent2))
-		result = multiVarMICalc.computeAverageLocalOfObservations()
+		self.multiVarMICalc.setObservations(jp.JArray(jp.JDouble, 2)(agent1), jp.JArray(jp.JDouble, 2)(agent2))
+		result = self.multiVarMICalc.computeAverageLocalOfObservations()
 
 		return result
 
@@ -186,8 +191,7 @@ class InfoAnalysis:
 					print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant)')
 		plt.show()
 
-	def plotBoxPlotList(self, data, labels, ttle, ylabel):
-		np.random.seed(1) # same seed_dir to have same jitter (distribution of points along x axis)
+	def plotBoxPlotList(self, data, labels, ttle, ylabel):		
 		plt.figure(figsize = (10, 6))
 		sb.boxplot(data = data, showmeans = True,
 			meanprops={"marker" : "o",
@@ -396,6 +400,8 @@ if __name__ == "__main__":
 	############# to analysis.
 	from dol.data_path_utils import overlap_dir_xN, exc_switch_xN_dir
 
+	# np.random.seed(1) # same seed_dir to have consistent results where random is used
+
 	agent_nodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
 	
 	# directory structures with experiments and seeds
@@ -424,7 +430,7 @@ if __name__ == "__main__":
 	if save_data:
 		IA.save_data_to_pickle(pickle_path)
 	
-	# IA.compute_synergy()
+	IA.compute_synergy()
 
 	''' 
 	correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
