@@ -400,7 +400,7 @@ if __name__ == "__main__":
 	############# to analysis.
 	from dol.data_path_utils import overlap_dir_xN, exc_switch_xN_dir
 
-	# np.random.seed(1) # same seed_dir to have consistent results where random is used
+	np.random.seed(1) # same seed_dir to have consistent results where random is used
 
 	agent_nodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
 	
