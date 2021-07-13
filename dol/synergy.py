@@ -30,7 +30,7 @@ class InfoAnalysis:
 
 		self.agent_nodes = agent_nodes
 		self.sim_type_path = sim_type_path	
-		self.simulation_types = sim_type_path.keys()
+		self.simulation_types = list(sim_type_path.keys())
 		
 		self.whichNormalization = whichNormalization   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
 		self.norm_label = InfoAnalysis.NORM_LABELS[whichNormalization]
@@ -413,7 +413,7 @@ if __name__ == "__main__":
 		agent_nodes = agent_nodes, 
 		sim_type_path = overlap_data_dirs,
 		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
-		max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
+		# max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
 	)
 	
 	if load_data and os.path.exists(pickle_path):
@@ -429,8 +429,9 @@ if __name__ == "__main__":
 	''' 
 	correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
 	'''
-	distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   
+	# distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   
+	distanceMetrics = ['correlation']   
 	for metric in distanceMetrics:
-		IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_001', 0, metric)
+		IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_010', 0, metric)
 
 	IA.shutdownJVM()						
