@@ -8,6 +8,7 @@ from numpy import pi
 import os
 import hashlib
 import codecs
+import pickle
 
 from numpy.core.overrides import array_function_from_dispatcher
 
@@ -153,3 +154,13 @@ def genotype_distance(a, b):
     dist_norm = linmap(dist, (0,max_dist), (0,1))
     assert 0 <= dist_norm <= 1
     return dist_norm
+    
+
+def save_data_to_pickle(data, pickle_file):
+    with open(pickle_file, 'wb') as handle:
+            pickle.dump(data, handle, protocol = pickle.HIGHEST_PROTOCOL)
+
+def load_data_from_pickle(pickle_file):
+    with open(pickle_file, 'rb') as handle:
+        return pickle.load(handle)		
+    
