@@ -415,13 +415,13 @@ if __name__ == "__main__":
 	pickle_path = 'results/synergy.pickle' # where data is saved/loaded
 	
 	load_data = False # set to True if data is read from pickle (has to be saved beforehand)
-	save_data = True # set to True if data will be saved to pickle (to be loaded faster successively)
+	save_data = False # set to True if data will be saved to pickle (to be loaded faster successively)
 	
 	IA = InfoAnalysis(
 		agent_nodes = agent_nodes, 
 		sim_type_path = overlap_data_dirs,
 		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
-		# max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
+		max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
 	)
 	
 	if load_data and os.path.exists(pickle_path):
