@@ -35,7 +35,8 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
 
     if population_idx is None:
         # by default get the population with best performance
-        population_idx = np.argmax(evo.best_performances[-1])
+        # population_idx = np.argmax(evo.best_performances[-1])
+        population_idx = 0
             
 
     if sim.num_random_pairings == 0:

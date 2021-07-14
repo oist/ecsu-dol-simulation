@@ -97,6 +97,7 @@ class InfoAnalysis:
 		return pV
 
 	def performFriedman_n_PosthocWilcoxonTest(self, M, whichData, ylabel):
+		np.random.seed(1) # reproducibility
 		print('\n====================================',  whichData, '\n')
 		self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
 		# sys.exit()
@@ -134,6 +135,7 @@ class InfoAnalysis:
 				return 'Large Effect'				
 
 	def performKruskalWallis_n_PosthocWilcoxonTest(self, M, whichData):
+		np.random.seed(1) # reproducibility
 		print('\n====================================',  whichData, '\n')
 		ylabel = f'{self.norm_label} {whichData}'
 		self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
@@ -161,6 +163,7 @@ class InfoAnalysis:
 			'  CI_95%-' + whichOne + ' = ', [np.percentile(data, 2.5), np.percentile(data, 97.5)])
 
 	def computeSpearmanCorr(self, M, distance, whichScenario, ylabel):
+		np.random.seed(1) # reproducibility
 		fig = plt.figure(figsize = (10, 6))
 		if self.whichNormalization != 0:
 			if self.whichNormalization == 1:
@@ -191,7 +194,8 @@ class InfoAnalysis:
 					print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant)')
 		plt.show()
 
-	def plotBoxPlotList(self, data, labels, ttle, ylabel):		
+	def plotBoxPlotList(self, data, labels, ttle, ylabel):
+		np.random.seed(1) # reproducibility		
 		plt.figure(figsize = (10, 6))
 		sb.boxplot(data = data, showmeans = True,
 			meanprops={"marker" : "o",
@@ -400,8 +404,6 @@ if __name__ == "__main__":
 	############# to analysis.
 	from dol.data_path_utils import overlap_dir_xN, exc_switch_xN_dir
 
-	np.random.seed(1) # same seed_dir to have consistent results where random is used
-
 	agent_nodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
 	
 	# directory structures with experiments and seeds
@@ -412,14 +414,14 @@ if __name__ == "__main__":
 	
 	pickle_path = 'results/synergy.pickle' # where data is saved/loaded
 	
-	load_data = True # set to True if data is read from pickle (has to be saved beforehand)
+	load_data = False # set to True if data is read from pickle (has to be saved beforehand)
 	save_data = False # set to True if data will be saved to pickle (to be loaded faster successively)
 	
 	IA = InfoAnalysis(
 		agent_nodes = agent_nodes, 
 		sim_type_path = overlap_data_dirs,
 		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
-		# max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
+		max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
 	)
 	
 	if load_data and os.path.exists(pickle_path):
