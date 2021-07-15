@@ -35,8 +35,7 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
 
     if population_idx is None:
         # by default get the population with best performance
-        # population_idx = np.argmax(evo.best_performances[-1])
-        population_idx = 0
+        population_idx = np.argmax(evo.best_performances[-1])
             
 
     if sim.num_random_pairings == 0:
@@ -127,7 +126,7 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
             print("Selecting simulation", sim_idx+1)
 
     if verbose:
-        print(f"   Performance recomputed (sim {sim_idx+1}): ", sim_perfs[sim_idx])
+        print(f"   Error recomputed (sim {sim_idx+1}): ", sim_perfs[sim_idx])
         if sim.num_agents == 2:
             print("   Sim agents genotype distance: ", sim.agents_genotype_distance[sim_idx])
         # print agents signatures
