@@ -9,6 +9,7 @@ from matplotlib import cm
 import seaborn as sb
 import jpype as jp
 from sklearn import preprocessing
+from joblib import Parallel, delayed
 from statsmodels.stats.diagnostic import lilliefors
 from scipy.stats import friedmanchisquare, ranksums, kruskal, spearmanr, pearsonr
 import scipy.special as special
@@ -25,7 +26,7 @@ class InfoAnalysis:
 		2: '[0 ..1] Scaled'
 	}	
 
-	def __init__(self, agent_nodes, sim_type_path, whichNormalization, max_num_seeds=None):
+	def __init__(self, agent_nodes, sim_type_path, whichNormalization, random_seed, num_cores=1, max_num_seeds=None):
 		self.initiJVM()
 
 		self.agent_nodes = agent_nodes
@@ -34,6 +35,9 @@ class InfoAnalysis:
 		
 		self.whichNormalization = whichNormalization   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
 		self.norm_label = InfoAnalysis.NORM_LABELS[whichNormalization]
+
+		self.random_seed = random_seed
+		self.num_cores = num_cores
 
 		self.max_num_seeds = max_num_seeds # restrict it to first n seeds (for test purpose)
 
@@ -97,7 +101,7 @@ class InfoAnalysis:
 		return pV
 
 	def performFriedman_n_PosthocWilcoxonTest(self, M, whichData, ylabel):
-		np.random.seed(1) # reproducibility
+		np.random.seed(self.random_seed) # reproducibility
 		print('\n====================================',  whichData, '\n')
 		self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
 		# sys.exit()
@@ -135,7 +139,7 @@ class InfoAnalysis:
 				return 'Large Effect'				
 
 	def performKruskalWallis_n_PosthocWilcoxonTest(self, M, whichData):
-		np.random.seed(1) # reproducibility
+		np.random.seed(self.random_seed) # reproducibility
 		print('\n====================================',  whichData, '\n')
 		ylabel = f'{self.norm_label} {whichData}'
 		self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
@@ -163,8 +167,8 @@ class InfoAnalysis:
 			'  CI_95%-' + whichOne + ' = ', [np.percentile(data, 2.5), np.percentile(data, 97.5)])
 
 	def computeSpearmanCorr(self, M, distance, whichScenario, ylabel):
-		np.random.seed(1) # reproducibility
-		fig = plt.figure(figsize = (10, 6))
+		np.random.seed(self.random_seed) # reproducibility
+		fig = plt.figure(figsize = (40, 13))
 		if self.whichNormalization != 0:
 			if self.whichNormalization == 1:
 				meanDistGroup = [(val - np.mean(meanDistGroup))/np.std(meanDistGroup) for val in meanDistGroup]
@@ -179,10 +183,10 @@ class InfoAnalysis:
 			ax1.plot(M[:, i], distance, 'ro')
 			ax1.plot(M[:, i], b + m * M[:, i], 'k-')
 			# ax1.set_title(whichScenario + ' : ' + whichMeasure[i])				
-			ax1.set_xlabel(whichScenario + ' : ' + whichMeasure[i])
-			ax1.set_ylabel(ylabel)
-			# plt.xticks(fontsize = 15)
-			# plt.yticks(fontsize = 15)				
+			ax1.set_xlabel(whichScenario + ' : ' + whichMeasure[i], fontsize = 15)
+			ax1.set_ylabel(ylabel, fontsize = 15)
+			plt.xticks(fontsize = 15)
+			plt.yticks(fontsize = 15)				
 
 			[r, p] = spearmanr(M[:, i], distance)				
 			if p < 0.05 and p < self.BonferroniCorrection:
@@ -195,8 +199,8 @@ class InfoAnalysis:
 		plt.show()
 
 	def plotBoxPlotList(self, data, labels, ttle, ylabel):
-		np.random.seed(1) # reproducibility		
-		plt.figure(figsize = (10, 6))
+		np.random.seed(self.random_seed) # reproducibility		
+		plt.figure(figsize = (40, 13))
 		sb.boxplot(data = data, showmeans = True,
 			meanprops={"marker" : "o",
 			"markerfacecolor" : "white", 
@@ -207,15 +211,15 @@ class InfoAnalysis:
 		# x = []
 		# plot(x, a, 'r.', alpha=0.2)
 		plt.xticks(range(0, len(labels)), labels, rotation = 0)
-		# plt.xticks(fontsize = 30)
-		# plt.yticks(fontsize = 25)
+		plt.xticks(fontsize = 30)
+		plt.yticks(fontsize = 25)
 		plt.title(ttle)
-		plt.ylabel(ylabel)
+		plt.ylabel(ylabel, fontsize = 25)
 		plt.show()						
 
 
 	def generateHeatMap(self, data, labels, ttle):
-		fig = plt.figure(figsize = (10, 6))
+		fig = plt.figure(figsize = (40, 13))
 		ax = fig.add_subplot(111)
 		cax = ax.matshow(data, cmap = cm.Spectral_r, interpolation = 'nearest')
 		fig.colorbar(cax)
@@ -226,8 +230,8 @@ class InfoAnalysis:
 		ax.set_xticklabels(labels, rotation = 90)
 		ax.xaxis.set_ticks_position('bottom')
 		ax.set_yticklabels(labels)
-		# plt.xticks(fontsize = 15)
-		# plt.yticks(fontsize = 15)
+		plt.xticks(fontsize = 15)
+		plt.yticks(fontsize = 15)
 		plt.title(ttle)
 
 		plt.show()				
@@ -265,6 +269,11 @@ class InfoAnalysis:
 		)
 
 	def build_data(self):
+		from pytictoc import TicToc
+
+		t = TicToc() #create instance of class
+
+		t.tic() #Start timer
 		
 		self.data = {} # dictionary sim_type -> seed_dir -> sim_data
 		
@@ -272,28 +281,44 @@ class InfoAnalysis:
 			
 			print('Processing ', sim_type)
 
-			self.data[sim_type] = {}
+			self.data[sim_type] = sim_type_data = {}
 
 			seeds = sorted([d for d in os.listdir(sim_dir) if d.startswith('seed_')])
 
 			if self.max_num_seeds is not None:
 				seeds = seeds[:self.max_num_seeds]
 
-			for seed_dir in seeds:
+			if self.num_cores == 1:
+				# single core
+				for seed_dir in seeds:				
+					dir = os.path.join(self.sim_type_path[sim_type], seed_dir)
+					_, seed_sim_data = InfoAnalysis.get_simulation_results(dir)
+					sim_type_data[seed_dir] = seed_sim_data
+			else:
+				# parallelization
+				# seeds results is a list of tuples (seed_dir, sim_data) one per each seed
+				seeds_results = Parallel(n_jobs=self.num_cores)(
+                    delayed(InfoAnalysis.get_simulation_results)(os.path.join(self.sim_type_path[sim_type],dir)) \
+                    for dir in seeds
+                )
+				for seed_dir, seed_sim_data in seeds_results:
+					sim_type_data[seed_dir] = seed_sim_data
 				
-				dir = os.path.join(self.sim_type_path[sim_type], seed_dir)
-
-				perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir)
-	
-				simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'
-				print(f'======  @ {seed_dir}', '   Sim', simIndex)
-				
-				sim_data = data_record_list[simIndex]
-
-				self.data[sim_type][seed_dir] = sim_data
-		
 		self.init_data_info()
+		t.toc('Building data took') #Time elapsed since t.tic()
 
+	@staticmethod
+	def get_simulation_results(dir):
+		perf, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(dir, quiet=True)
+		seed_dir = os.path.basename(dir)
+	
+		simIndex = sim_perfs.index(min(sim_perfs))	  ### sim_perf is normalized, therefore, using 'minimum distance'
+		# print(f'======  @ {seed_dir}', '   Sim', simIndex)
+		
+		sim_data = data_record_list[simIndex]
+		return seed_dir, sim_data
+
+	
 	def init_data_info(self):
 		first_seed_sim_data = next(iter(self.data.values()))
 		first_sim_data = next(iter(first_seed_sim_data.values()))
@@ -350,7 +375,12 @@ class InfoAnalysis:
 			# compute mean across trials
 			# all variables will be 1-dim array with num_seeds elements
 			for measure in sim_type_results:
-				sim_type_results[measure] = sim_type_results[measure].mean(axis=1)
+				if measure == 'trackerTargetDistStd':
+					# we take the std across trials for std
+					sim_type_results[measure] = sim_type_results[measure].std(axis=1)	
+				else:
+					# we take the mean across trials for all other values
+					sim_type_results[measure] = sim_type_results[measure].mean(axis=1)
 
 			results[sim_type] = sim_type_results
 
@@ -420,8 +450,10 @@ if __name__ == "__main__":
 	IA = InfoAnalysis(
 		agent_nodes = agent_nodes, 
 		sim_type_path = overlap_data_dirs,
-		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
-		max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
+		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
+		num_cores = 1,
+		random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
+		# max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
 	)
 	
 	if load_data and os.path.exists(pickle_path):
@@ -442,4 +474,4 @@ if __name__ == "__main__":
 	for metric in distanceMetrics:
 		IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_001', 0, metric)
 
-	IA.shutdownJVM()						
+	IA.shutdownJVM()			
