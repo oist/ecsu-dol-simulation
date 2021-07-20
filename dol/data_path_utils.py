@@ -54,7 +54,7 @@ if __name__ == "__main__":
         print('————————————————————')
         for type, path in exp_dict.items():
             print(f'--> {type.upper()} ({os.path.basename(path)})')
-            converged_seeds = get_last_performance_seeds(path, print_stats=True) # compute_nfn=True
+            converged_seeds = get_last_performance_seeds(path, print_stats=True) # best_sim_stats='converged'
             print()
         
         
