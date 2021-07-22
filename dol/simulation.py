@@ -264,10 +264,14 @@ class Simulation:
         if self.data_record is None:
             return
         self.data_record['delta_tracker_target'] = np.zeros((self.num_trials, self.num_data_points))
-        self.data_record['target_position'] = np.zeros((self.num_trials, self.num_data_points))
-        self.data_record['tracker_position'] = np.zeros((self.num_trials, self.num_data_points))
+        self.data_record['target_position'] = \
+            np.zeros((self.num_trials, self.num_data_points)) if self.num_dim==1 \
+            else np.zeros((self.num_trials, self.num_data_points, self.num_dim))
+        self.data_record['tracker_position'] = \
+            np.zeros((self.num_trials, self.num_data_points)) if self.num_dim==1 \
+            else np.zeros((self.num_trials, self.num_data_points, self.num_dim))
         self.data_record['tracker_angle'] = np.zeros((self.num_trials, self.num_data_points))
-        self.data_record['tracker_wheels'] = np.zeros((self.num_trials, self.num_data_points, self.num_sensors_motors))
+        self.data_record['tracker_wheels'] = np.zeros((self.num_trials, self.num_data_points, 2))
         self.data_record['tracker_velocity'] = np.zeros((self.num_trials, self.num_data_points))
         self.data_record['tracker_signals'] = np.zeros((self.num_trials, self.num_data_points, self.num_sensors_motors))
         self.data_record['agents_motors_control_indexes'] = [None for _ in range(self.num_trials)]
