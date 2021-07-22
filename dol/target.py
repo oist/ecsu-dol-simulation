@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from numpy.random import RandomState
 from dol.params import ENV_SIZE, HALF_ENV_SIZE
 
+RANDOM_WALK = True
 
 @dataclass
 class Target:
@@ -14,14 +15,16 @@ class Target:
     num_trials: int
     rs: RandomState
 
-    def __post_init__(self):
+    def __post_init__(self):        
         if self.rs is None:
+            self.random_walk = False
             self.trial_vel = np.repeat(np.arange(1, self.num_trials / 2 + 1), 2)[:self.num_trials]  # 1, 1, 2, 2
             self.trial_vel[1::2] *= -1  # +, -, +, -, ...
             self.trial_start_pos = [0] * self.num_trials
             self.trial_delta_bnd = [0] * self.num_trials
         else:
             # random target
+            self.random_walk = RANDOM_WALK
             max_vel = np.ceil(self.num_trials / 2)
             max_pos = ENV_SIZE / 8
             self.trial_vel = self.rs.choice([-1, 1]) * self.rs.uniform(1, max_vel, self.num_trials)
@@ -36,6 +39,9 @@ class Target:
         # init vel
         self.start_vel = self.trial_vel[trial]
         self.vel = self.start_vel
+
+    def change_vel(self):        
+        self.vel = self.rs.uniform(-10, 10)
 
     def get_next_boundary_pos(self, trial):
         return HALF_ENV_SIZE - self.trial_delta_bnd[trial]
@@ -55,6 +61,8 @@ class Target:
         self.positions[0] = self.pos
 
         for i in range(1, self.num_data_points):
+            if self.random_walk and i%5==0:
+                self.change_vel()
             self.pos += self.vel
             pos_sign, pos_abs = np.sign(self.pos), np.abs(self.pos)
             self.positions[i] = self.pos
@@ -65,6 +73,7 @@ class Target:
                 self.vel = -self.vel  # invert velocity
                 bnd_pos_abs = self.get_next_boundary_pos(trial)
         return self.positions
+
 
 
 def test_target():
