@@ -129,10 +129,11 @@ def get_last_performance_seeds(base_dir, print_stats=True,
         best_sim_stats = None
 
     if best_sim_stats is not None:
-        best_stats_genetic_distance = {}
         best_stats_non_flat_neur_outputs = {}
         best_stats_non_flat_neur_states = {}
         best_stats_non_flat_motors = {}
+        if sim.num_agents == 2:
+            best_stats_genetic_distance = {}
 
         best_stats_seeds = converged_seeds if best_sim_stats=='converged' else seeds
 
@@ -140,10 +141,11 @@ def get_last_performance_seeds(base_dir, print_stats=True,
             s_exp_dir = seed_exp_dir[s]
             performance, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(s_exp_dir, quiet=True)
             data_record = data_record_list[sim_idx]   
-            best_stats_genetic_distance[s] = data_record['genotype_distance']
             best_stats_non_flat_neur_outputs[s] = get_non_flat_neuron_data(data_record, 'agents_brain_output')
             best_stats_non_flat_neur_states[s] = get_non_flat_neuron_data(data_record, 'agents_brain_state')
             best_stats_non_flat_motors[s] = get_non_flat_neuron_data(data_record, 'agents_motors')
+            if sim.num_agents == 2:
+                best_stats_genetic_distance[s] = data_record['genotype_distance']
 
     if print_stats:
         # print('Selected evo: {}'.format(last_evo_file))
@@ -155,10 +157,11 @@ def get_last_performance_seeds(base_dir, print_stats=True,
         # print(f'Non converged ({len(non_converged_seeds)}):', non_converged_seeds)
 
         if best_sim_stats:
-            print('Genetic distances:')
-            for s in best_stats_seeds:
-                print(f'\tSeed {str(s).zfill(3)}: {best_stats_genetic_distance[s]}')
-            print(f'Average genetic distance: {np.mean(list(best_stats_genetic_distance.values()))}')
+            if sim.num_agents == 2:
+                print('Genetic distances:')
+                for s in best_stats_seeds:
+                    print(f'\tSeed {str(s).zfill(3)}: {best_stats_genetic_distance[s]}')
+                print(f'Average genetic distance: {np.mean(list(best_stats_genetic_distance.values()))}')
             print('Non flat neurons outputs for each agent:')
             for s in best_stats_seeds:
                 print(f'\tSeed {str(s).zfill(3)}: {best_stats_non_flat_neur_outputs[s]}')
@@ -188,7 +191,8 @@ def get_last_performance_seeds(base_dir, print_stats=True,
     if plot:
         plot_best_exp_performance(best_exp_performance, seeds)
         if best_sim_stats:
-            bar_plot_seeds_data_value(best_stats_genetic_distance, 'Genetic distance')
+            if sim.num_agents == 2:
+                bar_plot_seeds_data_value(best_stats_genetic_distance, 'Genetic distance')
             bar_plot_seeds_data_list(best_stats_non_flat_neur_outputs, 'Non flat neurons outputs')
             # bar_plot_seeds_data_list(best_stats_non_flat_neur_states, 'Non flat neurons states')
             bar_plot_seeds_data_list(best_stats_non_flat_motors, 'Non flat motors')
