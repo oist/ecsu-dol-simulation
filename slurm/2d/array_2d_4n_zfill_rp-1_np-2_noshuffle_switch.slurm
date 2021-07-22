@@ -27,7 +27,7 @@ python3 -m dol.main \
 --dir $tempdir \
 --gen_zfill \
 --num_pop 2 \
---shuffle_agents False \
+--noshuffle \
 --popsize 48 \
 --num_dim 2 \
 --max_gen 5000 \
