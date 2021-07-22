@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=compute
-#SBATCH --time=15:00:00
+#SBATCH --time=5:00:00
 #SBATCH --job-name=dot
 #SBATCH --output=slurm_%A-%a.out
 #SBATCH --mem=50G
@@ -28,9 +28,11 @@ python3 -m dol.main \
 --gen_zfill \
 --popsize 48 \
 --num_dim 2 \
---max_gen 50000 \
---num_neurons 3 \
+--max_gen 5000 \
+--num_neurons 4 \
 --num_trials 4 \
+--num_random_pairings 3 \
+--motor_control_mode SWITCH \
 --cores 48
 
 # copy our result back to Bucket. We use "scp" to copy the data 

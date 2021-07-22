@@ -26,11 +26,14 @@ python3 -m dol.main \
 --seed ${SLURM_ARRAY_TASK_ID} \
 --dir $tempdir \
 --gen_zfill \
---popsize 48 \
+--num_pop 4 \
+--popsize 24 \
 --num_dim 2 \
 --max_gen 5000 \
---num_neurons 2 \
+--num_neurons 4 \
 --num_trials 4 \
+--num_random_pairings 3 \
+--motor_control_mode SWITCH \
 --cores 48
 
 # copy our result back to Bucket. We use "scp" to copy the data 
