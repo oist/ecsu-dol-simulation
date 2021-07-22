@@ -10,6 +10,7 @@ from numpy.random import RandomState
 from joblib import Parallel, delayed
 from pyevolver.json_numpy import NumpyListJsonEncoder
 from pyevolver.timing import Timing
+from dol import tracker2d
 from dol.agent import Agent
 from dol.tracker import Tracker
 from dol.target import Target
@@ -258,6 +259,7 @@ class Simulation:
             )
 
     def init_data_record(self):
+        num_wheels = 2 if (self.num_dim ==1 or not tracker2d.XY_MODE) else 4
         if self.data_record is None:
             return
         self.data_record['delta_tracker_target'] = np.zeros((self.num_trials, self.num_data_points))
@@ -268,7 +270,7 @@ class Simulation:
             np.zeros((self.num_trials, self.num_data_points)) if self.num_dim==1 \
             else np.zeros((self.num_trials, self.num_data_points, self.num_dim))
         self.data_record['tracker_angle'] = np.zeros((self.num_trials, self.num_data_points))
-        self.data_record['tracker_wheels'] = np.zeros((self.num_trials, self.num_data_points, 2))
+        self.data_record['tracker_wheels'] = np.zeros((self.num_trials, self.num_data_points, num_wheels))
         self.data_record['tracker_velocity'] = np.zeros((self.num_trials, self.num_data_points))
         self.data_record['tracker_signals'] = np.zeros((self.num_trials, self.num_data_points, self.num_sensors_motors))
         self.data_record['agents_motors_control_indexes'] = [None for _ in range(self.num_trials)]
