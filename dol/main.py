@@ -30,6 +30,7 @@ def main(raw_args=None):
                         help='whether to fill geotipes with zeros otherwize random (default)')
     parser.add_argument('--num_pop', type=int, default=1, help='Number of populations')
     parser.add_argument('--popsize', type=int, default=96, help='Population size')
+    parser.add_argument('--shuffle_agents', type=bool, default=True, help='Weather to shuffle agents before eval function')
     parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')
 
     # simulation arguments        
@@ -77,6 +78,8 @@ def main(raw_args=None):
                 subdir += '_rp-{}'.format(args.num_random_pairings)
             if args.num_pop > 1:
                 subdir += f'_np-{args.num_pop}'
+            if not args.shuffle_agents:
+                subdir += f'_noshuffle'
             if args.motor_control_mode!=None:
                 subdir += f'_{args.motor_control_mode.lower()}'
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
@@ -121,6 +124,7 @@ def main(raw_args=None):
         random_seed=args.seed,
         population=population,
         num_populations=args.num_pop,
+        shuffle_agents=args.shuffle_agents,
         population_size=args.popsize,
         genotype_size=genotype_size,
         evaluation_function=sim.evaluate,
