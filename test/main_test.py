@@ -186,6 +186,21 @@ def test_2d_4n_rp0_switch():
     assert normalized_perf == [209.80775083182743]
     print('✅ test_2d_4n_rp0_switch')
 
+# def test_2d_4n_group():
+#     sim, evo = main([             
+#         '--cores', '1', 
+#         '--seed', '1',
+#         '--gen_zfill',
+#         '--num_dim', '2',
+#         '--num_neurons', '4', 
+#         '--popsize', '48', 
+#         '--max_gen', '20',
+#         '--num_random_pairings', '3', 
+#         '--motor_control_mode', 'SWITCH'
+#     ])
+#     last_best_perf = evo.best_performances[-1]
+#     print('✅ test_2d_4n_group')
+
 def test_2d_4n_rp3_switch():
     sim, evo = main([             
         # '--dir', './data/tmp', 
@@ -223,7 +238,7 @@ def test_2d_4n_rp3_np4_switch():
     assert normalized_perf == [206.7847936047856, 207.61790413771269, 207.51109872097186, 209.16469040317497]
     print('✅ test_2d_4n_rp3_np4_switch')
 
-def test_2d():    
+def test_2d(): 
     test_2d_4n() # isolated
     test_2d_4n_rp0_switch()
     test_2d_4n_rp3_switch()
