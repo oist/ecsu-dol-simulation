@@ -123,9 +123,6 @@ class Simulation:
             "In 2d mode exclusive_motors mode is not appropriate"
             # TODO: double check this
 
-        assert self.num_dim == 1 or self.num_pop==1, \
-            "2d mode has been implemented only for the isolated condition"        
-
     def split_population(self):
         # when population will be split in two for computing random pairs matching
         return self.num_pop==1 and \
@@ -313,29 +310,48 @@ class Simulation:
     def prepare_trial(self, t):
 
         # init motor controllers
-        # agents_motors_control_indexes[0]: which agent's left output is controlling the left motor
-        # agents_motors_control_indexes[1]: which agent's right output is controlling the right motor
+        # motors/wheels indexes in sequence: left, right (, down, up) 
+        # agents_motors_control_indexes[0]: which agent is controlling the left wheel
+        # agents_motors_control_indexes[1]: which agent is controlling the right motor
+        # in addition, if num_dim is 2
+        # agents_motors_control_indexes[2]: which agent is controlling the down wheel
+        # agents_motors_control_indexes[3]: which agent is controlling the up wheel
         
-        if self.num_agents == 2:
+        if self.num_agents == 1:
+            # single agent
+            self.agents_motors_control_indexes = None # only relevant for 2 agents
+        else:
+            # 2 agents            
             if self.isolation_idx is not None:
                 # forcing control by one agents
-                self.agents_motors_control_indexes = [self.isolation_idx] * 2  # [0,0] or [1,1]                
+                # [0,0] or [1,1] ([0,0,0,0] or [1,1,1,1] in 2d)
+                self.agents_motors_control_indexes = [self.isolation_idx] * self.num_dim
             elif self.motor_control_mode=='SWITCH':
-                if t % 2 == 0:
-                    self.agents_motors_control_indexes = [0, 1]                    
+                if t % 2 == 0: # (0,2) - (first, third)
+                    if self.num_dim == 1:
+                        self.agents_motors_control_indexes = [0, 1]
+                    else:
+                        # 2d - first agent controls horizontal wheels, second agents vertical wheels
+                        self.agents_motors_control_indexes = [0, 0, 1, 1]
                 else:
-                    # invert controller in switch mode on odd trial indexes
-                    self.agents_motors_control_indexes = [1, 0]
+                    # invert controller in switch mode on odd trial indexes (1,3) - (second, forth)
+                    if self.num_dim == 1:
+                        self.agents_motors_control_indexes = [1, 0]
+                    else:
+                        # 2d - first agent controls vertical wheels, second agents horizontal wheels
+                        self.agents_motors_control_indexes = [1, 1, 0, 0]
             elif self.motor_control_mode=='SEPARATE':
-                # first agent controls left motor, second agent controls right motor
-                self.agents_motors_control_indexes = [0, 1]
+                if self.num_dim == 1:
+                    # across all trials first agent controls left motor, second agent controls right motor
+                    self.agents_motors_control_indexes = [0, 1]
+                else:
+                    # 2d - # across all trials first agent controls horizontal wheels, second agents vertical wheels
+                    self.agents_motors_control_indexes = [0, 0, 1, 1]
             else:
                 # self.motor_control_mode=='OVERLAP'
                 # both agents control both motors (for a factor of half)
                 self.agents_motors_control_indexes = None 
-        else:
-            # single agent
-            self.agents_motors_control_indexes = [0,0]
+            
         
         # init deltas
         self.delta_tracker_target = np.zeros(self.num_data_points)
@@ -366,16 +382,19 @@ class Simulation:
         self.timing.add_time('SIM_euler_step', self.tim)
 
     def compute_motor_outputs_and_wheels(self):        
+        
         for o in self.agents:
             o.compute_motor_outputs()  # compute wheels from motor output
+        
         if self.num_agents == 1:
             motors = np.copy(self.agents[0].motors)
         else:
+            # 2 agents
             if self.motor_control_mode == 'OVERLAP':
                 motors = np.array([ # [[a1_m1, a1_m2],[a2_m1, a2_m2]
                     self.agents[a].motors
                     for a in range(2)
-                ]).mean(0) # mean across rows
+                ]).mean(axis=0) # mean across rows
             else:                
                 motors = np.array(
                     [
@@ -388,10 +407,8 @@ class Simulation:
                 # when both are more than threshold freeze
                 motors = np.zeros(2)
         
-        if self.num_dim == 1:
-            self.tracker.wheels = motors
-        else:
-            self.tracker.wheels = np.array([motors[1]-motors[0], motors[3]-motors[2]])        
+        self.tracker.wheels = motors
+        
         self.timing.add_time('SIM_move_one_step', self.tim)
 
     #################

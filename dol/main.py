@@ -61,6 +61,7 @@ def main(raw_args=None):
     t.tic()
 
     genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE(args.num_dim, args.num_neurons)
+    # agents in 2d have 4 sensors and 4 motors
         
     genotype_size = gen_structure.get_genotype_size(genotype_structure)
 
