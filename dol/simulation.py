@@ -40,6 +40,9 @@ class Simulation:
     # Ture -> SWITCH
     switch_agents_motor_control: bool = False
 
+    # for back compatibility - to be removed (now using num_pop)
+    dual_population: float = False 
+
     motor_control_mode: str = None # 'SEPARATE' # SEPARATE, SWITCH, OVERLAP
     # when num_agents is 2 this decides whether
     # None: not applicable (if self.num_agents==1)
@@ -49,8 +52,7 @@ class Simulation:
 
     exclusive_motors_threshold: float = None
 
-    # for back compatibility - to be removed (now using num_pop)
-    dual_population: float = False 
+    max_mean_distance = 10000 # for turning min to max in fitness function and normalization
 
     brain_step_size: float = 0.1
     num_trials: int = 4
@@ -63,17 +65,15 @@ class Simulation:
 
         self.num_agents = 1 if self.num_random_pairings is None else 2
 
-        if self.dual_population:
+        if self.dual_population:            
             # for back compatibility
             self.num_pop = 2 
-
-        if self.switch_agents_motor_control:
+            self.motor_control_mode = 'SWITCH' if self.switch_agents_motor_control else 'SEPARATE'
+        elif self.switch_agents_motor_control:            
             # for back compatibility
             self.motor_control_mode = None if self.num_agents==1 else 'SEPARATE'
 
-        self.__check_params__()
-
-        self.max_mean_distance = 10000
+        self.__check_params__()        
 
         self.num_sensors_motors = 2 * self.num_dim
 
@@ -174,6 +174,10 @@ class Simulation:
             obj_dict.update(kwargs)
 
         sim = Simulation(**obj_dict)
+        if 'motor_control_mode' not in obj_dict:
+            # for back compatibility - old simulations used different threshold
+            sim.max_mean_distance = 5000            
+
         gen_structure.check_genotype_structure(sim.genotype_structure)
         return sim
 
@@ -437,7 +441,7 @@ class Simulation:
         if self.split_population():
             # split pop in two (to allow for pair matching)
             self.genotype_population = np.split(self.genotype_population[0], 2)
-            if self.genotype_index > len(self.genotype_population[0]):
+            if self.genotype_index >= len(self.genotype_population[0]):
                 # keep track current agent is in the second part of population     
                 self.genotype_index = self.genotype_index - len(self.genotype_population[0])
                 self.population_index = 1
