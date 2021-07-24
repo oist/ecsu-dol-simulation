@@ -69,8 +69,8 @@ class Agent:
         
         self.genotype_structure = self.genotype_structure
 
-    def init_params(self):
-        self.brain.states = np.zeros(self.num_brain_neurons)
+    def init_params(self, init_state=0.):
+        self.brain.states = np.full(self.num_brain_neurons, init_state)
         self.position = 0
         self.sensors = np.zeros(self.num_sensors_motors)      
         self.motors = np.zeros(self.num_sensors_motors)      

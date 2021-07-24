@@ -136,7 +136,8 @@ def build_structure(
     return structure
 
 
-DEFAULT_GEN_STRUCTURE_FROM_FILE = lambda d,n: load_genotype_structure('config/genotype_structure_{}d_{}n.json'.format(d,n))
+DEFAULT_GEN_STRUCTURE_FROM_FILE = lambda d,n: \
+    load_genotype_structure('config/genotype_structure_{}d_{}n.json'.format(d,n))
 
 DEFAULT_GEN_STRUCTURE = lambda d,n: build_structure(
     num_sensors = 2 * d,

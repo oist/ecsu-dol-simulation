@@ -554,8 +554,11 @@ def single_paired_agents(input_dir='data'):
     data_record_list = []
 
     performance, sim_perfs, _ = sim.run_simulation(
-        best_two_agent_pop, 0, 0, 0, True, None,
-        data_record_list
+        genotype_population=best_two_agent_pop,
+        genotype_index=0,
+        random_seed=0,
+        population_index=0,
+        exaustive_pairs=True
     )
 
     nc = get_sim_agent_complexity(

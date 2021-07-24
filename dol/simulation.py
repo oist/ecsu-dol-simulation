@@ -292,6 +292,12 @@ class Simulation:
         self.data_record['delta_tracker_target'][t] = self.delta_tracker_target  # presaved
         self.data_record['target_position'][t] = self.target_positions  # presaved
         self.data_record['agents_motors_control_indexes'][t] = self.agents_motors_control_indexes
+
+        if self.with_ghost:
+            for k in ['agents_sensors', 'agents_brain_input', 'agents_brain_state',
+                      'agents_derivatives', 'agents_brain_output', 'agents_motors']:
+                self.data_record[k][t][self.ghost_index] = self.original_data_record[k][t][self.ghost_index]
+
         self.timing.add_time('SIM_init_trial_data', self.tim)
 
     def save_data_record_step(self, t, i):
@@ -305,6 +311,8 @@ class Simulation:
         self.data_record['tracker_signals'][t][i] = self.tracker.signals_strength
         
         for a, o in enumerate(self.agents):
+            if a == self.ghost_index:
+                continue
             self.data_record['agents_sensors'][t][a][i] = o.sensors
             self.data_record['agents_brain_input'][t][a][i] = o.brain.input
             self.data_record['agents_brain_state'][t][a][i] = o.brain.states
@@ -328,11 +336,11 @@ class Simulation:
             self.agents_motors_control_indexes = None # only relevant for 2 agents
         else:
             # 2 agents            
-            if self.isolation_idx is not None:
+            # if self.isolation_idx is not None:
                 # forcing control by one agents
                 # [0,0] or [1,1] ([0,0,0,0] or [1,1,1,1] in 2d)
-                self.agents_motors_control_indexes = [self.isolation_idx] * self.num_dim
-            elif self.motor_control_mode=='SWITCH':
+                # self.agents_motors_control_indexes = [self.isolation_idx] * self.num_dim
+            if self.motor_control_mode=='SWITCH':
                 if t % 2 == 0: # (0,2) - (first, third)
                     if self.num_dim == 1:
                         self.agents_motors_control_indexes = [0, 1]
@@ -365,8 +373,10 @@ class Simulation:
         self.target_positions = self.target.compute_positions(trial=t)        
 
         # init agents params
-        for o in self.agents:
-            o.init_params()
+        for i, o in enumerate(self.agents):
+            if i==self.ghost_index: 
+                continue
+            o.init_params(self.init_ctrnn_state)
 
             # init tracker params
         self.tracker.init_params_trial(t)
@@ -378,22 +388,32 @@ class Simulation:
         self.timing.add_time('SIM_prepare_agents_for_trials', self.tim)
 
     def compute_brain_input_agents(self):
-        for o in self.agents:
+        for i, o in enumerate(self.agents):
+            if i==self.ghost_index: 
+                continue
             o.compute_brain_input(self.tracker.signals_strength)
         self.timing.add_time('SIM_compute_brain_input', self.tim)
 
     def compute_brain_euler_step_agents(self):
-        for o in self.agents:
+        for i, o in enumerate(self.agents):
+            if i==self.ghost_index: 
+                continue
             o.brain.euler_step()  # this sets agent.brain.output (2-dim vector)
         self.timing.add_time('SIM_euler_step', self.tim)
 
     def compute_motor_outputs_and_wheels(self):        
         
-        for o in self.agents:
+        for i, o in enumerate(self.agents):
+            if i==self.ghost_index: 
+                o.motors = self.played_back_ghost_motors
+                continue
             o.compute_motor_outputs()  # compute wheels from motor output
         
         if self.num_agents == 1:
             motors = np.copy(self.agents[0].motors)
+        elif self.isolation_idx is not None:
+            motors = np.copy(self.agents[self.isolation_idx].motors)
+            self.agents[1-self.isolation_idx].motors = np.zeros(self.num_sensors_motors)
         else:
             # 2 agents
             if self.motor_control_mode == 'OVERLAP':
@@ -422,9 +442,16 @@ class Simulation:
     #################
     def run_simulation(self, genotype_population, genotype_index, random_seed,
                        population_index=0, exaustive_pairs=False, 
-                       isolation_idx=None, data_record_list=None):
+                       isolation_idx=None, init_ctrnn_state=0., data_record_list=None,
+                       ghost_index=None, original_data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
+        param isolation_idx (int): only run simulation considering only 1 agent
+        param exaustive_pairs (bool): if to compute all pairs 
+              by default False, during evolution for optimization purporses
+              (all pairs are recombined afterwards in evalutate() )
+        param ghost_index: run simulation with ghost agent at the given index
+              using its played back data specified in original_data_record_list
         '''
 
         assert population_index == 0 or self.num_pop > 1, \
@@ -448,9 +475,19 @@ class Simulation:
 
         self.population_size = len(self.genotype_population[0])
         self.isolation_idx = isolation_idx
+        self.init_ctrnn_state = init_ctrnn_state
         if self.isolation_idx is not None:
             assert self.num_agents == 2, \
                 'can only force isolation if simulatin is run with 2 agents'
+
+        self.ghost_index = ghost_index
+        self.with_ghost = ghost_index is not None
+
+        if self.with_ghost:
+            assert original_data_record_list is not None, \
+                'If you want to use ghost simulation you have to provide me with the original_data_record_list'
+            assert self.num_agents==2, \
+                'Cannot have ghost in isolated case (single agent)'
 
         self.fill_paired_agents_indexes(exaustive_pairs)  # paired_agents_sims_pop_idx
 
@@ -465,7 +502,11 @@ class Simulation:
 
         for self.sim_index in range(num_simulations):
 
+            if self.with_ghost:
+                self.original_data_record = original_data_record_list[self.sim_index]
+            
             self.data_record = None
+            
             if data_record_list is not None:
                 self.data_record = {}
                 data_record_list.append(self.data_record)
@@ -484,8 +525,14 @@ class Simulation:
                 # setup trial
                 self.prepare_trial(t)
 
+                if self.with_ghost:
+                    trial_ghost_motors = self.original_data_record['agents_motors'][t][self.ghost_index]
+
                 # replace with range(1, self.num_data_points) to reproduce old results
                 for i in range(self.num_data_points): 
+                    if self.with_ghost:
+                        self.played_back_ghost_motors = trial_ghost_motors[i]
+
                     # 1) Agent senses strength of emitter from the two sensors
                     self.tracker.compute_signal_strength_and_delta_target(self.target_positions[i])
                     
@@ -546,10 +593,14 @@ class Simulation:
         for pop_idx in range(self.num_pop-1): # exlude last
             pop_results.append(
                 self.run_simulation(
-                    genotype_population, genotype_index, random_seed, pop_idx
+                    genotype_population=genotype_population, 
+                    genotype_index=genotype_index, 
+                    random_seed=random_seed, 
+                    population_index=pop_idx
                 )
             )
-        return pop_results
+        return pop_results        
+
 
     ##################
     # EVAL FUNCTION

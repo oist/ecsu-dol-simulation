@@ -143,14 +143,14 @@ def test_1d_2n_exc_rp3_np4_switch():
     print('✅ test_1d_2n_exc_rp3_np4_switch')
 
 def test_1d():
-    # test_1d_1n_exc() # isolated
-    # test_1d_2n_exc() # isolated
+    test_1d_1n_exc() # isolated
+    test_1d_2n_exc() # isolated
     test_1d_2n_exc_rp0_switch()
-    # test_1d_2n_exc_rp3_switch()
-    # test_1d_3n_exc_rp3_switch()
-    # test_1d_2n_exc_rp3_overlap()
-    # test_1d_2n_exc_rp3_np2()
-    # test_1d_2n_exc_rp3_np4_switch()
+    test_1d_2n_exc_rp3_switch()
+    test_1d_3n_exc_rp3_switch()
+    test_1d_2n_exc_rp3_overlap()
+    test_1d_2n_exc_rp3_np2()
+    test_1d_2n_exc_rp3_np4_switch()
 
 def test_2d_4n():
     sim, evo = main([             
