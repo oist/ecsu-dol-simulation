@@ -336,10 +336,6 @@ class Simulation:
             self.agents_motors_control_indexes = None # only relevant for 2 agents
         else:
             # 2 agents            
-            # if self.isolation_idx is not None:
-                # forcing control by one agents
-                # [0,0] or [1,1] ([0,0,0,0] or [1,1,1,1] in 2d)
-                # self.agents_motors_control_indexes = [self.isolation_idx] * self.num_dim
             if self.motor_control_mode=='SWITCH':
                 if t % 2 == 0: # (0,2) - (first, third)
                     if self.num_dim == 1:
@@ -411,9 +407,6 @@ class Simulation:
         
         if self.num_agents == 1:
             motors = np.copy(self.agents[0].motors)
-        elif self.isolation_idx is not None:
-            motors = np.copy(self.agents[self.isolation_idx].motors)
-            self.agents[1-self.isolation_idx].motors = np.zeros(self.num_sensors_motors)
         else:
             # 2 agents
             if self.motor_control_mode == 'OVERLAP':
@@ -442,11 +435,10 @@ class Simulation:
     #################
     def run_simulation(self, genotype_population, genotype_index, random_seed,
                        population_index=0, exaustive_pairs=False, 
-                       isolation_idx=None, init_ctrnn_state=0., data_record_list=None,
+                       init_ctrnn_state=0., data_record_list=None,
                        ghost_index=None, original_data_record_list=None):
         '''
         Main function to compute shannon/transfer/sample entropy performace        
-        param isolation_idx (int): only run simulation considering only 1 agent
         param exaustive_pairs (bool): if to compute all pairs 
               by default False, during evolution for optimization purporses
               (all pairs are recombined afterwards in evalutate() )
@@ -474,11 +466,7 @@ class Simulation:
                 self.population_index = 1
 
         self.population_size = len(self.genotype_population[0])
-        self.isolation_idx = isolation_idx
         self.init_ctrnn_state = init_ctrnn_state
-        if self.isolation_idx is not None:
-            assert self.num_agents == 2, \
-                'can only force isolation if simulatin is run with 2 agents'
 
         self.ghost_index = ghost_index
         self.with_ghost = ghost_index is not None

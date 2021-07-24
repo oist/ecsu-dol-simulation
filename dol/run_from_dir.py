@@ -16,7 +16,7 @@ from dol.utils import get_numpy_signature
 
 def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx=None,
                             random_target_seed=None, random_pairing_seed=None, 
-                            isolation_idx=None, init_state=0., ghost_index=None, 
+                            isolation_idx=None, init_state=0., ghost_idx=None, 
                             write_data=False, **kwargs):
     """
     Utitity function to get data from a simulation
@@ -41,16 +41,19 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
         population_idx = np.argmax(evo.best_performances[-1])
             
 
+    # when referring to evo we use this
+    population_idx_evo = population_idx 
+
     if sim.num_random_pairings == 0:
-        population_idx_rp0 = population_idx
-        population_idx = 0 # there is only 1 population for evo        
+        # joined condition
+        population_idx_evo = 0 # there is only 1 population for evo        
 
     data_record_list = []
 
     random_seed = evo.pop_eval_random_seed 
     # seed from evolution to reproduce results
 
-    expect_same_results = isolation_idx is None
+    expect_same_results = True
 
     # overwriting simulaiton
     if random_target_seed is not None:
@@ -64,21 +67,54 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
         random_seed = random_pairing_seed # new seed to get different results
         expect_same_results = False
 
-    original_populations = evo.population_unsorted
+    original_population = evo.population_unsorted
 
     # get the indexes of the populations as they were before being sorted by performance
     # we only need to do this for the first population (index 0)
-    original_genotype_idx = evo.population_sorted_indexes[population_idx][genotype_idx]
+    original_genotype_idx = evo.population_sorted_indexes[population_idx_evo][genotype_idx]
 
     played_back_data_record_list = None
 
-    with_ghost = ghost_index is not None
+    with_ghost = ghost_idx is not None
+
+    if isolation_idx is not None:        
+        assert sim.num_agents == 2, "sim already with single angent"
+        assert not with_ghost, 'We cannot have both ghost and isolation mode'
+
+        print('\n🏝️ Isolation mode - original simulation')
+
+        # reset values for re-run
+        func_arguments['isolation_idx'] = None
+        func_arguments['write_data'] = None
+        func_arguments['verbose'] = True
+
+
+        # gather played back data
+        _, sim_perfs, _, _, original_data_record_list, _ = \
+            run_simulation_from_dir(**func_arguments)
+        
+        sim_idx = kwargs.get('select_sim') 
+        if sim_idx is None: 
+            sim_idx = np.argmin(sim_perfs) # best sim by default
+        data_record = original_data_record_list[sim_idx]
+        isolated_genotype = data_record['genotypes'][isolation_idx]
+
+        isolated_agent_signature = get_numpy_signature(isolated_genotype)
+        print(f'\n🏝️ New simulation with isolated agent ({isolated_agent_signature})')
+        
+        original_population = [[isolated_genotype]]
+        population_idx = 0
+        original_genotype_idx = 0       
+        sim.agents = [sim.agents[0]] # take first, it will be reinitialized in run_simulation
+        sim.num_agents = 1
+        sim.num_random_pairings = None
+        expect_same_results = False
 
     if with_ghost:
         print('\n👻 Ghost condition - original simulation')
 
         # reset values for re-run
-        func_arguments['ghost_index'] = None        
+        func_arguments['ghost_idx'] = None        
         func_arguments['random_target_seed']=None
         func_arguments['init_state'] = 0.
         func_arguments['write_data'] = None
@@ -87,21 +123,20 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
         
         # gather played back data
         _, _, _, _, played_back_data_record_list, _ = \
-            run_simulation_from_dir(**func_arguments)
+            run_simulation_from_dir(**func_arguments)        
         
         print('\n👻 New simulation with played back data')
         expect_same_results = False
         
     performance, sim_perfs, _ = sim.run_simulation(
-        genotype_population=original_populations,
+        genotype_population=original_population,
         genotype_index=original_genotype_idx,
         random_seed=random_seed,
         population_index=population_idx,
         exaustive_pairs=True,
-        isolation_idx=isolation_idx,
         init_ctrnn_state=init_state,
         data_record_list=data_record_list,
-        ghost_index=ghost_index,
+        ghost_index=ghost_idx,
         original_data_record_list=played_back_data_record_list
     )
 
@@ -117,7 +152,14 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
     verbose = not kwargs.get('quiet', False)
 
     if verbose:
-        perf_orig = evo.performances[population_idx][genotype_idx]
+        selected_agent_genome = original_population[population_idx][original_genotype_idx]
+        if sim.num_random_pairings == 0:
+            # joined condition
+            selected_agent_genome = np.split(selected_agent_genome, 2)[population_idx]    
+        selected_agent_signature = get_numpy_signature(selected_agent_genome)        
+        p_idx = population_idx if sim.num_random_pairings != 0 else ['left','right'][population_idx]
+        print(f'Selected agent "{selected_agent_signature}" (pop_idx:{p_idx}, genome_idx:{genotype_idx})')
+        perf_orig = evo.performances[population_idx_evo][genotype_idx]
         perf_orig = sim.normalize_performance(perf_orig)
         print("Error original: {}".format(perf_orig))
         print("Error recomputed: {}".format(performance))
@@ -140,7 +182,6 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
                 outfile = os.path.join(outdir, '{}.json'.format(k))
                 utils.save_json_numpy_data(v, outfile)
 
-    
     if kwargs.get('select_sim', None) is None:
         if with_ghost:
             # select worst one    
@@ -151,7 +192,10 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
             # select best one
             sim_idx = np.argmin(sim_perfs)
             if verbose:
-                print("Best sim (random pairings)", sim_idx+1)
+                if sim.num_agents == 1:
+                    print("Single agent (single sim)", sim_idx+1)
+                else:
+                    print("Best sim (random pairings)", sim_idx+1)
     else:
         sim_idx = kwargs['select_sim'] - 1  # zero based
         if verbose:
@@ -161,16 +205,15 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
         from dol.analyze_results import get_non_flat_neuron_data
         data_record = data_record_list[sim_idx]
         print(f"   Error recomputed (sim {sim_idx+1}): ", sim_perfs[sim_idx])
+        print("   Trials performances: ", data_record['trials_performances'])
+
         if sim.num_agents == 2:
             print("   Sim agents genotype distance: ", sim.agents_genotype_distance[sim_idx])
         # print agents signatures
         agents_sign = [get_numpy_signature(gt) for gt in data_record['genotypes']]
         print('   Agent(s) signature(s):', agents_sign)
-        selected_agent_genome = evo.population[population_idx][genotype_idx]
-        if sim.num_random_pairings == 0:
-            selected_agent_genome = np.split(selected_agent_genome, 2)[population_idx_rp0]
-            # double genotype
-        print(f'   Selected agent signature: {get_numpy_signature(selected_agent_genome)}')
+        if sim.num_agents > 1:
+            print('   Index of selected agent:', agents_sign.index(selected_agent_signature))
         non_flat_neurons = get_non_flat_neuron_data(data_record, 'agents_brain_output')
         print(f'   Non flat neurons: {non_flat_neurons}')
 
@@ -215,12 +258,14 @@ if __name__ == "__main__":
                         help='Seed to re-run simulation with random target (None to obtain same results)')
     parser.add_argument('--random_pairing_seed', type=int,
                         help='Seed to re-run simulation with random pairing (None to obtain same results)')
-    parser.add_argument('--isolation_idx', type=int,
-                        help='To force the first (0) or second (1) agent to run in isolation (None otherwise)')
+    parser.add_argument('--isolation_idx', type=int, choices=[0, 1], default=None,
+                        help='To force the first (0) or second (1) agent to run in isolation (None otherwise) '
+                             'Be aware that best agent could be at idx 1 (e.g., single population, rp-3)')
     parser.add_argument('--init_state', type=float, default=0.,
                         help="To force the agents' CTRNN to be initialized with specific initial state (default is 0.)")
-    parser.add_argument('--ghost_index', type=int, choices=[0, 1], default=None,
-                        help="To force ghost condition specifying which agent is played back")
+    parser.add_argument('--ghost_idx', type=int, choices=[0, 1], default=None,
+                        help='To force ghost condition specifying which agent is played back '
+                             'Be aware that best agent could be at idx 1 (e.g., single population, rp-3)')
     parser.add_argument('--write_data', action='store_true', help='Whether to output data (same directory as input)')
     parser.add_argument('--select_sim', type=int, help='Which simulation to select for visualization and plot (1-based) - default best')
     parser.add_argument('--compute_complexity', action='store_true', help='Whether to plot the data')
