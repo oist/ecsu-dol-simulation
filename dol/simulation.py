@@ -37,17 +37,18 @@ class Simulation:
 
     # for back compatibility - to be removed (now using motor_control_mode)
     # False -> SEPARATE
-    # Ture -> SWITCH
+    # True -> SWITCH
     switch_agents_motor_control: bool = False
 
     # for back compatibility - to be removed (now using num_pop)
     dual_population: float = False 
 
-    motor_control_mode: str = None # 'SEPARATE' # SEPARATE, SWITCH, OVERLAP
+    motor_control_mode: str = None # SEPARATE, SWITCH, SWITCH-HM, OVERLAP
     # when num_agents is 2 this decides whether
     # None: not applicable (if self.num_agents==1)
     # SEPARATE: across trials the first agent always control the left motor and the second the right
     # SWITCH: the two agents switch control of L/R motors in different trials
+    # SWITCH-HM: the two agents switch control of L/R motors in different trials but only first half of motors are used
     # OVERLAP: both agents control L/R motors (for a factor o half)
 
     exclusive_motors_threshold: float = None
@@ -68,7 +69,7 @@ class Simulation:
         if self.dual_population:            
             # for back compatibility
             self.num_pop = 2 
-            self.motor_control_mode = 'SWITCH' if self.switch_agents_motor_control else 'SEPARATE'
+            self.motor_control_mode in ['SWITCH','SWITCH-HM'] if self.switch_agents_motor_control else 'SEPARATE'
         elif self.switch_agents_motor_control:            
             # for back compatibility
             self.motor_control_mode = None if self.num_agents==1 else 'SEPARATE'
@@ -112,7 +113,7 @@ class Simulation:
         utils.assert_string_in_values(
             self.motor_control_mode, 
             'motor_control_mode',
-            [None, 'SEPARATE', 'SWITCH', 'OVERLAP']
+            [None, 'SEPARATE', 'SWITCH', 'SWITCH-HM', 'OVERLAP']
         )        
 
         assert self.num_pop<=2 or self.num_pop==self.num_random_pairings+1, \
@@ -325,11 +326,11 @@ class Simulation:
 
         # init motor controllers
         # motors/wheels indexes in sequence: left, right (, down, up) 
-        # agents_motors_control_indexes[0]: which agent is controlling the left wheel
-        # agents_motors_control_indexes[1]: which agent is controlling the right motor
+        # agents_motors_control_indexes[0]: tuple (a, m) such that motor 'm' of agent 'a' is connected to the left wheel
+        # agents_motors_control_indexes[1]: tuple (a, m) such that motor 'm' of agent 'a' is connected to the right wheel
         # in addition, if num_dim is 2
-        # agents_motors_control_indexes[2]: which agent is controlling the down wheel
-        # agents_motors_control_indexes[3]: which agent is controlling the up wheel
+        # agents_motors_control_indexes[2]: tuple (a, m) such that motor 'm' of agent 'a' is connected to the down wheel
+        # agents_motors_control_indexes[3]: tuple (a, m) such that motor 'm' of agent 'a' is connected to the up wheel
         
         if self.num_agents == 1:
             # single agent
@@ -339,24 +340,38 @@ class Simulation:
             if self.motor_control_mode=='SWITCH':
                 if t % 2 == 0: # (0,2) - (first, third)
                     if self.num_dim == 1:
-                        self.agents_motors_control_indexes = [0, 1]
+                        self.agents_motors_control_indexes = [(0,0), (1,1)]                            
                     else:
                         # 2d - first agent controls horizontal wheels, second agents vertical wheels
-                        self.agents_motors_control_indexes = [0, 0, 1, 1]
+                        self.agents_motors_control_indexes = [(0,0), (0,1), (1,2), (1,3)]
                 else:
                     # invert controller in switch mode on odd trial indexes (1,3) - (second, forth)
                     if self.num_dim == 1:
-                        self.agents_motors_control_indexes = [1, 0]
+                        self.agents_motors_control_indexes = [(1,0), (0,1)]
                     else:
                         # 2d - first agent controls vertical wheels, second agents horizontal wheels
-                        self.agents_motors_control_indexes = [1, 1, 0, 0]
+                        self.agents_motors_control_indexes = [(1,0), (1,1), (0,2), (0,3)]
+            elif self.motor_control_mode=='SWITCH-HM':
+                if t % 2 == 0: # (0,2) - (first, third)
+                    if self.num_dim == 1:
+                        self.agents_motors_control_indexes = [(0,0), (1,0)]                        
+                    else:
+                        # 2d - first agent controls horizontal wheels, second agents vertical wheels
+                        self.agents_motors_control_indexes = [(0,0), (0,1), (1,0), (1,1)]                        
+                else:
+                    # invert controller in switch mode on odd trial indexes (1,3) - (second, forth)
+                    if self.num_dim == 1:
+                        self.agents_motors_control_indexes = [(1,0), (0,0)]
+                    else:
+                        # 2d - first agent controls vertical wheels, second agents horizontal wheels
+                        self.agents_motors_control_indexes = [(1,0), (1,1), (0,0), (0,1)]
             elif self.motor_control_mode=='SEPARATE':
                 if self.num_dim == 1:
                     # across all trials first agent controls left motor, second agent controls right motor
-                    self.agents_motors_control_indexes = [0, 1]
+                    self.agents_motors_control_indexes = [(0,0), (1,1)]
                 else:
                     # 2d - # across all trials first agent controls horizontal wheels, second agents vertical wheels
-                    self.agents_motors_control_indexes = [0, 0, 1, 1]
+                    self.agents_motors_control_indexes = [(0,0), (0,1), (1,2), (1,3)]
             else:
                 # self.motor_control_mode=='OVERLAP'
                 # both agents control both motors (for a factor of half)
@@ -414,11 +429,12 @@ class Simulation:
                     self.agents[a].motors
                     for a in range(2)
                 ]).mean(axis=0) # mean across rows
-            else:                
+            else:    
+                # SWITCH / SWITCH-HM         
                 motors = np.array(
                     [
-                        self.agents[a].motors[i]
-                        for i, a in enumerate(self.agents_motors_control_indexes)
+                        self.agents[a].motors[m]
+                        for a, m in self.agents_motors_control_indexes
                     ]
                 )
         if self.exclusive_motors_threshold is not None:

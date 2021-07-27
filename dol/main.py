@@ -43,12 +43,13 @@ def main(raw_args=None):
                              '0    -> agents are evolved in pairs: a genotype contains a pair of agents. '
                              'n>0  -> each agent will go though a simulation with N other agents (randomly chosen).')
     parser.add_argument('--motor_control_mode', type=str, default=None,
-                        choices=[None, 'SEPARATE', 'SWITCH', 'OVERLAP'],
+                        choices=[None, 'SEPARATE', 'SWITCH', 'SWITCH-HM', 'OVERLAP'],
                         help=
                         'Type of motor control'
                         'None: not applicable (if single agent)'
                         'SEPARATE: across trials the first agent always control the left motor and the second the right'
                         'SWITCH: the two agents switch control of L/R motors in different trials'
+                        'SWITCH-HM: the two agents switch control of L/R motors in different trials but only first half of motors are used'
                         'OVERLAP: both agents control L/R motors (for a factor o half)')
 
     parser.add_argument('--exclusive_motors_threshold', type=float, default=None,
