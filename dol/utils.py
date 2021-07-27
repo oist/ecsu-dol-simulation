@@ -164,3 +164,6 @@ def load_data_from_pickle(pickle_file):
     with open(pickle_file, 'rb') as handle:
         return pickle.load(handle)		
     
+def am_i_on_deigo():
+    import socket
+    return socket.gethostname().startswith('deigo')

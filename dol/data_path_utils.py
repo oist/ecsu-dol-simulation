@@ -1,15 +1,19 @@
 import os
+from dol import utils
 
 # lookup tables for simulations in data directory
+# if run locally, it assumes data is store in project directory 
+# to synch data frolder from deigo run
+# rsync -avz --include="*/" --include="simulation.json" --include="evo_5000.json" --exclude="*" deigo-ext:'/bucket/FroeseU/fede/dol-simulation/exc_switch' ./data
+data_path = '/bucket/FroeseU/fede/dol-simulation' if  utils.am_i_on_deigo() else 'data'
 
-overlap_dir = os.path.join('data', 'overlap')
-exc_switch_dir = os.path.join('data', 'exc_switch')
-
+exc_switch_dir = os.path.join(data_path, 'exc_switch')
+overlap_dir = os.path.join(data_path, 'overlap')
 
 exc_switch_xN_dir = lambda x: {
     'individual': os.path.join(
         exc_switch_dir,
-        f'1d_{x}n_exc-0.1_zfill_rp-3_np-4_switch'
+        f'1d_{x}n_exc-0.1_zfill_rp-3_np-2_switch'
     ),
     'group': os.path.join( 
         exc_switch_dir, 
@@ -17,7 +21,7 @@ exc_switch_xN_dir = lambda x: {
     ),
     'joint': os.path.join(
         exc_switch_dir,
-        f'1d_{x}n_exc-0.1_zfill_rp-0_switch'
+        f'1d_{x}n_exc-0.1_zfill_rp-1_np-2_noshuffle_switch'
     )
 
 }

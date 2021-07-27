@@ -1,5 +1,6 @@
 #! /usr/bin/env python 3
 
+from dol import analyze_results
 import sys
 import os
 import numpy as np
@@ -17,6 +18,8 @@ from scipy.spatial.distance import pdist, squareform
 from dol.run_from_dir import run_simulation_from_dir
 from numpy.polynomial.polynomial import polyfit
 from dol.run_from_dir import run_simulation_from_dir
+from numpy.random import RandomState
+from itertools import combinations
 
 class InfoAnalysis:
 
@@ -26,7 +29,10 @@ class InfoAnalysis:
 		2: '[0 ..1] Scaled'
 	}	
 
-	def __init__(self, agent_nodes, sim_type_path, whichNormalization, random_seed, num_cores=1, max_num_seeds=None):
+	def __init__(self, agent_nodes, sim_type_path, whichNormalization, 
+		random_seed, num_cores=1, num_seeds_boostrapping=None, bootstrapping_runs=None,
+		debug=True, plot=True, max_num_seeds=None):
+
 		self.initiJVM()
 
 		self.agent_nodes = agent_nodes
@@ -37,12 +43,24 @@ class InfoAnalysis:
 		self.norm_label = InfoAnalysis.NORM_LABELS[whichNormalization]
 
 		self.random_seed = random_seed
+		self.rs = RandomState(random_seed)
 		self.num_cores = num_cores
 
+		assert (num_seeds_boostrapping==None) == (bootstrapping_runs==None), \
+			"num_seeds_boostrapping and bootstrapping_runs should be both None or both not None"
+		
+		self.num_seeds_boostrapping = num_seeds_boostrapping # bootstrapping
+		self.bootstrapping_runs = bootstrapping_runs # number of bootstrapping runs
+		self.bootstrapping = num_seeds_boostrapping is not None # whether we are doing boostrapping
+
+		self.debug = debug
+		self.plot = plot
 		self.max_num_seeds = max_num_seeds # restrict it to first n seeds (for test purpose)
 
 		# self.lillieforsPValue = 0.05
-		self.BonferroniCorrection = float(0.05 / len(self.simulation_types)) ## divided by num settings 
+		self.num_sim_types = len(self.simulation_types)
+		self.num_sim_pairs = self.num_sim_types * (self.num_sim_types-1) /2
+		self.BonferroniCorrection = float(0.05 / self.num_sim_types) ## divided by num settings 
 
 		jp_kraskov_pkg = jp.JPackage("infodynamics.measures.continuous.kraskov")
 		# http://lizier.me/joseph/software/jidt/javadocs/v1.5/
@@ -53,7 +71,6 @@ class InfoAnalysis:
 		self.multiVarMICalc = jp_kraskov_pkg.MutualInfoCalculatorMultiVariateKraskov1()
 		self.multiVarMICalc.setProperty("NOISE_LEVEL_TO_ADD", "0") # no noise for reproducibility
 		
-
 		self.data = None # dictionary sim_type -> seed_dir -> sim_data		
 
 	def initiJVM(self):
@@ -100,23 +117,23 @@ class InfoAnalysis:
 		print(whichData + ' KS-stats = ', ksstats, '  p-value = ', pV)											
 		return pV
 
-	def performFriedman_n_PosthocWilcoxonTest(self, M, whichData, ylabel):
-		np.random.seed(self.random_seed) # reproducibility
-		print('\n====================================',  whichData, '\n')
-		self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
-		# sys.exit()
-		# print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
-		[s, p] = friedmanchisquare(M[:, 0], M[:, 1], M[:, 2])			
-		print('Friedman Test -  ', whichData, ':  stat = ', s, '  p = ', p)
-		if p < self.BonferroniCorrection:				
-			for i in range(2):
-				for j in range(i + 1, 3, 1):
-					[sW, pW] = ranksums(M[:, i], M[:, j])
-					effectSize = abs(sW/np.sqrt(M.shape[0]))
-					print(self.simulation_types[i], ' vs. ', self.simulation_types[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
-						self.interpretObservedEffectSize(effectSize, 2), ')')
-					self.showDescriptiveStatistics(M[:, i], self.simulation_types[i])
-					self.showDescriptiveStatistics(M[:, j], self.simulation_types[j])
+	# def performFriedman_n_PosthocWilcoxonTest(self, M, whichData, ylabel):
+	# 	np.random.seed(self.random_seed) # reproducibility
+	# 	print('\n====================================',  whichData, '\n')
+	# 	self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
+	# 	# sys.exit()
+	# 	# print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
+	# 	[s, p] = friedmanchisquare(M[:, 0], M[:, 1], M[:, 2])			
+	# 	print('Friedman Test -  ', whichData, ':  stat = ', s, '  p = ', p)
+	# 	if p < self.BonferroniCorrection:				
+	# 		for i in range(2):
+	# 			for j in range(i + 1, 3, 1):
+	# 				[sW, pW] = ranksums(M[:, i], M[:, j])
+	# 				effectSize = abs(sW/np.sqrt(M.shape[0]))
+	# 				print(self.simulation_types[i], ' vs. ', self.simulation_types[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
+	# 					self.interpretObservedEffectSize(effectSize, 2), ')')
+	# 				self.showDescriptiveStatistics(M[:, i], self.simulation_types[i])
+	# 				self.showDescriptiveStatistics(M[:, j], self.simulation_types[j])
 
 	def interpretObservedEffectSize(self, effectSize, whichOne):
 		if whichOne == 1: #####  Eta^2 OR Epsilon^2
@@ -140,27 +157,39 @@ class InfoAnalysis:
 
 	def performKruskalWallis_n_PosthocWilcoxonTest(self, M, whichData):
 		np.random.seed(self.random_seed) # reproducibility
-		print('\n====================================',  whichData, '\n')
+		if self.debug:
+			print('\n====================================',  whichData, '\n')
 		ylabel = f'{self.norm_label} {whichData}'
-		self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
+		if self.plot and not self.bootstrapping:
+			self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
 		# sys.exit()
 		# print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
 		[h, p] = kruskal(M[:, 0], M[:, 1], M[:, 2])
 		etaSquaredEffectSize = (h - M.shape[1] + 1)/((M.shape[0] * M.shape[1]) - M.shape[1])
 		epsilonSquaredEffectSize = h/(((M.shape[0] * M.shape[1])**2 - 1)/((M.shape[0] * M.shape[1]) + 1))
 
-		print('Kruskal-Wallis Test -  ', whichData, ':  H-statistic = ', h, '  p = ', p, '  eta^2 = ', etaSquaredEffectSize, '(', \
-			self.interpretObservedEffectSize(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
-			self.interpretObservedEffectSize(etaSquaredEffectSize, 1), ')')
-		if p < self.BonferroniCorrection:				
-			for i in range(2):
-				for j in range(i + 1, 3, 1):
-					[sW, pW] = ranksums(M[:, i], M[:, j])
-					effectSize = abs(sW/np.sqrt(M.shape[0]))
+		if self.debug:
+			print('Kruskal-Wallis Test -  ', whichData, ':  H-statistic = ', h, '  p = ', p, '  eta^2 = ', etaSquaredEffectSize, '(', \
+				self.interpretObservedEffectSize(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
+				self.interpretObservedEffectSize(etaSquaredEffectSize, 1), ')')
+
+		post_hoc_computation = self.bootstrapping or p < self.BonferroniCorrection
+
+		post_hoc_stats = None
+		if post_hoc_computation:
+			all_pairs = list(combinations(list(range(self.num_sim_types)), 2)) # all pairs between sim types (e.g, [(0, 1), (0, 2), (1, 2)] for 3 sim_types)
+			post_hoc_stats = np.zeros((len(all_pairs),3)) # for each pair among sim_types (row) we have 3 stats: sW, pW, effectSize
+			for p_index, (i,j) in enumerate(all_pairs):
+				[sW, pW] = ranksums(M[:, i], M[:, j])
+				effectSize = abs(sW/np.sqrt(M.shape[0]))
+				post_hoc_stats[p_index] = [sW, pW, effectSize]
+				if self.debug:
 					print(self.simulation_types[i], ' vs. ', self.simulation_types[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
 						self.interpretObservedEffectSize(effectSize, 2), ')')
 					self.showDescriptiveStatistics(M[:, i], self.simulation_types[i])
-					self.showDescriptiveStatistics(M[:, j], self.simulation_types[j])
+					self.showDescriptiveStatistics(M[:, j], self.simulation_types[j])					
+
+		return h, p, etaSquaredEffectSize, epsilonSquaredEffectSize, post_hoc_stats
 
 	def showDescriptiveStatistics(self, data, whichOne):
 		print('M-' + whichOne, ' = ', np.mean(data), ' SD-' + whichOne, ' = ', np.std(data), '  Mdn-' + whichOne, ' = ', np.median(data), \
@@ -292,17 +321,21 @@ class InfoAnalysis:
 				# single core
 				for seed_dir in seeds:				
 					dir = os.path.join(self.sim_type_path[sim_type], seed_dir)
-					_, seed_sim_data = InfoAnalysis.get_simulation_results(dir)
-					sim_type_data[seed_dir] = seed_sim_data
+					_, seed_sim_data, converged = InfoAnalysis.get_simulation_results(dir)
+					if converged:
+						sim_type_data[seed_dir] = seed_sim_data
 			else:
 				# parallelization
 				# seeds results is a list of tuples (seed_dir, sim_data) one per each seed
 				seeds_results = Parallel(n_jobs=self.num_cores)(
                     delayed(InfoAnalysis.get_simulation_results)(os.path.join(self.sim_type_path[sim_type],dir)) \
                     for dir in seeds
-                )
-				for seed_dir, seed_sim_data in seeds_results:
-					sim_type_data[seed_dir] = seed_sim_data
+                )				
+				for seed_dir, seed_sim_data, converged in seeds_results:
+					if converged:
+						sim_type_data[seed_dir] = seed_sim_data
+
+			print(f'\tConverged: {len(sim_type_data)}')
 				
 		self.init_data_info()
 		t.toc('Building data took') #Time elapsed since t.tic()
@@ -316,7 +349,8 @@ class InfoAnalysis:
 		# print(f'======  @ {seed_dir}', '   Sim', simIndex)
 		
 		sim_data = data_record_list[simIndex]
-		return seed_dir, sim_data
+		converged = perf < analyze_results.CONVERGENCE_THRESHOLD
+		return seed_dir, sim_data, converged
 
 	
 	def init_data_info(self):
@@ -344,13 +378,27 @@ class InfoAnalysis:
 		nodes_measures = ['condMultVarMI', 'multVarMI', 'coinformation']
 		dist_measures = ['trackerTargetDistMean', 'trackerTargetDistStd']
 		results_measures = nodes_measures + dist_measures
+
+		sim_type_num_seeds = {
+			sim_type: len(seed_sim_data) # how many converged seeds in each sim type
+			for sim_type, seed_sim_data in self.data.items()
+		}
+
+		all_sim_same_converged_seeds = len(set(sim_type_num_seeds.values())) == 1 # True
+		min_num_converged_seeds = min(sim_type_num_seeds.values())
+
+		assert self.bootstrapping or all_sim_same_converged_seeds, \
+			f"Cannot compute statistics without bootstrapping if sim_type have different number of converged seeds: {sim_type_num_seeds}"
 		
+		assert not self.bootstrapping or self.num_seeds_boostrapping < min_num_converged_seeds, \
+			f"You specified a num_seed_stats value that is >= to min number of converged seeds: {min_num_converged_seeds}"
+
 		for sim_type, seed_sim_data in self.data.items():
-			
-			num_seeds = len(seed_sim_data)			
+
+			num_seeds = len(seed_sim_data)  # number of converged seeds
 
 			sim_type_results = {
-				measure: np.zeros((num_seeds, self.num_trials))
+				measure: np.zeros((num_seeds, self.num_trials)) # num_seeds x num_trials (e.g., 100x4) eventually will turn into a num_seeds array (mean/std across columns)
 				for measure in results_measures
 			}
 
@@ -380,51 +428,116 @@ class InfoAnalysis:
 					sim_type_results[measure] = sim_type_results[measure].std(axis=1)	
 				else:
 					# we take the mean across trials for all other values
-					sim_type_results[measure] = sim_type_results[measure].mean(axis=1)
+					sim_type_results[measure] = sim_type_results[measure].mean(axis=1) # 
 
 			results[sim_type] = sim_type_results
 
+		if self.bootstrapping:			
+			# condMultVarMI = [results[sim_type]['condMultVarMI'] for sim_type in self.simulation_types] # num_sim_type rows x converged_seeds_in_sim_type
+			# multVarMI = [results[sim_type]['multVarMI'] for sim_type in self.simulation_types]
+			# coinformation = [results[sim_type]['coinformation'] for sim_type in self.simulation_types]			
+			# TODO: boostrapping (random sampling with replacement)
 
-		condMultVarMI = np.array([results[sim_type]['condMultVarMI'] for sim_type in self.simulation_types]).T
-		multVarMI = np.array([results[sim_type]['multVarMI'] for sim_type in self.simulation_types]).T
-		coinformation = np.array([results[sim_type]['coinformation'] for sim_type in self.simulation_types]).T
+			info_measures = {
+				'condMultVarMI': 'Multivariate Conditional Mutual Information',				
+				'multVarMI': 'Multivariate Mutual Information',
+				'coinformation': 'Net-Synergy'
+			}
 
-		condMultVarMI = self.normalizeData(condMultVarMI) 
-		multVarMI = self.normalizeData(multVarMI)
-		coinformation = self.normalizeData(coinformation)
+			stats_factory = lambda: {
+				'h': np.zeros(self.bootstrapping_runs),
+				'p': np.zeros(self.bootstrapping_runs),
+				'eta': np.zeros(self.bootstrapping_runs),
+				'epsilon': np.zeros(self.bootstrapping_runs),
+				'post_hoc_stats': np.zeros((self.bootstrapping_runs,self.num_sim_types, 3))
+			}
 
+			boostrapping_stats = {
+				measure: stats_factory()
+				for measure in info_measures
+			}
 
-		################# We might want to check whether data follows normal distribution and if positive apply parametric tests instead.
+			
+			if self.plot:
+				for measure, label in info_measures.items():
+					results_measure_sim_types = [results[sim_type][measure] for sim_type in self.simulation_types]
+					self.plotBoxPlotList(results_measure_sim_types, self.simulation_types, label, label)
+						
 
-		# self.checkDataNormality(condMultVarMI.flatten().tolist(), 'Multivariate Conditional Mutual Information')
-		# self.checkDataNormality(multVarMI.flatten().tolist(), 'Multivariate Mutual Information')
-		# self.checkDataNormality(coinformation.flatten().tolist(), 'Net-Synergy')			
+			for b in range(self.bootstrapping_runs):	
 
-		self.performKruskalWallis_n_PosthocWilcoxonTest(condMultVarMI, f'Multivariate Conditional Mutual Information')
-		self.performKruskalWallis_n_PosthocWilcoxonTest(multVarMI, f'Multivariate Mutual Information')
-		self.performKruskalWallis_n_PosthocWilcoxonTest(coinformation, f'Net-Synergy')		
+				for measure, label in info_measures.items():					
 
-		print('\n\n Spearman Correlation Based on Target-Tracker Mean Distance')
+					selected_stat = np.array([
+						self.rs.choice(results[sim_type][measure], size=self.num_seeds_boostrapping, replace=True)
+						for sim_type in self.simulation_types
+					])
 
-		for sim_type, sim_type_results in results.items():
-			cond_mult_coinfo_mean = np.array([sim_type_results[m] for m in nodes_measures]).T
-			self.computeSpearmanCorr(
-				cond_mult_coinfo_mean, 
-				sim_type_results['trackerTargetDistMean'], 
-				sim_type, 
-				'Mean Target-Tracker Disatnce'
-			)  ##### 1 : z-scored   2 : [0 .. 1] scaled
+					selected_stat = self.normalizeData(selected_stat) 
+				
+					################# We might want to check whether data follows normal distribution and if positive apply parametric tests instead.
 
-		print('\n\n Spearman Correlation Based on Target-Tracker SD Distance')
+					# self.checkDataNormality(selected_stat.flatten().tolist(), label)
 
-		for sim_type, sim_type_results in results.items():
-			cond_mult_coinfo_mean = np.array([sim_type_results[m] for m in nodes_measures]).T
-			self.computeSpearmanCorr(
-				cond_mult_coinfo_mean, 
-				sim_type_results['trackerTargetDistStd'], 
-				sim_type, 
-				'SD Target-Tracker Disatnce'
-			)		
+					h, p, eta, epsilon, post_hoc_stats = self.performKruskalWallis_n_PosthocWilcoxonTest(selected_stat, label)
+
+					boostrapping_stats_measure = boostrapping_stats[measure]
+					boostrapping_stats_measure['h'][b] = h
+					boostrapping_stats_measure['p'][b] = p
+					boostrapping_stats_measure['eta'][b] = eta
+					boostrapping_stats_measure['epsilon'][b] = epsilon
+					boostrapping_stats_measure['post_hoc_stats'][b] = post_hoc_stats
+
+			for measure, label in info_measures.items():
+				# TODO: maybe only print those stats for which mean(p) < bonferroni ...
+				boostrapping_stats_measure = boostrapping_stats[measure]
+				print(label)
+				for sub_measure, data in boostrapping_stats_measure.items():					
+					self.showDescriptiveStatistics(data, sub_measure)
+
+				
+		else:
+			# no bootstrpping
+			# following arrays have shape num_seeds x num_sim_types (e.g., 100 x 3)
+			condMultVarMI = np.array([results[sim_type]['condMultVarMI'] for sim_type in self.simulation_types]).T
+			multVarMI = np.array([results[sim_type]['multVarMI'] for sim_type in self.simulation_types]).T
+			coinformation = np.array([results[sim_type]['coinformation'] for sim_type in self.simulation_types]).T
+			
+			condMultVarMI = self.normalizeData(condMultVarMI) 
+			multVarMI = self.normalizeData(multVarMI)
+			coinformation = self.normalizeData(coinformation)
+
+			################# We might want to check whether data follows normal distribution and if positive apply parametric tests instead.
+
+			# self.checkDataNormality(condMultVarMI.flatten().tolist(), 'Multivariate Conditional Mutual Information')
+			# self.checkDataNormality(multVarMI.flatten().tolist(), 'Multivariate Mutual Information')
+			# self.checkDataNormality(coinformation.flatten().tolist(), 'Net-Synergy')			
+
+			self.performKruskalWallis_n_PosthocWilcoxonTest(condMultVarMI, f'Multivariate Conditional Mutual Information')
+			self.performKruskalWallis_n_PosthocWilcoxonTest(multVarMI, f'Multivariate Mutual Information')
+			self.performKruskalWallis_n_PosthocWilcoxonTest(coinformation, f'Net-Synergy')		
+
+			print('\n\n Spearman Correlation Based on Target-Tracker Mean Distance')
+
+			for sim_type, sim_type_results in results.items():
+				cond_mult_coinfo_mean = np.array([sim_type_results[m] for m in nodes_measures]).T
+				self.computeSpearmanCorr(
+					cond_mult_coinfo_mean, 
+					sim_type_results['trackerTargetDistMean'], 
+					sim_type, 
+					'Mean Target-Tracker Disatnce'
+				)  ##### 1 : z-scored   2 : [0 .. 1] scaled
+
+			print('\n\n Spearman Correlation Based on Target-Tracker SD Distance')
+
+			for sim_type, sim_type_results in results.items():
+				cond_mult_coinfo_mean = np.array([sim_type_results[m] for m in nodes_measures]).T
+				self.computeSpearmanCorr(
+					cond_mult_coinfo_mean, 
+					sim_type_results['trackerTargetDistStd'], 
+					sim_type, 
+					'SD Target-Tracker Disatnce'
+				)		
 
 		
 
@@ -440,20 +553,37 @@ if __name__ == "__main__":
 	# exp_type -> dir_path
 	# exp_types are ['individual', 'group', 'joint']
 	overlap_data_dirs = overlap_dir_xN(2) # overlap 2 neurons
-	exc_switch_data_dirs = exc_switch_xN_dir(2) # exclusive + swtich 2 neurons
+	exc_switch_data_dirs = exc_switch_xN_dir(3) # exclusive + swtich 2 neurons
 	
 	pickle_path = 'results/synergy.pickle' # where data is saved/loaded
 	
 	load_data = False # set to True if data is read from pickle (has to be saved beforehand)
 	save_data = False # set to True if data will be saved to pickle (to be loaded faster successively)
 	
+	# IA = InfoAnalysis(
+	# 	agent_nodes = agent_nodes, 
+	# 	sim_type_path = overlap_data_dirs,
+	# 	whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
+	# 	num_cores = 7,
+	# 	random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
+	# 	num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
+	# 	bootstrapping_runs = 100, # number of boostrapping runs (default 100)
+	# 	debug=True,
+	# 	plot=True,
+	# 	max_num_seeds = None # 5 # set to low number to test few seeds, set to None to compute all seeds
+	# )
+
 	IA = InfoAnalysis(
 		agent_nodes = agent_nodes, 
-		sim_type_path = overlap_data_dirs,
+		sim_type_path = exc_switch_data_dirs,
 		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
-		num_cores = 1,
+		num_cores = 7,
 		random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
-		# max_num_seeds = 5 # set to low number to test few seeds, set to None to compute all seeds
+		num_seeds_boostrapping = 4, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
+		bootstrapping_runs = 10, # number of boostrapping runs (default 100)
+		debug=False,
+		plot=False,
+		max_num_seeds = None # 5 # set to low number to test few seeds, set to None to compute all seeds
 	)
 	
 	if load_data and os.path.exists(pickle_path):
