@@ -28,7 +28,7 @@ python3 -m dol.main \
 --gen_zfill \
 --popsize 96 \
 --max_gen 5000 \
---num_neurons 10 \
+--num_neurons 5 \
 --num_trials 4 \
 --num_random_pairings 3 \
 --exclusive_motors_threshold 0.1 \
