@@ -582,7 +582,7 @@ if __name__ == "__main__":
 		num_seeds_boostrapping = 4, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
 		bootstrapping_runs = 10, # number of boostrapping runs (default 100)
 		debug=False,
-		plot=False,
+		plot=True,
 		max_num_seeds = None # 5 # set to low number to test few seeds, set to None to compute all seeds
 	)
 	
@@ -600,8 +600,8 @@ if __name__ == "__main__":
 	correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
 	'''
 	# distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   
-	distanceMetrics = ['correlation']   
-	for metric in distanceMetrics:
-		IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_001', 0, metric)
+	# distanceMetrics = ['correlation']   
+	# for metric in distanceMetrics:
+	# 	IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_001', 0, metric)
 
 	IA.shutdownJVM()			

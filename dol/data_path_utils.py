@@ -4,7 +4,7 @@ from dol import utils
 # lookup tables for simulations in data directory
 # if run locally, it assumes data is store in project directory 
 # to synch data frolder from deigo run
-# rsync -avz --include="*/" --include="simulation.json" --include="evo_5000.json" --exclude="*" deigo-ext:'/bucket/FroeseU/fede/dol-simulation/exc_switch' ./data
+# rsync -avz --include="*/" --include="simulation.json" --include="evo_5000.json" --exclude="*" deigo-ext:'/bucket/FroeseU/fede/dol-simulation/*' ./data
 data_path = '/bucket/FroeseU/fede/dol-simulation' if  utils.am_i_on_deigo() else 'data'
 
 exc_switch_dir = os.path.join(data_path, 'exc_switch')

@@ -89,7 +89,7 @@ def min_max_flat_elements(values):
 
 def get_last_performance_seeds(base_dir, print_stats=True, 
     print_values=False, plot=False, export_to_csv=False,
-    best_sim_stats=None):
+    best_sim_stats=None, first_20_seeds=False):
 
     exp_dirs = sorted([d for d in os.listdir(base_dir) if d.startswith('seed_')])
     best_exp_performance = []  # the list of best performances of last generation for all seeds
@@ -97,7 +97,9 @@ def get_last_performance_seeds(base_dir, print_stats=True,
     last_evo_file = None
     seeds = []
     seed_exp_dir = {}
-    for exp in exp_dirs:
+    for n, exp in enumerate(exp_dirs,1):
+        if first_20_seeds and n>20:
+            break
         exp_dir = os.path.join(base_dir, exp)
         if last_evo_file is None:
             evo_files = sorted([f for f in os.listdir(exp_dir) if 'evo_' in f])
@@ -113,8 +115,6 @@ def get_last_performance_seeds(base_dir, print_stats=True,
             sim = Simulation.load_from_file(sim_json_filepath)
             exp_evo_data = json.load(f_in)
             s = exp_evo_data['random_seed']
-            if s>20:
-                continue
             seeds.append(s)
             seed_exp_dir[s] = exp_dir
             gen_best_perf = np.array(exp_evo_data['best_performances']) # one per population            
@@ -224,6 +224,7 @@ if __name__ == "__main__":
     parser.add_argument('--best_sim_stats', type=str, default=None, choices=[None, 'converged', 'all'], help='Whether to run best simulation stats (non-flat neurons/motors, similarities) and on which seeds')
     parser.add_argument('--plot', action='store_true', default=False, help='Whether to export results to csv in same dir')
     parser.add_argument('--csv', action='store_true', default=False, help='Whether to export results to csv in same dir')
+    parser.add_argument('--first20', action='store_true', default=False, help='Whether to run analysis only on first 20 seeds')
 
     args = parser.parse_args()
 
@@ -234,4 +235,5 @@ if __name__ == "__main__":
         plot=args.plot, 
         export_to_csv=args.csv,
         best_sim_stats=args.best_sim_stats,
+        first_20_seeds=args.first20
     )
