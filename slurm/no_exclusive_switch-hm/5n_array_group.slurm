@@ -31,7 +31,8 @@ python3 -m dol.main \
 --num_neurons 5 \
 --num_trials 4 \
 --num_random_pairings 3 \
---motor_control_mode SWITCH-HM \
+--motor_control_mode SWITCH \
+--half_motors \
 --cores 48
 
 # copy our result back to Bucket. We use "scp" to copy the data 

@@ -79,12 +79,13 @@ def test_1d_2n_exc_rp3_switch_hm():
         '--max_gen', '10',        
         '--exclusive_motors_threshold', '0.1',
         '--num_random_pairings', '3',
-        '--motor_control_mode', 'SWITCH-HM'
+        '--motor_control_mode', 'SWITCH',
+        '--half_motors'
     ])
     last_best_perf = evo.best_performances[-1]
     normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
     # print(normalized_perf)
-    assert normalized_perf == [94.49169959617575]
+    assert normalized_perf == [94.84999999999854]
     print('✅ test_1d_2n_exc_rp3_switch-hm')
 
 def test_1d_3n_exc_rp3_switch():
@@ -104,6 +105,25 @@ def test_1d_3n_exc_rp3_switch():
     # print(normalized_perf)
     assert normalized_perf == [94.07571341165567]
     print('✅ test_1d_3n_exc_rp3_switch')
+
+def test_1d_3n_exc_rp3_switch_ws():
+    sim, evo = main([             
+        # '--dir', './data/tmp', 
+        '--cores', '7', 
+        '--seed', '5',
+        '--num_neurons', '3', 
+        '--popsize', '20', 
+        '--max_gen', '10',        
+        '--exclusive_motors_threshold', '0.1',
+        '--wheel_sensors',
+        '--num_random_pairings', '3',
+        '--motor_control_mode', 'SWITCH'
+    ])
+    last_best_perf = evo.best_performances[-1]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    # print(normalized_perf)
+    assert normalized_perf == [94.84999999999854]
+    print('✅ test_1d_3n_exc_rp3_switch_ws')
 
 def test_1d_2n_exc_rp3_overlap():
     sim, evo = main([             
@@ -161,12 +181,13 @@ def test_1d_2n_exc_rp3_np4_switch():
     print('✅ test_1d_2n_exc_rp3_np4_switch')
 
 def test_1d():
-    test_1d_1n_exc() # isolated
-    test_1d_2n_exc() # isolated
-    test_1d_2n_exc_rp0_switch()
-    test_1d_2n_exc_rp3_switch()
+    # test_1d_1n_exc() # isolated
+    # test_1d_2n_exc() # isolated
+    # test_1d_2n_exc_rp0_switch()
+    # test_1d_2n_exc_rp3_switch()
     test_1d_2n_exc_rp3_switch_hm()
     test_1d_3n_exc_rp3_switch()
+    test_1d_3n_exc_rp3_switch_ws()
     test_1d_2n_exc_rp3_overlap()
     test_1d_2n_exc_rp3_np2()
     test_1d_2n_exc_rp3_np4_switch()

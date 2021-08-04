@@ -90,7 +90,7 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index, sim_
     ]                                                   # (num_neurons, num_trials, num_agents, num_data_points)                                        
     
     if analyze_brain:
-        assert sim.num_brain_neurons == num_neurons
+        assert sim.num_neurons == num_neurons
 
     data = np.stack([r for d in data for r in d])  # stacking all rows together
     assert data.shape == (

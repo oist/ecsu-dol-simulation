@@ -43,17 +43,19 @@ def main(raw_args=None):
                              '0    -> agents are evolved in pairs: a genotype contains a pair of agents. '
                              'n>0  -> each agent will go though a simulation with N other agents (randomly chosen).')
     parser.add_argument('--motor_control_mode', type=str, default=None,
-                        choices=[None, 'SEPARATE', 'SWITCH', 'SWITCH-HM', 'OVERLAP'],
+                        choices=[None, 'SEPARATE', 'SWITCH', 'OVERLAP'],
                         help=
                         'Type of motor control'
                         'None: not applicable (if single agent)'
                         'SEPARATE: across trials the first agent always control the left motor and the second the right'
                         'SWITCH: the two agents switch control of L/R motors in different trials'
-                        'SWITCH-HM: the two agents switch control of L/R motors in different trials but only first half of motors are used'
                         'OVERLAP: both agents control L/R motors (for a factor o half)')
-
+    parser.add_argument('--half_motors', action='store_true', default=False,
+        help='Use a single motor in 1d and 2 motors in 2d (instead of 2 and 4 respectively)')    
     parser.add_argument('--exclusive_motors_threshold', type=float, default=None,
                         help='prevent motors to run at the same time')    
+    parser.add_argument('--wheel_sensors', action='store_true', default=False,
+                        help='if agents get wheel velocity in input (2 extra input nodes will be added to the architecture)')    
     parser.add_argument('--cores', type=int, default=1, help='Number of cores')
 
     # Gather the provided arguements as an array.
@@ -61,11 +63,6 @@ def main(raw_args=None):
 
     t = TicToc()
     t.tic()
-
-    genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE(args.num_dim, args.num_neurons)
-    # agents in 2d have 4 sensors and 4 motors
-        
-    genotype_size = gen_structure.get_genotype_size(genotype_structure)
 
     if args.dir is not None:
         # create default path if it specified dir already exists
@@ -83,6 +80,10 @@ def main(raw_args=None):
                 subdir += f'_noshuffle'
             if args.motor_control_mode!=None:
                 subdir += f'_{args.motor_control_mode.lower()}'
+            if args.half_motors:
+                subdir += '_hm'
+            if args.wheel_sensors:
+                subdir += '_ws'
             seed_dir = 'seed_{}'.format(str(args.seed).zfill(3))
             outdir = os.path.join(args.dir, subdir, seed_dir)
         else:
@@ -95,16 +96,20 @@ def main(raw_args=None):
     checkpoint_interval = int(np.ceil(args.max_gen / 10))
 
     sim = Simulation(
-        genotype_structure=genotype_structure,
         num_pop=args.num_pop,
+        num_neurons = args.num_neurons,
         num_dim=args.num_dim,
+        half_motors=args.half_motors,
         num_trials=args.num_trials,
         trial_duration=args.trial_duration,  # the brain would iterate trial_duration/brain_step_size number of time
         num_random_pairings=args.num_random_pairings,
         motor_control_mode=args.motor_control_mode,
         exclusive_motors_threshold=args.exclusive_motors_threshold,
+        wheel_sensors=args.wheel_sensors,
         num_cores=args.cores
     )
+
+    genotype_size = gen_structure.get_genotype_size(sim.genotype_structure)
 
     if outdir is not None:
         sim_config_json = os.path.join(outdir, 'simulation.json')

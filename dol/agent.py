@@ -25,8 +25,9 @@ class Agent:
     TODO: update documentation above
     """
     
-    num_dim: int # dimensions, 1 or 2
-    num_brain_neurons: int
+    num_sensors: int 
+    num_neurons: int
+    num_motors: int
     brain_step_size: float
     genotype_structure: dict
     position: int = None      # to be initialized via init_params
@@ -34,7 +35,6 @@ class Agent:
 
     def __post_init__(self):
 
-        self.num_sensors_motors = 2 * self.num_dim
         get_param_range = lambda param: self.genotype_structure[param].get('range', None)
         get_param_default = lambda param: self.genotype_structure[param].get('default', None)
 
@@ -53,9 +53,9 @@ class Agent:
 
 
         self.brain = BrainCTRNN(
-            num_neurons=self.num_brain_neurons,
+            num_neurons=self.num_neurons,
             step_size=self.brain_step_size,
-            states=np.zeros(self.num_brain_neurons), # states are initialized with zeros
+            states=np.zeros(self.num_neurons), # states are initialized with zeros
             **brain_params
         )
 
@@ -70,10 +70,10 @@ class Agent:
         self.genotype_structure = self.genotype_structure
 
     def init_params(self, init_state=0.):
-        self.brain.states = np.full(self.num_brain_neurons, init_state)
+        self.brain.states = np.full(self.num_neurons, init_state)
         self.position = 0
-        self.sensors = np.zeros(self.num_sensors_motors)      
-        self.motors = np.zeros(self.num_sensors_motors)      
+        self.sensors = np.zeros(self.num_sensors)      
+        self.motors = np.zeros(self.num_motors)      
         self.brain.compute_output() # for first computation of euler step
 
     def genotype_to_phenotype(self, genotype, phenotype_list=None, phenotype_dict=None):
@@ -94,27 +94,27 @@ class Agent:
                 if 'indexes' in val:
                     gene_values = np.take(genotype, val['indexes'])
                     if k == 'neural_weights':
-                        gene_values = gene_values.reshape(self.brain.num_neurons, -1)
+                        gene_values = gene_values.reshape(self.num_neurons, -1)
                     else:
                         # biases, gains, weights
                         # same values for all neurons
-                        gene_values = np.tile(gene_values, self.brain.num_neurons) 
+                        gene_values = np.tile(gene_values, self.num_neurons) 
                     phenotype_value = linmap(gene_values, EVOLVE_GENE_RANGE, val['range'])                                        
                 else:
                     phenotype_value = np.array(val['default'])
                 setattr(self.brain, brain_field, phenotype_value)  
                 if phenotype_dict is not None:
                     phenotype_dict[k] = phenotype_value        
-            else:  # sensor*, motor*
+            else:  # sensor_/motor_ + gains/biases/weights
                 # using same fields as in genotype_structure
                 if 'indexes' in val:
                     gene_values = np.take(genotype, val['indexes'])
                     if k == 'sensor_weights':
-                        gene_values = gene_values.reshape(self.num_sensors_motors, self.brain.num_neurons)
+                        gene_values = gene_values.reshape(self.num_sensors, self.num_neurons)
                     elif k == 'motor_weights':
-                        gene_values = gene_values.reshape(self.brain.num_neurons, -1)
+                        gene_values = gene_values.reshape(self.num_neurons, -1)
                     else:
-                        num_units = self.num_sensors_motors 
+                        num_units = self.num_sensors if k.startswith('sensor') else self.num_motors
                         gene_values = np.tile(gene_values, num_units) # same tau/bias values for all sensors/motors
                     phenotype_value = linmap(gene_values, EVOLVE_GENE_RANGE, val['range'])                    
                 else:
@@ -166,13 +166,13 @@ def test_random_genotype():
     num_neurons = 2
     default_gen_structure = gen_structure.DEFAULT_GEN_STRUCTURE(num_dim, num_neurons)
     gen_size = gen_structure.get_genotype_size(default_gen_structure)
-    num_brain_neurons = gen_structure.get_num_brain_neurons(default_gen_structure)
+    num_neurons = gen_structure.get_num_neurons(default_gen_structure)
     print('Gen size of agent: {}'.format(gen_size))
-    print('Num brain neurons: {}'.format(num_brain_neurons))
+    print('Num brain neurons: {}'.format(num_neurons))
     random_genotype = Evolution.get_random_genotype(RandomState(None), gen_size)        
     agent = Agent(
         num_dim,
-        num_brain_neurons,
+        num_neurons,
         brain_step_size=0.1,
         genotype_structure=default_gen_structure,        
     )

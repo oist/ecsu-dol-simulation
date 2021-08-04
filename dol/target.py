@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from numpy.random import RandomState
 from dol.params import ENV_SIZE, HALF_ENV_SIZE
 
-RANDOM_WALK = True
+RANDOM_WALK = False
 
 @dataclass
 class Target:

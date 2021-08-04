@@ -21,13 +21,13 @@ from dol import utils
 
 @dataclass
 class Simulation:
-    # the genotype structure  
-    genotype_structure: Dict = field(default_factory = \
-        lambda:gen_structure.DEFAULT_GEN_STRUCTURE(1,2))  
-
     num_pop: int = 1 # number of populations
 
     num_dim: int = 1  # number of dimensions (1 or 2)
+
+    num_neurons: int = 2 # number of brain neurons
+
+    half_motors: bool = False # use half motors
 
     # random pairings
     num_random_pairings: int = None
@@ -43,15 +43,20 @@ class Simulation:
     # for back compatibility - to be removed (now using num_pop)
     dual_population: float = False 
 
-    motor_control_mode: str = None # SEPARATE, SWITCH, SWITCH-HM, OVERLAP
+    motor_control_mode: str = None # SEPARATE, SWITCH, OVERLAP
     # when num_agents is 2 this decides whether
     # None: not applicable (if self.num_agents==1)
-    # SEPARATE: across trials the first agent always control the left motor and the second the right
-    # SWITCH: the two agents switch control of L/R motors in different trials
-    # SWITCH-HM: the two agents switch control of L/R motors in different trials but only first half of motors are used
-    # OVERLAP: both agents control L/R motors (for a factor o half)
+    # SEPARATE: across trials the first agent always control the left wheel and the second the right
+    # SWITCH: the two agents switch control of L/R motors/wheels in different trials
+    # OVERLAP: both agents control L/R wheels (for a factor o half)
 
     exclusive_motors_threshold: float = None
+
+    wheel_sensors: bool = False # whether agents get input from wheels (2 extra sensor nodes)
+
+    # the genotype structure  
+    # for back compatibility - to be removed (now defined in post_init)
+    genotype_structure: Dict = None
 
     max_mean_distance = 10000 # for turning min to max in fitness function and normalization
 
@@ -69,22 +74,31 @@ class Simulation:
         if self.dual_population:            
             # for back compatibility
             self.num_pop = 2 
-            self.motor_control_mode in ['SWITCH','SWITCH-HM'] if self.switch_agents_motor_control else 'SEPARATE'
+            self.motor_control_mode == 'SWITCH' if self.switch_agents_motor_control else 'SEPARATE'
         elif self.switch_agents_motor_control:            
             # for back compatibility
             self.motor_control_mode = None if self.num_agents==1 else 'SEPARATE'
 
-        self.__check_params__()        
+        self.__check_params__()   
 
-        self.num_sensors_motors = 2 * self.num_dim
+        self.num_eyes = 2 * self.num_dim
+        self.num_sensors = self.num_eyes + 2 if self.wheel_sensors else self.num_eyes
+        self.num_motors = self.num_dim if self.half_motors else self.num_eyes
 
-        self.num_brain_neurons = gen_structure.get_num_brain_neurons(self.genotype_structure)
+        if self.genotype_structure is not None:
+            # for back compatibility, to be removed
+            self.num_neurons = gen_structure.get_num_brain_neurons(self.genotype_structure)
+        else:
+            self.genotype_structure = gen_structure.DEFAULT_GEN_STRUCTURE_SNM(
+                self.num_sensors, self.num_neurons, self.num_motors)
+        
         self.num_data_points = int(self.trial_duration / self.brain_step_size)
 
         self.agents = [
             Agent(
-                self.num_dim,
-                self.num_brain_neurons,
+                self.num_sensors,
+                self.num_neurons,
+                self.num_motors,
                 self.brain_step_size,
                 self.genotype_structure,
             )
@@ -113,7 +127,7 @@ class Simulation:
         utils.assert_string_in_values(
             self.motor_control_mode, 
             'motor_control_mode',
-            [None, 'SEPARATE', 'SWITCH', 'SWITCH-HM', 'OVERLAP']
+            [None, 'SEPARATE', 'SWITCH', 'OVERLAP']
         )        
 
         assert self.num_pop<=2 or self.num_pop==self.num_random_pairings+1, \
@@ -277,14 +291,14 @@ class Simulation:
         self.data_record['tracker_angle'] = np.zeros((self.num_trials, self.num_data_points))
         self.data_record['tracker_wheels'] = np.zeros((self.num_trials, self.num_data_points, num_wheels))
         self.data_record['tracker_velocity'] = np.zeros((self.num_trials, self.num_data_points))
-        self.data_record['tracker_signals'] = np.zeros((self.num_trials, self.num_data_points, self.num_sensors_motors))
+        self.data_record['tracker_signals'] = np.zeros((self.num_trials, self.num_data_points, self.num_eyes))
         self.data_record['agents_motors_control_indexes'] = [None for _ in range(self.num_trials)]
-        self.data_record['agents_sensors'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_sensors_motors))
-        self.data_record['agents_brain_input'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_brain_neurons))
-        self.data_record['agents_brain_state'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_brain_neurons))
-        self.data_record['agents_derivatives'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_brain_neurons))
-        self.data_record['agents_brain_output'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_brain_neurons))
-        self.data_record['agents_motors'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_sensors_motors))
+        self.data_record['agents_sensors'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_sensors))
+        self.data_record['agents_brain_input'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_neurons))
+        self.data_record['agents_brain_state'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_neurons))
+        self.data_record['agents_derivatives'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_neurons))
+        self.data_record['agents_brain_output'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_neurons))
+        self.data_record['agents_motors'] = np.zeros((self.num_trials, self.num_agents, self.num_data_points, self.num_motors))
         self.timing.add_time('SIM_init_data', self.tim)
 
     def save_data_record_trial(self, t):
@@ -338,43 +352,52 @@ class Simulation:
         else:
             # 2 agents            
             if self.motor_control_mode=='SWITCH':
-                if t % 2 == 0: # (0,2) - (first, third)
-                    if self.num_dim == 1:
-                        self.agents_motors_control_indexes = [(0,0), (1,1)]                            
+                if self.half_motors:
+                    if t % 2 == 0: # (0,2) - (first, third)
+                        if self.num_dim == 1:
+                            self.agents_motors_control_indexes = [(0,0), (1,0)]                        
+                        else:
+                            # 2d - first agent controls horizontal wheels, second agents vertical wheels
+                            self.agents_motors_control_indexes = [(0,0), (0,1), (1,0), (1,1)]                        
                     else:
-                        # 2d - first agent controls horizontal wheels, second agents vertical wheels
-                        self.agents_motors_control_indexes = [(0,0), (0,1), (1,2), (1,3)]
+                        # invert controller in switch mode on odd trial indexes (1,3) - (second, forth)
+                        if self.num_dim == 1:
+                            self.agents_motors_control_indexes = [(1,0), (0,0)]
+                        else:
+                            # 2d - first agent controls vertical wheels, second agents horizontal wheels
+                            self.agents_motors_control_indexes = [(1,0), (1,1), (0,0), (0,1)]
                 else:
-                    # invert controller in switch mode on odd trial indexes (1,3) - (second, forth)
-                    if self.num_dim == 1:
-                        self.agents_motors_control_indexes = [(1,0), (0,1)]
+                    if t % 2 == 0: # (0,2) - (first, third)
+                        if self.num_dim == 1:
+                            self.agents_motors_control_indexes = [(0,0), (1,1)]                            
+                        else:
+                            # 2d - first agent controls horizontal wheels, second agents vertical wheels
+                            self.agents_motors_control_indexes = [(0,0), (0,1), (1,2), (1,3)]
                     else:
-                        # 2d - first agent controls vertical wheels, second agents horizontal wheels
-                        self.agents_motors_control_indexes = [(1,0), (1,1), (0,2), (0,3)]
-            elif self.motor_control_mode=='SWITCH-HM':
-                if t % 2 == 0: # (0,2) - (first, third)
-                    if self.num_dim == 1:
-                        self.agents_motors_control_indexes = [(0,0), (1,0)]                        
-                    else:
-                        # 2d - first agent controls horizontal wheels, second agents vertical wheels
-                        self.agents_motors_control_indexes = [(0,0), (0,1), (1,0), (1,1)]                        
-                else:
-                    # invert controller in switch mode on odd trial indexes (1,3) - (second, forth)
-                    if self.num_dim == 1:
-                        self.agents_motors_control_indexes = [(1,0), (0,0)]
-                    else:
-                        # 2d - first agent controls vertical wheels, second agents horizontal wheels
-                        self.agents_motors_control_indexes = [(1,0), (1,1), (0,0), (0,1)]
+                        # invert controller in switch mode on odd trial indexes (1,3) - (second, forth)
+                        if self.num_dim == 1:
+                            self.agents_motors_control_indexes = [(1,0), (0,1)]
+                        else:
+                            # 2d - first agent controls vertical wheels, second agents horizontal wheels
+                            self.agents_motors_control_indexes = [(1,0), (1,1), (0,2), (0,3)]            
             elif self.motor_control_mode=='SEPARATE':
-                if self.num_dim == 1:
-                    # across all trials first agent controls left motor, second agent controls right motor
-                    self.agents_motors_control_indexes = [(0,0), (1,1)]
+                if self.half_motors:
+                    if self.num_dim == 1:
+                        # across all trials first agent controls left wheel, second agent controls right wheel
+                        self.agents_motors_control_indexes = [(0,0), (1,0)]
+                    else:
+                        # 2d - # across all trials first agent controls horizontal wheels, second agents vertical wheels
+                        self.agents_motors_control_indexes = [(0,0), (0,1), (1,0), (1,1)]
                 else:
-                    # 2d - # across all trials first agent controls horizontal wheels, second agents vertical wheels
-                    self.agents_motors_control_indexes = [(0,0), (0,1), (1,2), (1,3)]
+                    if self.num_dim == 1:
+                        # across all trials first agent controls left wheel, second agent controls right wheel
+                        self.agents_motors_control_indexes = [(0,0), (1,1)]
+                    else:
+                        # 2d - # across all trials first agent controls horizontal wheels, second agents vertical wheels
+                        self.agents_motors_control_indexes = [(0,0), (0,1), (1,2), (1,3)]
             else:
                 # self.motor_control_mode=='OVERLAP'
-                # both agents control both motors (for a factor of half)
+                # both agents control both wheels (for a factor of half)
                 self.agents_motors_control_indexes = None 
             
         
@@ -402,7 +425,11 @@ class Simulation:
         for i, o in enumerate(self.agents):
             if i==self.ghost_index: 
                 continue
-            o.compute_brain_input(self.tracker.signals_strength)
+            if self.wheel_sensors:
+                signals = np.concatenate([self.tracker.signals_strength, self.tracker.wheels])
+            else:
+                signals = self.tracker.signals_strength
+            o.compute_brain_input(signals)
         self.timing.add_time('SIM_compute_brain_input', self.tim)
 
     def compute_brain_euler_step_agents(self):
@@ -430,7 +457,7 @@ class Simulation:
                     for a in range(2)
                 ]).mean(axis=0) # mean across rows
             else:    
-                # SWITCH / SWITCH-HM         
+                # SWITCH
                 motors = np.array(
                     [
                         self.agents[a].motors[m]

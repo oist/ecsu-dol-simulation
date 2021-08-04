@@ -145,6 +145,12 @@ DEFAULT_GEN_STRUCTURE = lambda d,n: build_structure(
     num_motors = 2 * d
 )
 
+DEFAULT_GEN_STRUCTURE_SNM = lambda s,n,m: build_structure(
+    num_sensors = s,
+    num_neurons = n,
+    num_motors = m
+)
+
 if __name__ == "__main__":
     for d,n in [(1,2),(1,3),(1,4),(2,2),(2,3),(2,4)]:
         default_gs_file = DEFAULT_GEN_STRUCTURE_FROM_FILE(d,n)
