@@ -33,7 +33,7 @@ python3 -m dol.main \
 --num_random_pairings 3 \
 --exclusive_motors_threshold 0.1 \
 --motor_control_mode SWITCH \
---half_motors
+--half_motors \
 --cores 48
 
 # copy our result back to Bucket. We use "scp" to copy the data 
