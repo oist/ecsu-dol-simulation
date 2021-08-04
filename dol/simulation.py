@@ -54,6 +54,8 @@ class Simulation:
 
     wheel_sensors: bool = False # whether agents get input from wheels (2 extra sensor nodes)
 
+    # eyes_motors_asymmetry = False # whether to swap sensors and motors of second agent
+
     # the genotype structure  
     # for back compatibility - to be removed (now defined in post_init)
     genotype_structure: Dict = None
@@ -118,11 +120,15 @@ class Simulation:
         assert self.num_pop==1 or self.num_random_pairings > 0, \
             "In multiple populations, num_random_pairings must be > 0"
 
-        assert self.num_agents==2 or self.motor_control_mode==None, \
-            "With one agent motor_control_mode must be None"
+        assert self.num_agents==2 or self.motor_control_mode in [None, 'SWITCH'], \
+            "With one agent motor_control_mode must be None or SWITCH"
 
         assert self.num_agents==1 or self.motor_control_mode!=None, \
             "With two agents motor_control_mode must not be None"
+
+        # if self.eyes_motors_asymmetry:
+        #     assert self.motor_control_mode!='OVERLAP', \
+        #         "Cannot have half-motors in OVERLAP mode"
         
         utils.assert_string_in_values(
             self.motor_control_mode, 
@@ -348,14 +354,18 @@ class Simulation:
         
         if self.num_agents == 1:
             # single agent
-            self.agents_motors_control_indexes = None # only relevant for 2 agents
+            if self.motor_control_mode=='SWITCH':
+                self.agents_motors_control_indexes = [(0,1), (0,0)] 
+            else:
+                # None (default)
+                self.agents_motors_control_indexes = [(0,0), (0,1)] 
         else:
             # 2 agents            
             if self.motor_control_mode=='SWITCH':
                 if self.half_motors:
                     if t % 2 == 0: # (0,2) - (first, third)
                         if self.num_dim == 1:
-                            self.agents_motors_control_indexes = [(0,0), (1,0)]                        
+                            self.agents_motors_control_indexes = [(0,0), (1,0)]
                         else:
                             # 2d - first agent controls horizontal wheels, second agents vertical wheels
                             self.agents_motors_control_indexes = [(0,0), (0,1), (1,0), (1,1)]                        
@@ -399,6 +409,18 @@ class Simulation:
                 # self.motor_control_mode=='OVERLAP'
                 # both agents control both wheels (for a factor of half)
                 self.agents_motors_control_indexes = None 
+                # if self.eyes_motors_asymmetry:
+                #     if self.num_dim == 1:
+                #         self.agents_motors_control_indexes = [ [(0,0), (1,1)], [(0,1), (1,0)] ] 
+                #     else:
+                #         # 2D
+                #         self.agents_motors_control_indexes = [ [(0,0), (1,1)], [(0,1), (1,0)], [(0,2), (1,3)], [(0,3), (1,2)] ] 
+                # else:
+                #     if self.num_dim == 1:
+                #         self.agents_motors_control_indexes = [ [(0,0), (1,0)], [(0,1), (1,1)] ] 
+                #     else:
+                #         # 2D
+                #         self.agents_motors_control_indexes = [ [(0,0), (1,0)], [(0,1), (1,1)], [(0,2), (1,2)], [(0,3), (1,3)] ]                     
             
         
         # init deltas
@@ -448,7 +470,12 @@ class Simulation:
             o.compute_motor_outputs()  # compute wheels from motor output
         
         if self.num_agents == 1:
-            motors = np.copy(self.agents[0].motors)
+            motors = np.array(
+                [
+                    self.agents[a].motors[m]
+                    for a, m in self.agents_motors_control_indexes
+                ]
+            )
         else:
             # 2 agents
             if self.motor_control_mode == 'OVERLAP':

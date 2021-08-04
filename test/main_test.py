@@ -33,6 +33,23 @@ def test_1d_2n_exc():
     assert normalized_perf == [88.39240922352474]
     print('✅ test_1d_2n_exc')
 
+def test_1d_2n_exc_switch():
+    sim, evo = main([             
+        # '--dir', './data/tmp', 
+        '--cores', '7', 
+        '--seed', '1',
+        '--num_neurons', '2', 
+        '--popsize', '20', 
+        '--max_gen', '10',
+        '--exclusive_motors_threshold', '0.1',
+        '--motor_control_mode', 'SWITCH'
+    ])
+    last_best_perf = evo.best_performances[-1]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    print(normalized_perf)
+    # assert normalized_perf == [88.39240922352474]
+    print('✅ test_1d_2n_exc_switch')
+
 def test_1d_2n_exc_rp0_switch():
     sim, evo = main([             
         # '--dir', './data/tmp', 
@@ -181,10 +198,11 @@ def test_1d_2n_exc_rp3_np4_switch():
     print('✅ test_1d_2n_exc_rp3_np4_switch')
 
 def test_1d():
-    # test_1d_1n_exc() # isolated
-    # test_1d_2n_exc() # isolated
-    # test_1d_2n_exc_rp0_switch()
-    # test_1d_2n_exc_rp3_switch()
+    test_1d_1n_exc() # isolated
+    test_1d_2n_exc() # isolated
+    test_1d_2n_exc_switch() # isolated
+    test_1d_2n_exc_rp0_switch()
+    test_1d_2n_exc_rp3_switch()
     test_1d_2n_exc_rp3_switch_hm()
     test_1d_3n_exc_rp3_switch()
     test_1d_3n_exc_rp3_switch_ws()
