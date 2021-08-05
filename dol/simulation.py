@@ -355,10 +355,25 @@ class Simulation:
         if self.num_agents == 1:
             # single agent
             if self.motor_control_mode=='SWITCH':
-                self.agents_motors_control_indexes = [(0,1), (0,0)] 
+                if t % 2 == 0: # (0,2) - (first, third)
+                    if self.num_dim == 1:
+                        self.agents_motors_control_indexes = [(0,0), (0,1)]                            
+                    else:
+                        # 2d - first agent controls horizontal wheels, second agents vertical wheels
+                        self.agents_motors_control_indexes = [(0,0), (0,1), (0,2), (0,3)]
+                else:
+                    # invert controller in switch mode on odd trial indexes (1,3) - (second, forth)
+                    if self.num_dim == 1:
+                        self.agents_motors_control_indexes = [(0,1), (0,0)]
+                    else:
+                        # 2d - first agent controls vertical wheels, second agents horizontal wheels
+                        self.agents_motors_control_indexes = [(0,1), (0,0), (0,3), (0,2)]   
             else:
                 # None (default)
-                self.agents_motors_control_indexes = [(0,0), (0,1)] 
+                if self.num_dim == 1:
+                    self.agents_motors_control_indexes = [(0,0), (0,1)] 
+                else:
+                    self.agents_motors_control_indexes = [(0,0), (0,1), (0,2), (0,3)] 
         else:
             # 2 agents            
             if self.motor_control_mode=='SWITCH':
