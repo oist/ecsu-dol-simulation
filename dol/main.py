@@ -43,13 +43,16 @@ def main(raw_args=None):
                              '0    -> agents are evolved in pairs: a genotype contains a pair of agents. '
                              'n>0  -> each agent will go though a simulation with N other agents (randomly chosen).')
     parser.add_argument('--motor_control_mode', type=str, default=None,
-                        choices=[None, 'SEPARATE', 'SWITCH', 'OVERLAP'],
+                        choices=[None, 'SEPARATE', 'SWITCH', 'OVERLAP', 'OVERLAPSWAP'],
                         help=
                         'Type of motor control'
                         'None: not applicable (if single agent)'
                         'SEPARATE: across trials the first agent always control the left motor and the second the right'
                         'SWITCH: the two agents switch control of L/R motors in different trials'
-                        'OVERLAP: both agents control L/R motors (for a factor o half)')
+                        'OVERLAP: both agents control L/R motors (for a factor o half)'
+                        'OVERLAPSWAP: both agents control L/R motors (for a factor o half) with switch of motors/wheel in half of trials')    
+    parser.add_argument('--eyes_swap', action='store_true', default=False,
+        help='Switch eyes input in half of the trials')    
     parser.add_argument('--half_motors', action='store_true', default=False,
         help='Use a single motor in 1d and 2 motors in 2d (instead of 2 and 4 respectively)')    
     parser.add_argument('--exclusive_motors_threshold', type=float, default=None,
@@ -80,6 +83,8 @@ def main(raw_args=None):
                 subdir += f'_noshuffle'
             if args.motor_control_mode!=None:
                 subdir += f'_{args.motor_control_mode.lower()}'
+            if args.eyes_swap:
+                subdir += '_es'
             if args.half_motors:
                 subdir += '_hm'
             if args.wheel_sensors:

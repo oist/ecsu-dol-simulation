@@ -159,6 +159,24 @@ def test_1d_2n_exc_rp3_overlap():
     assert normalized_perf == [2.0250736246180168]
     print('✅ test_1d_2n_exc_rp3_overlap')
 
+def test_1d_2n_exc_rp3_overlap_swap():
+    sim, evo = main([             
+        # '--dir', './data/tmp', 
+        '--cores', '7', 
+        '--seed', '1',
+        '--num_neurons', '2', 
+        '--popsize', '20', 
+        '--max_gen', '10',        
+        '--num_random_pairings', '3',
+        '--motor_control_mode', 'OVERLAPSWAP',
+        '--eyes_swap'
+    ])
+    last_best_perf = evo.best_performances[-1]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    # print(normalized_perf)
+    assert normalized_perf == [93.33586745013781]
+    print('✅ test_1d_2n_exc_rp3_overlap_swap')
+
 def test_1d_2n_exc_rp3_np2():
     sim, evo = main([             
         # '--dir', './data/tmp', 
@@ -207,6 +225,7 @@ def test_1d():
     test_1d_3n_exc_rp3_switch()
     test_1d_3n_exc_rp3_switch_ws()
     test_1d_2n_exc_rp3_overlap()
+    test_1d_2n_exc_rp3_overlap_swap()
     test_1d_2n_exc_rp3_np2()
     test_1d_2n_exc_rp3_np4_switch()
 

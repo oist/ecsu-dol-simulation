@@ -49,12 +49,13 @@ class Simulation:
     # SEPARATE: across trials the first agent always control the left wheel and the second the right
     # SWITCH: the two agents switch control of L/R motors/wheels in different trials
     # OVERLAP: both agents control L/R wheels (for a factor o half)
+    # OVERLAPSWAP: OVERLAP with switch of motors/wheels in half of the trials
 
     exclusive_motors_threshold: float = None
 
     wheel_sensors: bool = False # whether agents get input from wheels (2 extra sensor nodes)
 
-    # eyes_motors_asymmetry = False # whether to swap sensors and motors of second agent
+    eyes_swap = False # whether to switch eyes input in half of the trials
 
     # the genotype structure  
     # for back compatibility - to be removed (now defined in post_init)
@@ -126,14 +127,10 @@ class Simulation:
         assert self.num_agents==1 or self.motor_control_mode!=None, \
             "With two agents motor_control_mode must not be None"
 
-        # if self.eyes_motors_asymmetry:
-        #     assert self.motor_control_mode!='OVERLAP', \
-        #         "Cannot have half-motors in OVERLAP mode"
-        
         utils.assert_string_in_values(
             self.motor_control_mode, 
             'motor_control_mode',
-            [None, 'SEPARATE', 'SWITCH', 'OVERLAP']
+            [None, 'SEPARATE', 'SWITCH', 'OVERLAP', 'OVERLAPSWAP']
         )        
 
         assert self.num_pop<=2 or self.num_pop==self.num_random_pairings+1, \
@@ -420,23 +417,26 @@ class Simulation:
                     else:
                         # 2d - # across all trials first agent controls horizontal wheels, second agents vertical wheels
                         self.agents_motors_control_indexes = [(0,0), (0,1), (1,2), (1,3)]
-            else:
-                # self.motor_control_mode=='OVERLAP'
+            elif self.motor_control_mode=='OVERLAP':
                 # both agents control both wheels (for a factor of half)
-                self.agents_motors_control_indexes = None 
-                # if self.eyes_motors_asymmetry:
-                #     if self.num_dim == 1:
-                #         self.agents_motors_control_indexes = [ [(0,0), (1,1)], [(0,1), (1,0)] ] 
-                #     else:
-                #         # 2D
-                #         self.agents_motors_control_indexes = [ [(0,0), (1,1)], [(0,1), (1,0)], [(0,2), (1,3)], [(0,3), (1,2)] ] 
-                # else:
-                #     if self.num_dim == 1:
-                #         self.agents_motors_control_indexes = [ [(0,0), (1,0)], [(0,1), (1,1)] ] 
-                #     else:
-                #         # 2D
-                #         self.agents_motors_control_indexes = [ [(0,0), (1,0)], [(0,1), (1,1)], [(0,2), (1,2)], [(0,3), (1,3)] ]                     
-            
+                if self.num_dim == 1:
+                    self.agents_motors_control_indexes = [ [(0,0), (1,0)], [(0,1), (1,1)] ] 
+                else:
+                    # 2D
+                    self.agents_motors_control_indexes = [ [(0,0), (1,0)], [(0,1), (1,1)], [(0,2), (1,2)], [(0,3), (1,3)] ]                     
+            elif self.motor_control_mode=='OVERLAPSWAP':
+                if t % 2 == 0: # (0,2) - (first, third) fist agent switch
+                    if self.num_dim == 1:
+                        self.agents_motors_control_indexes = [ [(0,1), (1,0)], [(0,0), (1,1)] ] 
+                    else:
+                        # 2D
+                        self.agents_motors_control_indexes = [ [(0,1), (1,0)], [(0,0), (1,1)], [(0,3), (1,2)], [(0,2), (1,3)] ]                                 
+                else: # (1,3) - (second, forth) second agent switch
+                    if self.num_dim == 1:
+                        self.agents_motors_control_indexes = [ [(0,0), (1,1)], [(0,1), (1,0)] ] 
+                    else:
+                        # 2D
+                        self.agents_motors_control_indexes = [ [(0,0), (1,1)], [(0,1), (1,0)], [(0,2), (1,3)], [(0,3), (1,2)] ]                     
         
         # init deltas
         self.delta_tracker_target = np.zeros(self.num_data_points)
@@ -458,14 +458,24 @@ class Simulation:
 
         self.timing.add_time('SIM_prepare_agents_for_trials', self.tim)
 
-    def compute_brain_input_agents(self):
+    def compute_brain_input_agents(self, t):
         for i, o in enumerate(self.agents):
             if i==self.ghost_index: 
                 continue
+            eyes_signals = self.tracker.signals_strength
+
+            # first agent swtich on t in (0,2)
+            # second agent swtich on t in (1,3)
+            if self.eyes_swap and t % 2 == i:                
+                if self.num_dim == 1:
+                    eyes_signals = np.take(eyes_signals, [1,0]) # invert signals
+                else:
+                    eyes_signals = np.take(eyes_signals, [1,0,3,2]) # invert signals
+
             if self.wheel_sensors:
-                signals = np.concatenate([self.tracker.signals_strength, self.tracker.wheels])
+                signals = np.concatenate([eyes_signals, self.tracker.wheels])
             else:
-                signals = self.tracker.signals_strength
+                signals = eyes_signals
             o.compute_brain_input(signals)
         self.timing.add_time('SIM_compute_brain_input', self.tim)
 
@@ -493,11 +503,14 @@ class Simulation:
             )
         else:
             # 2 agents
-            if self.motor_control_mode == 'OVERLAP':
-                motors = np.array([ # [[a1_m1, a1_m2],[a2_m1, a2_m2]
-                    self.agents[a].motors
-                    for a in range(2)
-                ]).mean(axis=0) # mean across rows
+            if self.motor_control_mode in ['OVERLAP','OVERLAPSWAP']:
+                motors = np.array([ 
+                    np.mean([
+                        self.agents[a1].motors[m1],
+                        self.agents[a2].motors[m2]
+                    ])
+                    for (a1, m1), (a2, m2) in self.agents_motors_control_indexes
+                ])
             else:    
                 # SWITCH
                 motors = np.array(
@@ -612,7 +625,7 @@ class Simulation:
                     self.delta_tracker_target[i] = self.tracker.delta_target
 
                     # 2) compute brain input
-                    self.compute_brain_input_agents()
+                    self.compute_brain_input_agents(t)
 
                     # 3) Update agent's neural system
                     self.compute_brain_euler_step_agents()
