@@ -76,16 +76,22 @@ def get_non_flat_neuron_data(data_record, key):
     non_flat_neurons = np.sum(max_var > VARIANCE_THRESHOLD, axis=1)    
     return non_flat_neurons
 
-def min_max_flat_elements(values):
+def flat_elements_stats(values):
     # values is a list of pairs [x,y] (e.g., [1,2])
     # indicating how many non-flat elements in the corresponding seed
+    tuple_list = [tuple(sorted(x)) for x in values]
     sorted_set = sorted(
-        set([tuple(sorted(x)) for x in values]),
+        set(x for x in tuple_list),
         key = lambda x: np.sum(x)
     )
     if len(sorted_set)==1:
-        return str(list(sorted_set[0]))
-    return f'{list(sorted_set[0])} ... {list(sorted_set[-1])}'
+        l = list(sorted_set[0])
+        avg = str(l)
+        min_max = str(l)        
+    else:
+        avg = np.mean(tuple_list, axis=0).round(1).tolist()
+        min_max = f'{list(sorted_set[0])} ... {list(sorted_set[-1])}'        
+    return avg, min_max
 
 def get_last_performance_seeds(base_dir, print_stats=True, 
     print_values=False, plot=False, export_to_csv=False,
@@ -173,10 +179,14 @@ def get_last_performance_seeds(base_dir, print_stats=True,
                 # for s in best_stats_seeds:
                 #     print(f'\tSeed {str(s).zfill(3)}: {best_stats_genetic_distance[s]}')
                 print(f'Average genetic distance: {np.mean(list(best_stats_genetic_distance.values()))}')            
-            print(f'Non flat neurons outputs for each agent (min-max): {min_max_flat_elements(best_stats_non_flat_neur_outputs.values())}')
+            flat_neurons_avg, flat_neurons_min_max = flat_elements_stats(best_stats_non_flat_neur_outputs.values())
+            print(f'Non flat neurons outputs for each agent (min-max): {flat_neurons_min_max}')
+            print(f'Non flat neurons outputs for each agent (avg): {flat_neurons_avg}')
             # for s in best_stats_seeds:
             #     print(f'\tSeed {str(s).zfill(3)}: {best_stats_non_flat_neur_outputs[s]}')            
-            print(f'Non flat neurons states for each agent (min-max): {min_max_flat_elements(best_stats_non_flat_neur_states.values())}')
+            # flat_states_avg, flat_states_min_max = flat_elements_stats(best_stats_non_flat_neur_states.values())
+            # print(f'Non flat neurons states for each agent (min-max): {flat_states_min_max}')
+            # print(f'Non flat neurons states for each agent (avg): {flat_states_avg}')
             # for s in best_stats_seeds:
             #     print(f'\tSeed {str(s).zfill(3)}: {best_stats_non_flat_neur_states[s]}')
 
