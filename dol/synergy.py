@@ -1,9 +1,11 @@
 #! /usr/bin/env python 3
 
+from typing import Counter
 from dol import analyze_results
 import sys
 import os
 import numpy as np
+from tqdm import tqdm
 import pickle
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -306,7 +308,7 @@ class InfoAnalysis:
 		
 		self.data = {} # dictionary sim_type -> seed_dir -> sim_data
 		
-		for sim_type, sim_dir in self.sim_type_path.items(): 				
+		for sim_type, sim_dir in self.sim_type_path.items():
 			
 			print('Processing ', sim_type)
 
@@ -319,7 +321,7 @@ class InfoAnalysis:
 
 			if self.num_cores == 1:
 				# single core
-				for seed_dir in seeds:				
+				for seed_dir in tqdm(seeds):				
 					dir = os.path.join(self.sim_type_path[sim_type], seed_dir)
 					_, seed_sim_data, converged = InfoAnalysis.get_simulation_results(dir)
 					if converged:
@@ -329,7 +331,7 @@ class InfoAnalysis:
 				# seeds results is a list of tuples (seed_dir, sim_data) one per each seed
 				seeds_results = Parallel(n_jobs=self.num_cores)(
                     delayed(InfoAnalysis.get_simulation_results)(os.path.join(self.sim_type_path[sim_type],dir)) \
-                    for dir in seeds
+                    for dir in tqdm(seeds)
                 )				
 				for seed_dir, seed_sim_data, converged in seeds_results:
 					if converged:
@@ -368,7 +370,20 @@ class InfoAnalysis:
 		with open(pickle_file, 'rb') as handle:
 			self.data = pickle.load(handle)		
 		self.init_data_info()						
-
+	
+	def plot_seed_choices(self, sim_type_seed_counter):
+		f,a = plt.subplots(1,3)
+		for idx,ax in enumerate(a):
+			sim_type = self.simulation_types[idx]
+			sim_type_seeds_counter = sim_type_seed_counter[sim_type]
+			seeds_values = list(sim_type_seeds_counter.keys())
+			x_values = list(range(len(seeds_values)))
+			y_values = list(sim_type_seeds_counter.values())
+			ax.bar(x_values, y_values)
+			ax.set_title(sim_type)
+			# ax.set_xticks(list(range(len(seeds_values))), seeds_values)
+		plt.tight_layout()
+		plt.show()
 
 	def compute_synergy(self):
 
@@ -464,14 +479,26 @@ class InfoAnalysis:
 					self.plotBoxPlotList(results_measure_sim_types, self.simulation_types, label, label)
 						
 
-			for b in range(self.bootstrapping_runs):	
+			sim_type_seed_idx_counter = {
+				sim_type: Counter()
+				for sim_type in self.simulation_types
+			}
+
+			for b in tqdm(range(self.bootstrapping_runs)):	
 
 				for measure, label in info_measures.items():					
 
-					selected_stat = np.array([
-						self.rs.choice(results[sim_type][measure], size=self.num_seeds_boostrapping, replace=True)
-						for sim_type in self.simulation_types
-					])
+					selected_stat_indexes = np.zeros((self.num_sim_types, self.num_seeds_boostrapping), dtype="int")
+					selected_stat = np.zeros((self.num_sim_types, self.num_seeds_boostrapping))
+					
+					for i, sim_type in enumerate(self.simulation_types):
+						indexes = list(range(len(results[sim_type][measure])))
+						selected_stat_indexes[i] = self.rs.choice(indexes, size=self.num_seeds_boostrapping, replace=True)
+						selected_stat[i] = np.take(results[sim_type][measure], selected_stat_indexes[i])
+
+					for sim_index, sim_type_seed_idx_choices in enumerate(selected_stat_indexes):
+						sim_type = self.simulation_types[sim_index]
+						sim_type_seed_idx_counter[sim_type].update(sim_type_seed_idx_choices)
 
 					selected_stat = self.normalizeData(selected_stat) 
 				
@@ -487,6 +514,9 @@ class InfoAnalysis:
 					boostrapping_stats_measure['eta'][b] = eta
 					boostrapping_stats_measure['epsilon'][b] = epsilon
 					boostrapping_stats_measure['post_hoc_stats'][b] = post_hoc_stats
+
+			if self.plot:
+				self.plot_seed_choices(sim_type_seed_idx_counter)
 
 			for measure, label in info_measures.items():
 				# TODO: maybe only print those stats for which mean(p) < bonferroni ...
@@ -557,7 +587,7 @@ if __name__ == "__main__":
 	
 	pickle_path = 'results/synergy.pickle' # where data is saved/loaded
 	
-	load_data = False # set to True if data is read from pickle (has to be saved beforehand)
+	load_data = True # set to True if data is read from pickle (has to be saved beforehand)
 	save_data = False # set to True if data will be saved to pickle (to be loaded faster successively)
 	
 	# IA = InfoAnalysis(
@@ -577,10 +607,10 @@ if __name__ == "__main__":
 		agent_nodes = agent_nodes, 
 		sim_type_path = exc_switch_data_dirs,
 		whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
-		num_cores = 7,
+		num_cores = 1,
 		random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
-		num_seeds_boostrapping = 4, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
-		bootstrapping_runs = 10, # number of boostrapping runs (default 100)
+		num_seeds_boostrapping = 12, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
+		bootstrapping_runs = 5000, # number of boostrapping runs (default 100)
 		debug=False,
 		plot=True,
 		max_num_seeds = None # 5 # set to low number to test few seeds, set to None to compute all seeds
