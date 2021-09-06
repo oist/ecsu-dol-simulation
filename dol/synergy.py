@@ -583,7 +583,7 @@ if __name__ == "__main__":
 	# exp_type -> dir_path
 	# exp_types are ['individual', 'group', 'joint']
 	overlap_data_dirs = overlap_dir_xN(2) # overlap 2 neurons
-	exc_switch_data_dirs = exc_switch_xN_dir(3) # exclusive + swtich 2 neurons
+	exc_switch_data_dirs = exc_switch_xN_dir(3) # exclusive + switch 3 neurons
 	
 	pickle_path = 'results/synergy.pickle' # where data is saved/loaded
 	
