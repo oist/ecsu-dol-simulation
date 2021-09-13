@@ -655,7 +655,7 @@ if __name__ == "__main__":
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
             bootstrapping_runs = None, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = None, # whether to use only first n converged seed for analysis
-            output_dir = None,
+            output_dir = args.output_dir,
             debug = True,
             plot = True,
             test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
@@ -670,7 +670,7 @@ if __name__ == "__main__":
             num_seeds_boostrapping = 12, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
             bootstrapping_runs = 5000, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = None, # whether to use only first n converged seed for analysis
-            output_dir = None,
+            output_dir = args.output_dir,
             debug = False,
             plot = True,
             test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
@@ -685,7 +685,7 @@ if __name__ == "__main__":
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
             bootstrapping_runs = None, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = 100, # whether to use only first n converged seed for analysis
-            output_dir = None,
+            output_dir = args.output_dir,
             debug = True,
             plot = True,
             test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
