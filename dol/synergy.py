@@ -276,9 +276,6 @@ class InfoAnalysis:
         else:
             plt.show()
 
-        plt.savefig()
-
-
     def generateHeatMap(self, data, labels, ttle):
         fig = plt.figure(figsize = (40, 13))
         ax = fig.add_subplot(111)
