@@ -104,7 +104,11 @@ def get_last_performance_seeds(base_dir, print_stats=True,
     last_evo_file = None
     seeds = []
     seed_exp_dir = {}
-    for n, exp in tqdm(enumerate(exp_dirs,1)):
+    
+    pbar = tqdm(total=len(exp_dirs))
+
+    for n, exp in enumerate(exp_dirs,1):
+        pbar.update()
         if first_n_seeds is not None and n>first_n_seeds:
             break
         exp_dir = os.path.join(base_dir, exp)
@@ -155,9 +159,13 @@ def get_last_performance_seeds(base_dir, print_stats=True,
 
         best_stats_seeds = converged_seeds if best_sim_stats=='converged' else seeds
 
+        pbar = tqdm(total=len(best_stats_seeds))
+
         for s in best_stats_seeds:
+            pbar.update()
             s_exp_dir = seed_exp_dir[s]
-            performance, sim_perfs, evo, sim, data_record_list, sim_idx = run_simulation_from_dir(s_exp_dir, quiet=True)
+            performance, sim_perfs, evo, sim, data_record_list, sim_idx = \
+                run_simulation_from_dir(s_exp_dir, quiet=True)
             data_record = data_record_list[sim_idx]   
             best_stats_non_flat_neur_outputs[s] = get_non_flat_neuron_data(data_record, 'agents_brain_output')
             best_stats_non_flat_neur_states[s] = get_non_flat_neuron_data(data_record, 'agents_brain_state')
