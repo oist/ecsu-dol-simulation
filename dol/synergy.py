@@ -657,7 +657,7 @@ if __name__ == "__main__":
             bootstrapping_runs = None, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = 100, # whether to use only first n converged seed for analysis
             debug=False,
-            plot=True,
+            plot=False,
             max_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
         )		
     else:
