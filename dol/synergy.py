@@ -34,7 +34,7 @@ class InfoAnalysis:
     def __init__(self, agent_nodes, sim_type_path, whichNormalization, 
         random_seed, num_cores=1, num_seeds_boostrapping=None, bootstrapping_runs=None,
         restrict_to_first_n_converged_seeds = None,
-        debug=True, plot=True, max_num_seeds=None):
+        output_dir=None, debug=True, plot=True, test_num_seeds=None):
 
         self.initiJVM()
 
@@ -58,13 +58,20 @@ class InfoAnalysis:
 
         self.restrict_to_first_n_converged_seeds = restrict_to_first_n_converged_seeds # whether to use only first n converged seed for analysis
 
+        self.output_dir =output_dir # where to save plots, etc...
+        if not os.path.exists:
+            os.makedirs(output_dir)
+        else:
+            assert os.path.isdir(output_dir), \
+                f'Specified outputdir {output_dir} must be a dir not a file'
+
         self.debug = debug
         self.plot = plot
 
         # set to low number to test few seeds (not only converged), 
         # set to None to compute all seeds 
         # (or fewer if restrict_to_first_n_converged_seeds is not None)
-        self.max_num_seeds = max_num_seeds 
+        self.test_num_seeds = test_num_seeds 
 
         # self.lillieforsPValue = 0.05
         self.num_sim_types = len(self.simulation_types)
@@ -234,8 +241,13 @@ class InfoAnalysis:
                     print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant After Bonferroni Correction)')
                 else:
                     print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant)')
-        # plt.show()
-        plt.savefig(f'results/computeSpearmanCorr_{whichScenario}.pdf')
+        
+        if self.output_dir is not None:
+            output_file = os.path.join(self.output_dir, f'computeSpearmanCorr_{whichScenario}.pdf')
+            plt.savefig(output_file)
+        else:
+            plt.show()
+        
 
     def plotBoxPlotList(self, data, labels, ttle, ylabel):
         np.random.seed(self.random_seed) # reproducibility		
@@ -254,8 +266,14 @@ class InfoAnalysis:
         plt.yticks(fontsize = 25)
         plt.title(ttle)
         plt.ylabel(ylabel, fontsize = 25)
-        # plt.show()						
-        plt.savefig(f'results/plotBoxPlotList_{ttle}.pdf')
+
+        if self.output_dir is not None:
+            output_file = os.path.join(self.output_dir, f'plotBoxPlotList_{ttle}.pdf')
+            plt.savefig(output_file)
+        else:
+            plt.show()
+
+        plt.savefig()
 
 
     def generateHeatMap(self, data, labels, ttle):
@@ -274,8 +292,12 @@ class InfoAnalysis:
         plt.yticks(fontsize = 15)
         plt.title(ttle)
 
-        # plt.show()				
-        plt.savefig(f'results/generateHeatMap_{ttle}.pdf')
+        if self.output_dir is not None:
+            output_file = os.path.join(self.output_dir, f'generateHeatMap_{ttle}.pdf')
+            plt.savefig(output_file)
+        else:
+            plt.show()
+
 
     def computeDistanceMetricsForSpecificSeed(self, whichSetting, whichSeed, trial_idx, whichDistance):
         if not whichSeed in list(set(os.listdir(self.sim_type_path[whichSetting]))):
@@ -326,8 +348,8 @@ class InfoAnalysis:
 
             seeds = sorted([d for d in os.listdir(sim_dir) if d.startswith('seed_')])
 
-            if self.max_num_seeds is not None:
-                seeds = seeds[:self.max_num_seeds]
+            if self.test_num_seeds is not None:
+                seeds = seeds[:self.test_num_seeds]
 
             if self.num_cores == 1:
                 # single core
@@ -401,8 +423,13 @@ class InfoAnalysis:
             ax.set_title(sim_type)
             # ax.set_xticks(list(range(len(seeds_values))), seeds_values)
         plt.tight_layout()
-        # plt.show()
-        plt.savefig(f'results/plot_seed_choices.pdf')
+
+        if self.output_dir is not None:
+            output_file = os.path.join(self.output_dir, f'plot_seed_choices.pdf')
+            plt.savefig(output_file)
+        else:
+            plt.show()
+
 
     def compute_synergy(self):
 
@@ -591,7 +618,7 @@ class InfoAnalysis:
 
 if __name__ == "__main__":
     import argparse
-    from dol.data_path_utils import overlap_dir_xN, exc_switch_xN_dir
+    from dol import data_path_utils
 
     parser = argparse.ArgumentParser(
         description='Synergy'
@@ -608,6 +635,7 @@ if __name__ == "__main__":
         help='Types of run, choose one of the predefined strings'
     )
     parser.add_argument('--cores', type=int, default=1, help='Number of cores to used (defaults to 1)')
+    parser.add_argument('--output_dir', type=str, default=None, help='Output dir where to save plots (defaults to None: disply plots to screen)')
 
     args = parser.parse_args()
 
@@ -620,44 +648,47 @@ if __name__ == "__main__":
     if args.run_type == 'overlapping_all_100_converged_no_bootstrapping':
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
-            sim_type_path = overlap_dir_xN(2), # overlap 2 neurons
+            sim_type_path = data_path_utils.overlap_dir_xN(2), # overlap 2 neurons
             whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
             bootstrapping_runs = None, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = None, # whether to use only first n converged seed for analysis
-            debug=True,
-            plot=True,
-            max_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
+            output_dir = None,
+            debug = True,
+            plot = True,
+            test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
         )
     elif args.run_type == 'exc_switch_bootstrapping_12_seeds':
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
-            sim_type_path = exc_switch_xN_dir(3), # exclusive + switch 3 neurons
+            sim_type_path = data_path_utils.exc_switch_xN_dir(3), # exclusive + switch 3 neurons
             whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
             num_seeds_boostrapping = 12, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
             bootstrapping_runs = 5000, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = None, # whether to use only first n converged seed for analysis
-            debug=False,
-            plot=True,
-            max_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
+            output_dir = None,
+            debug = False,
+            plot = True,
+            test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
         )
     elif args.run_type == 'exc_switch_first_100_converged':
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
-            sim_type_path = exc_switch_xN_dir(3), # exclusive + switch 3 neurons
+            sim_type_path = data_path_utils.exc_switch_xN_dir(3), # exclusive + switch 3 neurons
             whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
             bootstrapping_runs = None, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = 100, # whether to use only first n converged seed for analysis
-            debug=True,
-            plot=True,
-            max_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
+            output_dir = None,
+            debug = True,
+            plot = True,
+            test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
         )		
     else:
         assert False, 'Wron run_type type'
