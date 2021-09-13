@@ -234,7 +234,8 @@ class InfoAnalysis:
                     print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant After Bonferroni Correction)')
                 else:
                     print(whichMeasure[i], ' vs. Target-Tracker-Distance: r = ', r, '  p-value = ', p, ' (Non-significant)')
-        plt.show()
+        # plt.show()
+        plt.savefig(f'results/computeSpearmanCorr_{whichScenario}.pdf')
 
     def plotBoxPlotList(self, data, labels, ttle, ylabel):
         np.random.seed(self.random_seed) # reproducibility		
@@ -253,7 +254,8 @@ class InfoAnalysis:
         plt.yticks(fontsize = 25)
         plt.title(ttle)
         plt.ylabel(ylabel, fontsize = 25)
-        plt.show()						
+        # plt.show()						
+        plt.savefig(f'results/plotBoxPlotList_{ttle}.pdf')
 
 
     def generateHeatMap(self, data, labels, ttle):
@@ -272,7 +274,8 @@ class InfoAnalysis:
         plt.yticks(fontsize = 15)
         plt.title(ttle)
 
-        plt.show()				
+        # plt.show()				
+        plt.savefig(f'results/generateHeatMap_{ttle}.pdf')
 
     def computeDistanceMetricsForSpecificSeed(self, whichSetting, whichSeed, trial_idx, whichDistance):
         if not whichSeed in list(set(os.listdir(self.sim_type_path[whichSetting]))):
@@ -398,7 +401,8 @@ class InfoAnalysis:
             ax.set_title(sim_type)
             # ax.set_xticks(list(range(len(seeds_values))), seeds_values)
         plt.tight_layout()
-        plt.show()
+        # plt.show()
+        plt.savefig(f'results/plot_seed_choices.pdf')
 
     def compute_synergy(self):
 
@@ -462,17 +466,23 @@ class InfoAnalysis:
 
             results[sim_type] = sim_type_results
 
+        info_measures = {
+            'condMultVarMI': 'Multivariate Conditional Mutual Information',				
+            'multVarMI': 'Multivariate Mutual Information',
+            'coinformation': 'Net-Synergy'
+        }
+
+        if self.plot:
+            for measure, label in info_measures.items():
+                results_measure_sim_types = [results[sim_type][measure] for sim_type in self.simulation_types]
+                self.plotBoxPlotList(results_measure_sim_types, self.simulation_types, label, label)                        
+
+
         if self.bootstrapping:			
             # condMultVarMI = [results[sim_type]['condMultVarMI'] for sim_type in self.simulation_types] # num_sim_type rows x converged_seeds_in_sim_type
             # multVarMI = [results[sim_type]['multVarMI'] for sim_type in self.simulation_types]
             # coinformation = [results[sim_type]['coinformation'] for sim_type in self.simulation_types]			
             # TODO: boostrapping (random sampling with replacement)
-
-            info_measures = {
-                'condMultVarMI': 'Multivariate Conditional Mutual Information',				
-                'multVarMI': 'Multivariate Mutual Information',
-                'coinformation': 'Net-Synergy'
-            }
 
             stats_factory = lambda: {
                 'h': np.zeros(self.bootstrapping_runs),
@@ -486,14 +496,7 @@ class InfoAnalysis:
                 measure: stats_factory()
                 for measure in info_measures
             }
-
             
-            if self.plot:
-                for measure, label in info_measures.items():
-                    results_measure_sim_types = [results[sim_type][measure] for sim_type in self.simulation_types]
-                    self.plotBoxPlotList(results_measure_sim_types, self.simulation_types, label, label)
-                        
-
             sim_type_seed_idx_counter = {
                 sim_type: Counter()
                 for sim_type in self.simulation_types
@@ -569,7 +572,7 @@ class InfoAnalysis:
                 self.computeSpearmanCorr(
                     cond_mult_coinfo_mean, 
                     sim_type_results['trackerTargetDistMean'], 
-                    sim_type, 
+                    sim_type + '_Mean', 
                     'Mean Target-Tracker Disatnce'
                 )  ##### 1 : z-scored   2 : [0 .. 1] scaled
 
@@ -580,7 +583,7 @@ class InfoAnalysis:
                 self.computeSpearmanCorr(
                     cond_mult_coinfo_mean, 
                     sim_type_results['trackerTargetDistStd'], 
-                    sim_type, 
+                    sim_type + '_SD', 
                     'SD Target-Tracker Disatnce'
                 )		
 
@@ -613,12 +616,8 @@ if __name__ == "__main__":
     
     load_data = False # set to True if data is read from pickle (has to be saved beforehand)
     save_data = False # set to True if data will be saved to pickle (to be loaded faster successively)
-
-    # run types, on of the following hard coded runs:
     
-    run_type = 'exc_switch_first_100_converged' 
-    
-    if run_type == 'overlapping_all_100_converged_no_bootstrapping':
+    if args.run_type == 'overlapping_all_100_converged_no_bootstrapping':
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
             sim_type_path = overlap_dir_xN(2), # overlap 2 neurons
@@ -632,7 +631,7 @@ if __name__ == "__main__":
             plot=True,
             max_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
         )
-    elif run_type == 'exc_switch_bootstrapping_12_seeds':
+    elif args.run_type == 'exc_switch_bootstrapping_12_seeds':
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
             sim_type_path = exc_switch_xN_dir(3), # exclusive + switch 3 neurons
@@ -646,7 +645,7 @@ if __name__ == "__main__":
             plot=True,
             max_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
         )
-    elif run_type == 'exc_switch_first_100_converged':
+    elif args.run_type == 'exc_switch_first_100_converged':
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
             sim_type_path = exc_switch_xN_dir(3), # exclusive + switch 3 neurons
@@ -656,8 +655,8 @@ if __name__ == "__main__":
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
             bootstrapping_runs = None, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = 100, # whether to use only first n converged seed for analysis
-            debug=False,
-            plot=False,
+            debug=True,
+            plot=True,
             max_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
         )		
     else:
