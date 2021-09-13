@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from dol.simulation import Simulation
 from dol.run_from_dir import run_simulation_from_dir
+from tqdm import tqdm
 
 CONVERGENCE_THRESHOLD = 20.
 VARIANCE_THRESHOLD = 1e-6
@@ -103,7 +104,7 @@ def get_last_performance_seeds(base_dir, print_stats=True,
     last_evo_file = None
     seeds = []
     seed_exp_dir = {}
-    for n, exp in enumerate(exp_dirs,1):
+    for n, exp in tqdm(enumerate(exp_dirs,1)):
         if first_n_seeds is not None and n>first_n_seeds:
             break
         exp_dir = os.path.join(base_dir, exp)
