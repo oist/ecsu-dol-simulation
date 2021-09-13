@@ -145,6 +145,8 @@ def get_last_performance_seeds(base_dir, print_stats=True,
             best_exp_performance.append(last_best_performance)
             all_gen_best_performances.append(gen_best_perf)
 
+    pbar.close()
+    
     converged_seeds = [s for s,p in zip(seeds,best_exp_performance) if np.min(p)<CONVERGENCE_THRESHOLD]    
     non_converged_seeds = [s for s in seeds if s not in converged_seeds]
     conv_seeds_err = {s:round(np.min(p),0) for s,p in zip(seeds,best_exp_performance) if s in converged_seeds}
@@ -175,6 +177,7 @@ def get_last_performance_seeds(base_dir, print_stats=True,
             best_stats_non_flat_motors[s] = get_non_flat_neuron_data(data_record, 'agents_motors')
             if sim.num_agents == 2:
                 best_stats_genetic_distance[s] = data_record['genotype_distance']
+        pbar.close()
 
     if print_stats:
         # print('Selected evo: {}'.format(last_evo_file))
