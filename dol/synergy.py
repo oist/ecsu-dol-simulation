@@ -7,6 +7,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 import pickle
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import seaborn as sb
@@ -59,11 +60,13 @@ class InfoAnalysis:
         self.restrict_to_first_n_converged_seeds = restrict_to_first_n_converged_seeds # whether to use only first n converged seed for analysis
 
         self.output_dir =output_dir # where to save plots, etc...
-        if not os.path.exists:
-            os.makedirs(output_dir)
-        else:
-            assert os.path.isdir(output_dir), \
-                f'Specified outputdir {output_dir} must be a dir not a file'
+        if output_dir is not None:
+            matplotlib.use('pdf')
+            if not os.path.exists(self.output_dir):
+                os.makedirs(output_dir)
+            else:
+                assert os.path.isdir(output_dir), \
+                    f'Specified outputdir {output_dir} must be a dir not a file'
 
         self.debug = debug
         self.plot = plot
@@ -279,6 +282,7 @@ class InfoAnalysis:
     def generateHeatMap(self, data, labels, ttle):
         fig = plt.figure(figsize = (40, 13))
         ax = fig.add_subplot(111)
+        # pylint: disable=maybe-no-member
         cax = ax.matshow(data, cmap = cm.Spectral_r, interpolation = 'nearest')
         fig.colorbar(cax)
 
