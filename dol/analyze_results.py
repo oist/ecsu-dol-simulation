@@ -95,7 +95,7 @@ def flat_elements_stats(values):
 
 def get_last_performance_seeds(base_dir, print_stats=True, 
     print_values=False, plot=False, export_to_csv=False,
-    best_sim_stats=None, first_20_seeds=False):
+    best_sim_stats=None, first_n_seeds=None):
 
     exp_dirs = sorted([d for d in os.listdir(base_dir) if d.startswith('seed_')])
     best_exp_performance = []  # the list of best performances of last generation for all seeds
@@ -104,7 +104,7 @@ def get_last_performance_seeds(base_dir, print_stats=True,
     seeds = []
     seed_exp_dir = {}
     for n, exp in enumerate(exp_dirs,1):
-        if first_20_seeds and n>20:
+        if first_n_seeds is not None and n>first_n_seeds:
             break
         exp_dir = os.path.join(base_dir, exp)
         if last_evo_file is None:
@@ -234,7 +234,7 @@ if __name__ == "__main__":
     parser.add_argument('--best_sim_stats', type=str, default=None, choices=[None, 'converged', 'all'], help='Whether to run best simulation stats (non-flat neurons/motors, similarities) and on which seeds')
     parser.add_argument('--plot', action='store_true', default=False, help='Whether to export results to csv in same dir')
     parser.add_argument('--csv', action='store_true', default=False, help='Whether to export results to csv in same dir')
-    parser.add_argument('--first20', action='store_true', default=False, help='Whether to run analysis only on first 20 seeds')
+    parser.add_argument('--first_n_seeds', type=int, default=None, help='Whether to run analysis only on first n seeds')
 
     args = parser.parse_args()
 
@@ -245,5 +245,5 @@ if __name__ == "__main__":
         plot=args.plot, 
         export_to_csv=args.csv,
         best_sim_stats=args.best_sim_stats,
-        first_20_seeds=args.first20
+        first_n_seeds=args.first_n_seeds
     )
