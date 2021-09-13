@@ -105,7 +105,10 @@ def get_last_performance_seeds(base_dir, print_stats=True,
     seeds = []
     seed_exp_dir = {}
     
-    pbar = tqdm(total=len(exp_dirs))
+    pbar_total = len(exp_dirs)
+    if first_n_seeds is not None and first_n_seeds<len(exp_dirs):
+        pbar_total=first_n_seeds
+    pbar = tqdm(total=pbar_total)
 
     for n, exp in enumerate(exp_dirs,1):
         pbar.update()
