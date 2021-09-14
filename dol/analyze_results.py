@@ -194,6 +194,17 @@ def get_last_performance_seeds(base_dir, print_stats=True,
                 # for s in best_stats_seeds:
                 #     print(f'\tSeed {str(s).zfill(3)}: {best_stats_genetic_distance[s]}')
                 print(f'Average genetic distance: {np.mean(list(best_stats_genetic_distance.values()))}')            
+
+            # get number of selected seeds having max neurons active
+            num_neurons = sim.num_neurons
+            num_seeds_using_max_neurons = int(np.sum(
+                [
+                    1 for s in best_stats_non_flat_neur_outputs 
+                    if np.all(best_stats_non_flat_neur_outputs[s] == [num_neurons, num_neurons])
+                ]
+            ))
+
+            print('num_seeds_using_max_neurons', num_seeds_using_max_neurons)
             flat_neurons_avg, flat_neurons_min_max = flat_elements_stats(best_stats_non_flat_neur_outputs.values())
             print(f'Non flat neurons outputs for each agent (min-max): {flat_neurons_min_max}')
             print(f'Non flat neurons outputs for each agent (avg): {flat_neurons_avg}')
