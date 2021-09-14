@@ -28,7 +28,7 @@ python3 -m dol.main \
 --gen_zfill \
 --popsize 48 \
 --max_gen 5000 \
---num_neurons n \
+--num_neurons 3 \
 --num_trials 4 \
 --num_random_pairings 0 \
 --motor_control_mode OVERLAP \
