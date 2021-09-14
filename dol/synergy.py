@@ -178,11 +178,6 @@ class InfoAnalysis:
         np.random.seed(self.random_seed) # reproducibility
         if self.debug:
             print('\n====================================',  whichData, '\n')
-        ylabel = f'{self.norm_label} {whichData}'
-        if self.plot and not self.bootstrapping:
-            self.plotBoxPlotList(M, self.simulation_types, whichData, ylabel)
-        # sys.exit()
-        # print(M[:, 0].shape, M[:, 1].shape, M[:, 2].shape)
         [h, p] = kruskal(M[:, 0], M[:, 1], M[:, 2])
         etaSquaredEffectSize = (h - M.shape[1] + 1)/((M.shape[0] * M.shape[1]) - M.shape[1])
         epsilonSquaredEffectSize = h/(((M.shape[0] * M.shape[1])**2 - 1)/((M.shape[0] * M.shape[1]) + 1))
