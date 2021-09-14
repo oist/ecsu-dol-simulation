@@ -649,7 +649,7 @@ if __name__ == "__main__":
     if args.run_type == 'overlapping_all_100_converged_no_bootstrapping':
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
-            sim_type_path = data_path_utils.overlap_dir_xN(2), # overlap 2 neurons
+            sim_type_path = data_path_utils.overlap_dir_xN(3), # overlap 3 neurons
             whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		

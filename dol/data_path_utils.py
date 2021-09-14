@@ -19,7 +19,7 @@ exc_switch_xN_dir = lambda x: {
         exc_switch_dir, 
         f'1d_{x}n_exc-0.1_zfill_rp-3_switch'
     ),
-    'joint': os.path.join(
+    'joint': os.path.join( 
         exc_switch_dir,
         f'1d_{x}n_exc-0.1_zfill_rp-1_np-2_noshuffle_switch'
     )
@@ -35,7 +35,7 @@ overlap_dir_xN = lambda x: {
         overlap_dir, 
         f'1d_{x}n_zfill_rp-3_overlap'
     ),
-    'joint': os.path.join( 
+    'joint': os.path.join( # original joint (double)
         overlap_dir, 
         f'1d_{x}n_zfill_rp-0_overlap'
     )
