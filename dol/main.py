@@ -6,6 +6,7 @@ See help for required arguments:
 python -m dol.main --help
 """
 
+from dol.simulation_synergy import SimulationSynergy
 import os
 import argparse
 from pytictoc import TicToc
@@ -30,7 +31,7 @@ def main(raw_args=None):
                         help='whether to fill geotipes with zeros otherwize random (default)')
     parser.add_argument('--num_pop', type=int, default=1, help='Number of populations')
     parser.add_argument('--popsize', type=int, default=96, help='Population size')
-    parser.add_argument('--noshuffle', action='store_true', default=False, help='Weather to shuffle agents before eval function')
+    parser.add_argument('--noshuffle', action='store_true', default=False, help='Weather to shuffle agents before eval function')    
     parser.add_argument('--max_gen', type=int, default=10, help='Number of generations')
 
     # simulation arguments        
@@ -59,6 +60,7 @@ def main(raw_args=None):
                         help='prevent motors to run at the same time')    
     parser.add_argument('--wheel_sensors', action='store_true', default=False,
                         help='if agents get wheel velocity in input (2 extra input nodes will be added to the architecture)')    
+    parser.add_argument('--synergy_max', action='store_true', default=False, help='Weather to use synergy maximization')
     parser.add_argument('--cores', type=int, default=1, help='Number of cores')
 
     # Gather the provided arguements as an array.
@@ -70,7 +72,8 @@ def main(raw_args=None):
     if args.dir is not None:
         # create default path if it specified dir already exists
         if os.path.isdir(args.dir):
-            subdir = f'{args.num_dim}d_{args.num_neurons}n'
+            subdir = 'synergy_' if args.synergy_max else ''
+            subdir += f'{args.num_dim}d_{args.num_neurons}n'
             if args.exclusive_motors_threshold is not None:
                 subdir += '_exc-{}'.format(args.exclusive_motors_threshold)
             if args.gen_zfill:
@@ -100,7 +103,9 @@ def main(raw_args=None):
 
     checkpoint_interval = int(np.ceil(args.max_gen / 10))
 
-    sim = Simulation(
+    sim_class = SimulationSynergy if args.synergy_max else Simulation
+
+    sim = sim_class(
         num_pop=args.num_pop,
         num_neurons = args.num_neurons,
         num_dim=args.num_dim,

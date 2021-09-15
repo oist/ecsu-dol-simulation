@@ -471,7 +471,9 @@ class InfoAnalysis:
                     agent1 = np.concatenate([sim_data[node][t,0,:,:] for node in self.agent_nodes], axis=1)
                     agent2 = np.concatenate([sim_data[node][t,1,:,:] for node in self.agent_nodes], axis=1)
                     target_pos = sim_data['target_position'][t]
-                    sim_type_results['condMultVarMI'][s,t] = condMultVarMI = self.computeConditionalMultiVariateMutualInfo(agent1, agent2, np.expand_dims(target_pos, axis = 0).T)
+                    sim_type_results['condMultVarMI'][s,t] = condMultVarMI = \
+                        self.computeConditionalMultiVariateMutualInfo(
+                            agent1, agent2, np.expand_dims(target_pos, axis = 1))
                     sim_type_results['multVarMI'][s,t] = multVarMI = self.computeMultiVariateMutualInfo(agent1, agent2)
                     sim_type_results['coinformation'][s,t] = condMultVarMI - multVarMI  #### a.k.a interaction information, net synergy, and integration														
                     sim_type_results['trackerTargetDistMean'][s,t] = delta_tracker_target[t].mean()
@@ -644,7 +646,7 @@ if __name__ == "__main__":
     if args.run_type == 'overlapping_all_100_converged_no_bootstrapping':
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
-            sim_type_path = data_path_utils.overlap_dir_xN(3), # overlap 3 neurons
+            sim_type_path = data_path_utils.overlap_dir_xN(2), # overlap 3 neurons
             whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
@@ -654,7 +656,7 @@ if __name__ == "__main__":
             output_dir = args.output_dir,
             debug = True,
             plot = True,
-            test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
+            test_num_seeds = 5 # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
         )
     elif args.run_type == 'exc_switch_bootstrapping_12_seeds':
         IA = InfoAnalysis(

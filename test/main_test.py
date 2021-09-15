@@ -321,6 +321,28 @@ def test_2d():
     test_2d_4n_rp3_switch()
     test_2d_4n_rp3_np4_switch()
 
+def test_synergy_overlap_1d_2n():
+    sim, evo = main([             
+        # '--dir', './data/tmp', 
+        '--cores', '5', 
+        # '--gen_zfill',
+        '--seed', '1',
+        '--num_pop', '2',
+        '--noshuffle',
+        '--num_neurons', '2', 
+        '--popsize', '20', 
+        '--max_gen', '10',        
+        '--num_random_pairings', '1',
+        '--motor_control_mode', 'OVERLAP',
+        '--synergy_max'
+    ])
+    last_best_perf = evo.best_performances[-1]
+    normalized_perf = [sim.normalize_performance(x) for x in last_best_perf]
+    print(normalized_perf)
+    # assert normalized_perf == [2.0250736246180168]
+    print('✅ test_synergy_overlap_1d_2n')
+
 if __name__ == "__main__":
-    test_1d()
+    # test_1d()
     # test_2d()
+    test_synergy_overlap_1d_2n()
