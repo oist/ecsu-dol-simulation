@@ -3,9 +3,9 @@
 #SBATCH --time=4:00:00
 #SBATCH --job-name=dot
 #SBATCH --output=slurm_%A-%a.out
-#SBATCH --mem=50G
-#SBATCH --cpus-per-task=55
-#SBATCH --array=1-20%20
+#SBATCH --mem=500G
+#SBATCH --cpus-per-task=128
+#SBATCH --array=1-10%10
 
 # load python module
 module load python/3.7.3
