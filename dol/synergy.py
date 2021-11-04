@@ -178,16 +178,20 @@ class InfoAnalysis:
         np.random.seed(self.random_seed) # reproducibility
         if self.debug:
             print('\n====================================',  whichData, '\n')
-        [h, p] = kruskal(M[:, 0], M[:, 1], M[:, 2])
-        etaSquaredEffectSize = (h - M.shape[1] + 1)/((M.shape[0] * M.shape[1]) - M.shape[1])
-        epsilonSquaredEffectSize = h/(((M.shape[0] * M.shape[1])**2 - 1)/((M.shape[0] * M.shape[1]) + 1))
+        
+        h, p, etaSquaredEffectSize, epsilonSquaredEffectSize = None, None, None, None
+        
+        if M.shape[1]>2:
+            [h, p] = kruskal(M[:, 0], M[:, 1], M[:, 2])
+            etaSquaredEffectSize = (h - M.shape[1] + 1)/((M.shape[0] * M.shape[1]) - M.shape[1])
+            epsilonSquaredEffectSize = h/(((M.shape[0] * M.shape[1])**2 - 1)/((M.shape[0] * M.shape[1]) + 1))
 
-        if self.debug:
-            print('Kruskal-Wallis Test -  ', whichData, ':  H-statistic = ', h, '  p = ', p, '  eta^2 = ', etaSquaredEffectSize, '(', \
-                self.interpretObservedEffectSize(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
-                self.interpretObservedEffectSize(etaSquaredEffectSize, 1), ')')
+            if self.debug:
+                print('Kruskal-Wallis Test -  ', whichData, ':  H-statistic = ', h, '  p = ', p, '  eta^2 = ', etaSquaredEffectSize, '(', \
+                    self.interpretObservedEffectSize(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
+                    self.interpretObservedEffectSize(etaSquaredEffectSize, 1), ')')
 
-        post_hoc_computation = self.bootstrapping or p < self.BonferroniCorrection
+        post_hoc_computation = M.shape[1]<=2 or self.bootstrapping or p < self.BonferroniCorrection
 
         post_hoc_stats = None
         if post_hoc_computation:
@@ -627,7 +631,8 @@ if __name__ == "__main__":
         choices=[
             'overlapping_all_100_converged_no_bootstrapping', 
             'exc_switch_bootstrapping_12_seeds', 
-            'exc_switch_first_100_converged'			
+            'exc_switch_first_100_converged',
+            'alife_first_41_converged'		
         ], 
         required=True, 
         help='Types of run, choose one of the predefined strings'
@@ -683,6 +688,21 @@ if __name__ == "__main__":
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
             bootstrapping_runs = None, # number of boostrapping runs (default 100)
             restrict_to_first_n_converged_seeds = 100, # whether to use only first n converged seed for analysis
+            output_dir = args.output_dir,
+            debug = True,
+            plot = True,
+            test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
+        )		
+    elif args.run_type == 'alife_first_41_converged':
+        IA = InfoAnalysis(
+            agent_nodes = agent_nodes, 
+            sim_type_path = data_path_utils.alife_dir_xN(2), # alife dir
+            whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
+            num_cores = args.cores,
+            random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
+            num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
+            bootstrapping_runs = None, # number of boostrapping runs (default 100)
+            restrict_to_first_n_converged_seeds = 41, # whether to use only first n converged seed for analysis
             output_dir = args.output_dir,
             debug = True,
             plot = True,

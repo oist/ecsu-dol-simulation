@@ -9,6 +9,7 @@ data_path = '/bucket/FroeseU/fede/dol-simulation' if  utils.am_i_on_deigo() else
 
 exc_switch_dir = os.path.join(data_path, 'exc_switch')
 overlap_dir = os.path.join(data_path, 'overlap')
+alife_dir = os.path.join(data_path, 'alife21_bis')
 
 exc_switch_xN_dir = lambda x: {
     'individual': os.path.join(
@@ -40,6 +41,18 @@ overlap_dir_xN = lambda x: {
         f'1d_{x}n_zfill_rp-0_overlap'
     )
 }
+
+alife_dir_xN = lambda x: {
+    'generalists': os.path.join( 
+        alife_dir, 
+        f'1d_{x}n_exc-0.1_zfill_rp-3_switch'
+    ),
+    'specialists': os.path.join( # 19/20 seeds converged
+        alife_dir, 
+        f'1d_{x}n_exc-0.1_zfill_rp-3_np-2_separate'
+    )
+}
+
 
 if __name__ == "__main__":
     from dol.analyze_results import get_last_performance_seeds
