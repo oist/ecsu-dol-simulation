@@ -174,7 +174,7 @@ def plot_alife21(indir, outdir):
     _, sim_perfs2, _, _, _, _ = run_simulation_from_dir(
         dir=plot_dir, generation=5000)
     # select best simulation for joint cases
-    sim_idx = np.argmax(sim_perfs2)
+    sim_idx = np.argmin(sim_perfs2)
 
     # rerun with random target
     performance2, sim_perfs2, evo2, sim2, data_record_list2, sim_idx2 = run_simulation_from_dir(
@@ -216,7 +216,7 @@ def plot_alife21(indir, outdir):
     _, sim_perfs3, _, _, _, _ = run_simulation_from_dir(
         dir=plot_dir, generation=5000)
     # select best simulation for joint cases
-    sim_idx = np.argmax(sim_perfs3)
+    sim_idx = np.argmin(sim_perfs3)
 
     # rerun with random target
     performance3, sim_perfs3, evo3, sim3, data_record_list3, sim_idx3 = run_simulation_from_dir(

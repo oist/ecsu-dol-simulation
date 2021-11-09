@@ -65,7 +65,8 @@ def plot_data_time(data_record, key, trial='all', log=False):
     fig.suptitle(title)
     for t in range(num_trials):
         trial_data = exp_data[t] if trial == 'all' else exp_data[trial - 1]
-        if type(trial_data) is list:
+        if len(trial_data) <= 2:
+        # if type(trial_data) in (list, np.ndarray):
             num_agents = len(trial_data)
             for a in range(num_agents):
                 ax = fig.add_subplot(num_agents, num_trials, (a * num_trials) + t + 1)
@@ -95,7 +96,8 @@ def plot_motor_time(sim, data_record, key, trial='all', log=False):
     for t in range(num_trials):
         trial_index = t if trial == 'all' else trial - 1
         trial_data = exp_data[trial_index]
-        if type(trial_data) is list:
+        if len(trial_data) <= 2:
+        # if type(trial_data) in (list, np.ndarray):
             num_agents = len(trial_data)
             for a in range(num_agents):
                 ax = fig.add_subplot(num_agents, num_trials, (a * num_trials) + t + 1)
@@ -150,28 +152,41 @@ def plot_scatter_multi_keys(data_record, keys, title, log=False):
             ax.plot(trial_data[:, 0], trial_data[:, 1])
     plt.show()
 
+def plot_genotype_distance(sim):
+    if sim.num_agents != 2:
+        return
+    genotypes = np.array(sim.genotypes)
+    genotypes = utils.linmap(genotypes, params.EVOLVE_GENE_RANGE, (0,1))    
+    distance = np.abs(genotypes[0]-genotypes[1])
+    distance = distance.reshape(1, -1) # row vector
+    cmap_inv = plt.cm.get_cmap('viridis_r')        
+    plt.imshow(distance, cmap=cmap_inv)       
+    plt.clim(0, 1) 
+    plt.colorbar()
+    plt.show()
 
-def plot_genotype_similarity(evo, sim):
+def plot_population_genotype_distance(evo, sim):
     """
-    Heatmap of genotype similarity within the population.
+    Heatmap of genotype distance within the population.
     """
     from sklearn.metrics.pairwise import pairwise_distances    
     population = evo.population
     genotype_length = len(evo.population[0][0])
     if len(evo.population) > 1:
         population = np.concatenate(evo.population)
-        population = np.expand_dims(population, 0)
+    else:
+        population = population[0]
+        if sim.num_random_pairings == 0:
+            # genotypes evolved in pairs
+            # we need to split the population in two subpopulation
+            population = np.hsplit(population,2)
+            population = np.concatenate(population)
+        
+    # map genotype in range 0,1
     population_norm = utils.linmap(population, params.EVOLVE_GENE_RANGE, (0,1))    
-    dist = pairwise_distances(population_norm[0])
-    max_dist = np.sqrt(genotype_length)
+    dist = pairwise_distances(population_norm)
+    max_dist = np.sqrt(genotype_length) # length of unary vector of dim = genotype_length
     dist_norm = utils.linmap(dist, (0,max_dist), (0,1))
-
-    if sim.num_random_pairings == 0:
-        # genotypes evolved in pairs
-        dist_norm = np.zeros((1, len(population)))
-        for i, pair in enumerate(population):
-            a, b = np.array_split(pair, 2)
-            dist_norm[0][i] = utils.genotype_distance(a,b)
 
     assert 0 <= dist_norm.all() <= 1
     cmap_inv = plt.cm.get_cmap('viridis_r')        
@@ -191,28 +206,28 @@ def plot_results(evo, sim, trial, data_record):
     if evo is not None:
         plot_performances(evo, sim, log=True)
         # plot_performances(evo, sim, log=False, only_best=True)
-        plot_genotype_similarity(evo, sim)
+        plot_population_genotype_distance(evo, sim)
+
+    plot_genotype_distance(sim)
 
     # scatter agents
     # plot_data_scatter(data_record, 'agents_brain_output')
     # plot_data_scatter(data_record, 'agents_brain_state')
 
     # time agents
-    # plot_data_time(data_record, 'agents_brain_input', trial)
+    plot_data_time(data_record, 'agents_brain_input', trial)
+    plot_data_time(data_record, 'agents_brain_state', trial)
     plot_data_time(data_record, 'agents_brain_output', trial)
+
     plot_data_time(data_record, 'agents_sensors', trial)
-    plot_data_time(data_record, 'agents_motors', trial)
-    # plot_data_time(data_record, 'agents_brain_state', trial)
+    plot_data_time(data_record, 'agents_motors', trial)    
     # plot_data_time(data_record, 'agents_derivatives', trial)
     # plot_motor_time(sim, data_record, 'agents_motors', trial)
 
     # time tracker
-    # plot_data_time(data_record, 'tracker_wheels', trial)
+    plot_data_time(data_record, 'tracker_wheels', trial)
     # plot_data_time(data_record, 'tracker_velocity', trial)
     # plot_data_time(data_record, 'tracker_signals', trial)
-
-    # time target
-    # plot_data_time(data_record, 'target_velocity', trial)    
 
     # time tracker & target
     if sim.num_dim == 1:

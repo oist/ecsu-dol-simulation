@@ -25,7 +25,7 @@ def get_test_data():
         'agents_sensors': [
             [
                 [
-                    ['t{}_a{}_p{}_sens{}'.format(t, a, p, s) for s in range(num_sensors)]
+                    ['t{}_a{}_p{}_sens{}'.format(t, a, p, s) for s in range(num_sensors_motors)]
                     for p in range(num_data_points)
                 ]
                 for a in range(num_agents)
@@ -71,7 +71,7 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index, sim_
         data_keys.append('agents_motors')  # dim = num motors = 2
 
     if sim_idx is None:
-        sim_idx = np.argmax(sim_perfs)
+        sim_idx = np.argmin(sim_perfs)
 
     num_trials = sim.num_trials
     num_agents = sim.num_agents
@@ -90,7 +90,7 @@ def get_sim_agent_complexity(sim_perfs, sim, data_record_list, agent_index, sim_
     ]                                                   # (num_neurons, num_trials, num_agents, num_data_points)                                        
     
     if analyze_brain:
-        assert sim.num_brain_neurons == num_neurons
+        assert sim.num_neurons == num_neurons
 
     data = np.stack([r for d in data for r in d])  # stacking all rows together
     assert data.shape == (
@@ -492,16 +492,16 @@ def single_agent(init_value='random'):
     rs = RandomState(1)
     if init_value == 'random':
         run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
-            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
+            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(num_dim, num_neurons),
             rs=rs
         )
     else:
         run_result, sim, data_record_list = simulation.get_simulation_data_from_filled_agent(
-            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(num_neurons),
+            gen_struct=gen_structure.DEFAULT_GEN_STRUCTURE(num_dim, num_neurons),
             value=init_value,
             rs=rs
         )
-    total_performance, sim_perfs, random_agent_indexes = run_result
+    total_performance, sim_perfs, paired_agents_sims_pop_idx = run_result
 
     nc = get_sim_agent_complexity(
         sim_perfs, sim, data_record_list,
@@ -536,7 +536,7 @@ def single_paired_agents(input_dir='data'):
 
     sim = Simulation.load_from_file(
         sim_json_filepath,
-        switch_agents_motor_control=True,  # forcing switch
+        motor_control_mode='SWITCH',  # forcing switch
         num_random_pairings=1  # forcing to play with one another
     )
 
@@ -554,8 +554,11 @@ def single_paired_agents(input_dir='data'):
     data_record_list = []
 
     performance, sim_perfs, _ = sim.run_simulation(
-        best_two_agent_pop, 0, 0, 0, None,
-        data_record_list
+        genotype_population=best_two_agent_pop,
+        genotype_index=0,
+        random_seed=0,
+        population_index=0,
+        exaustive_pairs=True
     )
 
     nc = get_sim_agent_complexity(

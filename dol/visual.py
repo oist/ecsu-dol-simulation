@@ -115,7 +115,7 @@ def draw_line(surface, x1y1, theta, length):
 def test_visual():
     from dol import simulation    
     run_result, sim, data_record_list = simulation.get_simulation_data_from_random_agent(
-        gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(2),
+        gen_struct = gen_structure.DEFAULT_GEN_STRUCTURE(1,2),
         rs = RandomState(None)
     )
     vis = Visualization(sim)

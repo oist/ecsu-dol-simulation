@@ -37,16 +37,35 @@ perf, sim_perfs, evo, sim, data, sim_idx = run_simulation_from_dir('path/to/data
 ```
 
 where:
-- `perf`: the overall performance across multiple simulations (e.g., if an agent is undergoing x simulations with x other agents)
-- `sim_perfs`: the list perfomances for each simulation
-- `evo`: the `pyevolver.Evolution` object
-- `sim`: the `dol.Simulation` object
-- `sim_idx`: index of the simulation obtaining the best performance
-- `data`: a list of dictionaries each containing the data from the n-th simulation. Each key in the dictionary maps to the data related to that key, e.g.:  
-  - `target_position`: contains a list of `np.array` (one per simulation trial) representing the positions of the target.
-  - `agents_brain_output`: contains a list of lists where `data[s]['agents_brain_output'][t][a]` represents the brain output of agent `a` of trial `t` of simulation `s`.
-
-
+- `perf`: the overall performance of the best agent across multiple simulations computed as the average of the performances across all the pairs of agents (`np.mean(sim_perfs)`).
+- `sim_perfs`: the list of perfomances for each simulation (i.e., a list of `n` values, if an agent is undergoing `n` simulations with `n` other agents). Each performance is obtain as the average performances across trials (see `trials_performances` and `sim_performance` below). If the simulation is perfomed by a single gent `sim_perfs` is a list with a single value equaling `perf`.
+- `evo`: the `pyevolver.Evolution` object.
+- `sim`: the `dol.Simulation` object.
+- `sim_idx`: index of the simulation obtaining the best performance (`np.argmin(sim_perfs)`).
+- `data`: a list of dictionaries each containing the data from each of the `n` simulations (one per paired agent). In each dictionary contains the following keys.
+   |key|Type/Shape|Description|
+   |---|-----|-----------|
+   |`trials_performances`| `list(num_trials)`  |list of performances for each trial between the two agents of the current simulation, computed as the average of the distance between `tracker`  and `target` within each trial (see `delta_tracker_target` below)
+   `sim_performance`| `float`  |the average across trial performances (`np.mean(trials_performances)`.
+   `current_agent_pop_idx`| `tuple(2)`  |a tuple `(pop_idx, p_idx)` where `pop_idx` is the index of the population of the current agent and `p_idx` the index of the current agent within the population.
+   `paired_agent_pop_idx`|  `tuple(2)` |analogous to above for the paired agent. If the simulation is perfomed by a single agent this is `None`.
+   `genotypes`| `ndarray` with size depending on the network architecture (e.g., number of neurons) |genotypes of the agent(s) in the current simulation.
+   `phenotypes`|  `list` of 2 `dict` |phenotypes of the agent(s) in the current simulation.
+   `genotype_distance`| `float`  |distance between the genotypes of the current agent and the paired one (`None` if there is only a single agent).  
+   `delta_tracker_target`| `ndarray(num_trials, num_data_points)`  |a list of arrays (one per trial) each containing data points, one for each step of the simulation representing the distance between `tracker` and `target` at that step.
+   `target_position`|  `ndarray(num_trials, num_data_points)` |contains a list of `np.array` (one per simulation trial) representing the positions of the target throughout the simulation.
+   `tracker_position`| `ndarray(num_trials, num_data_points)`  |as above wrt target position.
+   `tracker_angle`| `ndarray(num_trials, num_data_points)` |as above wrt target angle (only relevant in `2d` mode with `XY_MODE` disabled).
+   `tracker_wheels`|  `ndarray(num_trials, num_data_points, num_motors)` |as above wrt tracker wheels.
+   `tracker_velocity`| `ndarray(num_trials, num_data_points)`  |as above wrt tracker velocity (difference between the wheels).
+   `tracker_signals`|  `ndarray(num_trials, num_data_points, num_sensors)` |as above wrt tracker signal.
+   `agents_brain_output`| `ndarray(num_trials, num_agents, num_data_points, num_brain_neurons)`  |contains a list of arrays (one per simulation trial) where each array contains the brain output values in the corresponding trial.
+   `agents_brain_input`| `ndarray(num_trials, num_agents, num_data_points, num_brain_neurons)` |as above, wrt agent brain input.
+   `agents_sensors`| `ndarray(num_trials, num_agents, num_data_points, num_sensors)`  |as above, wrt agent sensors.  
+   `agents_brain_state`| `ndarray(num_trials, num_agents, num_data_points, num_brain_neurons)` |as above, wrt agent brain state.
+   `agents_derivatives`|   |as above, wrt agent brain derivatives.
+   `agents_motors`| `ndarray(num_trials, num_agents, num_data_points, num_brain_neurons)` |as above, wrt agent motors.
+   `agents_motors_control_indexes`| `list(num_trials)` of `tuple(2)`  |a list of tuples (one per trial) where in each tuple `(l,r)`, `l` is the index of the agent whose left output is controlling the left motor and `r` is the index of the agent whose right output is controlling the right motor.
 
 
 ## Alife 2021 paper
@@ -84,7 +103,7 @@ animation and data plots of behavior and neural activity, run (see available arg
       ```
       cd rstat
       R [enter into R]
-      > install.packages(c("dplyr", "tidyr", "car", "ggplot2", "ggsignif", "ggpubr", "pastecs", "compute.es"))
+      > install.packages(c("dplyr", "tidyr", "car", "ggplot2", "ggsignif", "ggpubr", "pastecs", "compute.es")
       > q() [quit R]
       Rscript dol_complexity.R
       ```

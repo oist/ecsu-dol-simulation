@@ -22,10 +22,11 @@ class Tracker2D:
     def init_params_trial(self, trial_idx):
         self.position = np.zeros(2)
         self.velocity = 0
-        self.wheels = np.zeros(2)
         if XY_MODE:
             self.angle = 0
+            self.wheels = np.zeros(4) # left, right, down, up
         else:
+            self.wheels = np.zeros(2) # left, right
             if trial_idx%2 ==0:
                 self.angle = - np.pi/4 # 45 degree: face the target
             else:
@@ -66,7 +67,12 @@ class Tracker2D:
 
     def move_one_step(self):  
         if XY_MODE:
-            self.position += self.wheels
+            self.position += np.array(
+                [
+                    self.wheels[1]-self.wheels[0],  # left - right
+                    self.wheels[3]-self.wheels[2]   # down - up 
+                ]
+            )            
         else:
             self.velocity = self.wheels[1] - self.wheels[0]  # right - left
             delta_angle = self.velocity / BODY_RADIUS
