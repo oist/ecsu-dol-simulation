@@ -219,7 +219,7 @@ def run_simulation_from_dir(dir, generation=None, genotype_idx=0, population_idx
 
 
     if kwargs.get('compute_complexity', False):
-        from dol.analyze_complexity import get_sim_agent_complexity
+        from dol.info_analysis.analyze_complexity import get_sim_agent_complexity
         for a in range(sim.num_agents):
             nc = get_sim_agent_complexity(
                 sim_perfs, sim, data_record_list,
