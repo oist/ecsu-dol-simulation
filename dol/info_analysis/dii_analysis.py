@@ -5,6 +5,7 @@ from tqdm import tqdm
 import pickle
 from dol.info_analysis.dii import DII
 from dol.info_analysis import infodynamics
+from dol.info_analysis.info_analysis import build_info_analysis_from_experiments
 from dol.info_analysis.plots import box_plot
 from dol.info_analysis.info_utils import interpret_observed_effect_size, show_descriptive_stats
 from joblib import Parallel, delayed
@@ -77,7 +78,11 @@ def compute_info_values(sim_data, agent_nodes, conditioning_node, powerset=False
 
 
 
-def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node, powerset=False):
+def perform_analysis(IA, agent_nodes, conditioning_node, powerset=False):
+
+    data = IA.data
+    ouput_dir = IA.output_dir
+    num_cores = IA.num_cores
 
     sim_type_results = defaultdict(lambda: defaultdict(dict))
     # sim type -> seed_num -> result 
@@ -153,35 +158,39 @@ def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node,
             interpret_observed_effect_size(effectSize, 2), ')')
         show_descriptive_stats(sims_metric_data[0], sim_type[0])
         show_descriptive_stats(sims_metric_data[1], sim_type[1])
-
-    infodynamics.shutdownJVM
         
 
 if __name__ == "__main__":
-    import argparse
 
     # agent_nodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
     agent_nodes = ['agents_sensors', 'agents_brain_output'] # alife settings
     conditioning_node = 'delta_tracker_target'
 
-    parser = argparse.ArgumentParser(
-        description='DII Simulation Analysis'
-    )
+    powerset = False
 
-    parser.add_argument('--pickle_path', type=str, required=True, help='Pickle path')
-    parser.add_argument('--num_cores', type=int, default=1, help='Number of cores to used (defaults to 1)')
-    parser.add_argument('--powerset', action='store_true', default=False, help='Whether to compute powerset metrics')
-    parser.add_argument('--output_dir', type=str, default=None, help='Output dir where to save plots (defaults to None: disply plots to screen)')
+    IA = build_info_analysis_from_experiments()
+    perform_analysis(IA, agent_nodes, conditioning_node, powerset=False)
+    
+    # import argparse
 
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser(
+    #     description='DII Simulation Analysis'
+    # )
 
-    pickle_path = args.pickle_path 
-    # pickle_path = '/Users/fedja/Code/ECSU/Evolution/dol-simulation/results/alife21_5seeds.pickle'
-    # args.num_cores = 5
-    # args.output_dir = './results/alife21_5'
-    data = load_data_from_pickle(pickle_path)
+    # parser.add_argument('--pickle_path', type=str, required=True, help='Pickle path')
+    # parser.add_argument('--num_cores', type=int, default=1, help='Number of cores to used (defaults to 1)')
+    # parser.add_argument('--powerset', action='store_true', default=False, help='Whether to compute powerset metrics')
+    # parser.add_argument('--output_dir', type=str, default=None, help='Output dir where to save plots (defaults to None: disply plots to screen)')
 
-    if args.output_dir is not None and not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
+    # args = parser.parse_args()
 
-    perform_analysis(data, args.output_dir, args.num_cores, agent_nodes, conditioning_node, args.powerset)
+    # pickle_path = args.pickle_path 
+    # # pickle_path = '/Users/fedja/Code/ECSU/Evolution/dol-simulation/results/alife21_5seeds.pickle'
+    # # args.num_cores = 5
+    # # args.output_dir = './results/alife21_5'
+    # data = load_data_from_pickle(pickle_path)
+
+    # if args.output_dir is not None and not os.path.exists(args.output_dir):
+    #     os.makedirs(args.output_dir)
+
+    # perform_analysis(data, args.output_dir, args.num_cores, agent_nodes, conditioning_node, args.powerset)

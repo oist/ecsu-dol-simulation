@@ -1,15 +1,16 @@
 #! /usr/bin/env python 3
 
-from typing import Counter
+import sys
 import os
 import numpy as np
 from tqdm import tqdm
-from dol.info_analysis.info_analysis import InfoAnalysis
-from dol.info_analysis import infodynamics
+from typing import Counter
+from scipy.spatial.distance import pdist, squareform
+from dol.info_analysis.info_analysis import InfoAnalysis, build_info_analysis_from_experiments
+from dol.info_analysis.infodynamics import compute_mi, compute_cond_mi
 from dol.info_analysis import info_utils
 
-
-def compute_synergy(IA):
+def compute_synergy(IA, agent_nodes):
 
     results = {} 
     # overall results sim_type -> sim_type_result
@@ -50,13 +51,12 @@ def compute_synergy(IA):
 
             for t in range(IA.num_trials):
                 # print('Trial # ', (t + 1))
-                agent1 = np.concatenate([sim_data[node][t,0,:,:] for node in IA.agent_nodes], axis=1)
-                agent2 = np.concatenate([sim_data[node][t,1,:,:] for node in IA.agent_nodes], axis=1)
+                agent1 = np.concatenate([sim_data[node][t,0,:,:] for node in agent_nodes], axis=1)
+                agent2 = np.concatenate([sim_data[node][t,1,:,:] for node in agent_nodes], axis=1)
                 target_pos = sim_data['target_position'][t]
                 sim_type_results['condMultVarMI'][s,t] = condMultVarMI = \
-                    IA.computeConditionalMultiVariateMutualInfo(
-                        agent1, agent2, np.expand_dims(target_pos, axis = 1))
-                sim_type_results['multVarMI'][s,t] = multVarMI = IA.computeMultiVariateMutualInfo(agent1, agent2)
+                    compute_cond_mi(agent1, agent2, np.expand_dims(target_pos, axis = 1))
+                sim_type_results['multVarMI'][s,t] = multVarMI = compute_mi(agent1, agent2)
                 sim_type_results['coinformation'][s,t] = condMultVarMI - multVarMI  #### a.k.a interaction information, net synergy, and integration														
                 sim_type_results['trackerTargetDistMean'][s,t] = delta_tracker_target[t].mean()
                 sim_type_results['trackerTargetDistStd'][s,t] = delta_tracker_target[t].std()
@@ -194,109 +194,41 @@ def compute_synergy(IA):
                 'SD Target-Tracker Disatnce'
             )		
 
+def computeDistanceMetricsForSpecificSeed(IA, agent_nodes, whichSetting, whichSeed, trial_idx, whichDistance):
+    if not whichSeed in list(set(os.listdir(IA.sim_type_path[whichSetting]))):
+        print(whichSeed, '  Is Not a Valid Seed')				
+        sys.exit()
+
+    data = IA.data[whichSetting][whichSeed]
+
+    agent1 = np.concatenate([data[node][trial_idx,0,:,:] for node in agent_nodes], axis=1)
+    agent2 = np.concatenate([data[node][trial_idx,1,:,:] for node in agent_nodes], axis=1)
+    agentsM = np.concatenate((agent1, agent2), axis = 1).T
+
+    agentsM = info_utils.normalize_data(agentsM, IA.norm_type)			
+
+    agentsM = squareform(pdist(agentsM, whichDistance))
+
+    labels = []
+    cnt = 0
+    for i in range(agentsM.shape[0]):
+        if i < 6:
+            labels.append('Node1_' + str(cnt + 1))
+        else:
+            if i == 6:
+                cnt = 0
+            labels.append('Node2_' + str(cnt + 1))
+        cnt += 1
+
+    IA.generateHeatMap(
+        agentsM, 
+        labels, 
+        f'{whichSetting} {whichSeed} Trial {trial_idx+1} {whichDistance} Distance'
+    )
         
 
 if __name__ == "__main__":
-    import argparse
-    from dol import data_path_utils
-
-    parser = argparse.ArgumentParser(
-        description='Synergy'
-    )
-
-    parser.add_argument('--run_type', 
-        type=str, 
-        choices=[
-            'overlapping_all_100_converged_no_bootstrapping', 
-            'exc_switch_bootstrapping_12_seeds', 
-            'exc_switch_first_100_converged',
-            'alife_first_41_converged'		
-        ], 
-        required=True, 
-        help='Types of run, choose one of the predefined strings'
-    )
-    parser.add_argument('--cores', type=int, default=1, help='Number of cores to used (defaults to 1)')
-    parser.add_argument('--output_dir', type=str, default=None, help='Output dir where to save plots (defaults to None: disply plots to screen)')
-
-    args = parser.parse_args()
-
-
-    agent_nodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
-    
-    load_data = False # set to True if data is read from pickle (has to be saved beforehand)
-    save_data = False # set to True if data will be saved to pickle (to be loaded faster successively)
-    
-    if args.run_type == 'overlapping_all_100_converged_no_bootstrapping':
-        IA = InfoAnalysis(
-            agent_nodes = agent_nodes, 
-            sim_type_path = data_path_utils.overlap_dir_xN(2), # overlap 3 neurons
-            norm_type = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
-            num_cores = args.cores,
-            random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
-            num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
-            bootstrapping_runs = None, # number of boostrapping runs (default 100)
-            restrict_to_first_n_converged_seeds = None, # whether to use only first n converged seed for analysis
-            output_dir = args.output_dir,
-            debug = True,
-            plot = True,
-            test_num_seeds = 5 # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
-        )
-    elif args.run_type == 'exc_switch_bootstrapping_12_seeds':
-        IA = InfoAnalysis(
-            agent_nodes = agent_nodes, 
-            sim_type_path = data_path_utils.exc_switch_xN_dir(3), # exclusive + switch 3 neurons
-            norm_type = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
-            num_cores = args.cores,
-            random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
-            num_seeds_boostrapping = 12, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
-            bootstrapping_runs = 5000, # number of boostrapping runs (default 100)
-            restrict_to_first_n_converged_seeds = None, # whether to use only first n converged seed for analysis
-            output_dir = args.output_dir,
-            debug = False,
-            plot = True,
-            test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
-        )
-    elif args.run_type == 'exc_switch_first_100_converged':
-        IA = InfoAnalysis(
-            agent_nodes = agent_nodes, 
-            sim_type_path = data_path_utils.exc_switch_xN_dir(3), # exclusive + switch 3 neurons
-            norm_type = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
-            num_cores = args.cores,
-            random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
-            num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
-            bootstrapping_runs = None, # number of boostrapping runs (default 100)
-            restrict_to_first_n_converged_seeds = 100, # whether to use only first n converged seed for analysis
-            output_dir = args.output_dir,
-            debug = True,
-            plot = True,
-            test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
-        )		
-    elif args.run_type == 'alife_first_41_converged':
-        IA = InfoAnalysis(
-            agent_nodes = agent_nodes, 
-            sim_type_path = data_path_utils.alife_dir_xN(2), # alife dir
-            norm_type = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
-            num_cores = args.cores,
-            random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
-            num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
-            bootstrapping_runs = None, # number of boostrapping runs (default 100)
-            restrict_to_first_n_converged_seeds = 41, # whether to use only first n converged seed for analysis
-            output_dir = args.output_dir,
-            debug = True,
-            plot = True,
-            test_num_seeds = None # 5 # set to low number to test few seeds (not only converged), set to None to compute all seeds (or fewer if restrict_to_first_n_converged_seeds is not None)
-        )		
-    else:
-        assert False, 'Wron run_type type'
-    
-    # load/build/save data
-    pickle_path = 'results/synergy.pickle' # where data is saved/loaded
-    if load_data and os.path.exists(pickle_path):
-        IA.load_data_from_pickle(pickle_path)
-    else:
-        IA.build_data()
-    if save_data:
-        IA.save_data_to_pickle(pickle_path)
+    IA = build_info_analysis_from_experiments()
     
     # main computation script
     compute_synergy(IA)
@@ -307,6 +239,4 @@ if __name__ == "__main__":
     # distanceMetrics = ['cosine', 'correlation', 'euclidean', 'cityblock', 'canberra']   
     # distanceMetrics = ['correlation']   
     # for metric in distanceMetrics:
-    # 	IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_001', 0, metric)
-
-    infodynamics.shutdownJVM()			
+    # 	IA.computeDistanceMetricsForSpecificSeed(IA, agent_nodes, 'individual', 'seed_001', 0, metric)

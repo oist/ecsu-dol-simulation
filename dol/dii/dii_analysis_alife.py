@@ -130,8 +130,6 @@ def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node)
             ylabel = metric,
             output_file = output_file
         )
-
-    infodynamics.shutdownJVM
         
 
 if __name__ == "__main__":

@@ -3,8 +3,7 @@ import numpy as np
 import jpype as jp
 from numpy.random import RandomState
 from dol.info_analysis import info_utils, plots, infodynamics
-
-infodynamics.startJVM()
+from dol.info_analysis.infodynamics import compute_mi, compute_cond_mi
 
 class DII:
 
@@ -18,7 +17,7 @@ class DII:
         """        
         self.matrix_a = matrix_a
         self.matrix_b = matrix_b
-        self.matrix_conditioning = np.expand_dims(matrix_conditioning, axis = 1) # make 2 dim for infodynamics computation
+        self.conditioning_matrix = np.expand_dims(matrix_conditioning, axis = 1) # make 2 dim for infodynamics computation
         
         self.time_steps, self.num_columns = self.matrix_a.shape
         self.norm_type =norm_type
@@ -30,23 +29,12 @@ class DII:
         matrix_a = info_utils.normalize_data(self.matrix_a, self.norm_type)
         matrix_b = info_utils.normalize_data(self.matrix_b, self.norm_type)
 
-        # init JP
-        jp_kraskov_pkg = jp.JPackage("infodynamics.measures.continuous.kraskov")
-        
-        # MI
-        self.multivar_mi_calc = jp_kraskov_pkg.MutualInfoCalculatorMultiVariateKraskov1()            
-        self.multivar_mi_calc.setProperty("NOISE_LEVEL_TO_ADD", "0") # no noise for reproducibility
-
-        # Cond. MI
-        self.multivar_cond_mi_calc = jp_kraskov_pkg.ConditionalMutualInfoCalculatorMultiVariateKraskov1()
-        self.multivar_cond_mi_calc.setProperty("NOISE_LEVEL_TO_ADD", "0") # no noise for reproducibility
-
 
     def __check_params(self):
         assert self.matrix_a.shape == self.matrix_b.shape, \
             "The two input matrices must have same shape"
         
-        assert self.matrix_a.shape[0] == self.matrix_conditioning.shape[0], \
+        assert self.matrix_a.shape[0] == self.conditioning_matrix.shape[0], \
             "The conditioning matrix should have same number of elements as the other matrices"
 
         assert self.matrix_a.ndim == 2, \
@@ -55,43 +43,6 @@ class DII:
         assert self.time_steps > self.num_columns, \
             "First dimension is time series (must be greater than second dim)"
 
-
-    def __compute_mi(self, sub_matrix_a, sub_matrix_b):
-        """Matrices should have the same num of rows but they may differ in num of columns
-
-        Args:
-            matrix_a (ndarray): [description]
-            matrix_b (ndarray): [description]
-        """        
-
-        self.multivar_mi_calc.initialise(sub_matrix_a.shape[1], sub_matrix_b.shape[1])		
-
-        self.multivar_mi_calc.setObservations(
-            jp.JArray(jp.JDouble, 2)(sub_matrix_a), 
-            jp.JArray(jp.JDouble, 2)(sub_matrix_b)
-        )
-        multivar_mi = self.multivar_mi_calc.computeAverageLocalOfObservations()
-
-        return multivar_mi
-
-    def __compute_cond_mi(self, sub_matrix_a, sub_matrix_b):
-        """Matrices should have the same num of rows but they may differ in num of columns
-
-        Args:
-            matrix_a (ndarray): [description]
-            matrix_b (ndarray): [description]
-        """        
-
-        self.multivar_cond_mi_calc.initialise(sub_matrix_a.shape[1], sub_matrix_b.shape[1], 1)		
-
-        self.multivar_cond_mi_calc.setObservations(
-            jp.JArray(jp.JDouble, 2)(sub_matrix_a), 
-            jp.JArray(jp.JDouble, 2)(sub_matrix_b),
-            jp.JArray(jp.JDouble, 2)(self.matrix_conditioning)
-        )
-        multivar_cond_mi = self.multivar_cond_mi_calc.computeAverageLocalOfObservations()
-
-        return multivar_cond_mi
 
     def compute_dii_powerset(self, plot=False):
         """compute dyadic integrated information
@@ -114,8 +65,8 @@ class DII:
             for j, ps_b in enumerate(power_set_idx):            
                 sub_matrix_a = self.matrix_a[:,ps_a] # column indexes specified in ps_a
                 sub_matrix_b = self.matrix_b[:,ps_b] # column indexes specified in ps_b
-                MI_matrix[i][j] = self.__compute_mi(sub_matrix_a, sub_matrix_b)
-                COND_MI_matrix[i][j] = self.__compute_cond_mi(sub_matrix_a, sub_matrix_b)
+                MI_matrix[i][j] = compute_mi(sub_matrix_a, sub_matrix_b)
+                COND_MI_matrix[i][j] = compute_cond_mi(sub_matrix_a, sub_matrix_b, self.conditioning_matrix)
 
         if plot:
             matrices = [MI_matrix, COND_MI_matrix]
@@ -143,8 +94,8 @@ class DII:
         power_set_idx = info_utils.powerset_idx(self.num_columns, remove_empty=True)
         heat_map_size = len(power_set_idx)
 
-        overall_MI = self.__compute_mi(self.matrix_a, self.matrix_b)
-        overall_COND_MI = self.__compute_cond_mi(self.matrix_a, self.matrix_b)
+        overall_MI = compute_mi(self.matrix_a, self.matrix_b)
+        overall_COND_MI = compute_cond_mi(self.matrix_a, self.matrix_b, self.conditioning_matrix)
 
         return overall_MI, overall_COND_MI
 
