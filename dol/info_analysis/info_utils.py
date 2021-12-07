@@ -1,6 +1,8 @@
 import numpy as np
+from itertools import chain, combinations
+from sklearn import preprocessing
 
-def interpretObservedEffectSize(effectSize, whichOne):
+def interpret_observed_effect_size(effectSize, whichOne):
     if whichOne == 1: #####  Eta^2 OR Epsilon^2
         if effectSize <= 0.01:					
             return 'Very Small Effect'
@@ -20,12 +22,10 @@ def interpretObservedEffectSize(effectSize, whichOne):
         elif effectSize >= 0.5:
             return 'Large Effect'				
 
-def showDescriptiveStatistics(data, whichOne):
+def show_descriptive_stats(data, whichOne):
     print('M-' + whichOne, ' = ', np.mean(data), ' SD-' + whichOne, ' = ', np.std(data), '  Mdn-' + whichOne, ' = ', np.median(data), \
         '  CI_95%-' + whichOne + ' = ', [np.percentile(data, 2.5), np.percentile(data, 97.5)])
 
-from itertools import chain, combinations
-from sklearn import preprocessing
 
 def normalize_data(matrix, norm_type):
     """[summary]
@@ -61,3 +61,6 @@ def test_powerset_idx():
     assert exp_size == size
     print(ps)
     print(size)
+
+if __name__ == "__main__":
+    test_powerset_idx

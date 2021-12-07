@@ -1,24 +1,20 @@
 import os
-
 import numpy as np
 from tqdm import tqdm
 import pickle
-from dol.info_analysis.dii import DII
+from dol.info_analysis.plots import box_plot 
+from dol.info_analysis.dii import DII 
 from dol.info_analysis import infodynamics
-from dol.info_analysis.plots import box_plot
-from dol.info_analysis.info_utils import interpret_observed_effect_size, show_descriptive_stats
 from joblib import Parallel, delayed
 from collections import defaultdict
-from scipy.stats import spearmanr, ranksums
-
-
+from scipy.stats import spearmanr
 
 def load_data_from_pickle(pickle_file):
     with open(pickle_file, 'rb') as handle:
         data = pickle.load(handle)		
     return data
 
-def compute_info_values(sim_data, agent_nodes, conditioning_node, powerset=False):
+def compute_info_values(sim_data, agent_nodes, conditioning_node):
     """compute info measures for data of a specific simulation type and a specific seed
 
     Args:
@@ -38,46 +34,38 @@ def compute_info_values(sim_data, agent_nodes, conditioning_node, powerset=False
     mi_overall_trials = np.zeros(num_trials)
     cond_mi_trials = np.zeros(num_trials)
     cond_mi_overall_trials = np.zeros(num_trials)
+    synergy_powerset = np.zeros(num_trials)
     synergy_overall = np.zeros(num_trials)
-    if powerset:
-        synergy_powerset = np.zeros(num_trials)
-        
+
     for t in range(num_trials):
         agent1 = np.concatenate([sim_data[node][t,0,:,:] for node in agent_nodes], axis=1)
         agent2 = np.concatenate([sim_data[node][t,1,:,:] for node in agent_nodes], axis=1)
         target = sim_data[conditioning_node][t]
-        dii = DII(agent1, agent2, target)        
-        overall_mi, overall_cond_mi = dii.compute_dii_overall()        
-        if powerset:
-            mi_matrix, cond_mi_matrix = dii.compute_dii_powerset() 
-            mi_trials[t] = mi_matrix.mean()                
-            cond_mi_trials[t] = cond_mi_matrix.mean()
-            synergy_powerset[t] = cond_mi_trials[t] - mi_trials[t]
-        
-        cond_mi_overall_trials[t] = overall_cond_mi        
+        dii = DII(agent1, agent2, target)
+        mi_matrix, cond_mi_matrix, overall_mi, overall_cond_mi = dii.compute_dii()        
+        mi_trials[t] = mi_matrix.mean()        
+        cond_mi_trials[t] = cond_mi_matrix.mean()
+        cond_mi_overall_trials[t] = overall_cond_mi
+        synergy_powerset[t] = cond_mi_trials[t] - mi_trials[t]
         mi_overall_trials[t] = overall_mi
         synergy_overrall_trial = cond_mi_overall_trials[t] - mi_overall_trials[t]
         synergy_overall[t] = synergy_overrall_trial
 
+
     result = {
+        'MI powerset': mi_trials.mean(),
+        'Cond MI powerset': cond_mi_trials.mean(),
         'MI overall': mi_overall_trials.mean(),
         'CMI overall': cond_mi_overall_trials.mean(),
+        'Synergy powerset': synergy_powerset.mean(),
         'Synergy overall': synergy_overall.mean()
     }
-    if powerset:
-        result.update(
-            {
-                'MI powerset': mi_trials.mean(),
-                'Cond MI powerset': cond_mi_trials.mean(),
-                'Synergy powerset': synergy_powerset.mean()
-            }
-        )
 
     return result
 
 
 
-def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node, powerset=False):
+def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node):
 
     sim_type_results = defaultdict(lambda: defaultdict(dict))
     # sim type -> seed_num -> result 
@@ -92,10 +80,10 @@ def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node,
 
         if num_cores == 1:
             for s, sim_data in enumerate(tqdm(seed_sim_data.values())):
-                sim_type_results[sim_type][s] = compute_info_values(sim_data, agent_nodes, conditioning_node, powerset)
+                sim_type_results[sim_type][s] = compute_info_values(sim_data, agent_nodes, conditioning_node)
         else:
             seeds_results = Parallel(n_jobs=num_cores)(
-                delayed(compute_info_values)(sim_data, agent_nodes, conditioning_node, powerset)
+                delayed(compute_info_values)(sim_data, agent_nodes, conditioning_node)
                 for sim_data in tqdm(seed_sim_data.values())
             )
             for s, results in enumerate(seeds_results):
@@ -115,13 +103,12 @@ def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node,
 
     
     # # SpearmanCorr for ['MI overall', 'CMI overall', 'Synergy overall']        
-    '''
     for x in ['MI overall', 'CMI overall', 'Synergy overall']:            
         delta = None # average target-tracker distance for all seeds (averaged across timesteps and then trials)
         # self.delta_target = target_position - self.position
         # delta_abs = np.abs(self.delta_target)
         [r, p] = spearmanr(x, delta) # where x and delta are arrays of num_seeds values
-    '''
+
     
     for metric in result_metrics:
 
@@ -144,16 +131,6 @@ def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node,
             output_file = output_file
         )
 
-        print('-------------')
-        print(metric)
-        print(f'sim_types: {sim_types}')
-        sW, pW = ranksums(sims_metric_data[0], sims_metric_data[1])        
-        effectSize = abs(sW/np.sqrt(len(sims_metric_data[0])))
-        print(sim_type[0], ' vs. ', sim_type[1], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
-            interpret_observed_effect_size(effectSize, 2), ')')
-        show_descriptive_stats(sims_metric_data[0], sim_type[0])
-        show_descriptive_stats(sims_metric_data[1], sim_type[1])
-
     infodynamics.shutdownJVM
         
 
@@ -170,7 +147,6 @@ if __name__ == "__main__":
 
     parser.add_argument('--pickle_path', type=str, required=True, help='Pickle path')
     parser.add_argument('--num_cores', type=int, default=1, help='Number of cores to used (defaults to 1)')
-    parser.add_argument('--powerset', action='store_true', default=False, help='Whether to compute powerset metrics')
     parser.add_argument('--output_dir', type=str, default=None, help='Output dir where to save plots (defaults to None: disply plots to screen)')
 
     args = parser.parse_args()
@@ -184,4 +160,4 @@ if __name__ == "__main__":
     if args.output_dir is not None and not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    perform_analysis(data, args.output_dir, args.num_cores, agent_nodes, conditioning_node, args.powerset)
+    perform_analysis(data, args.output_dir, args.num_cores, agent_nodes, conditioning_node)

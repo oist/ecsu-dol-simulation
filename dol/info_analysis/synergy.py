@@ -18,12 +18,14 @@ from statsmodels.stats.diagnostic import lilliefors
 from scipy.stats import friedmanchisquare, ranksums, kruskal, spearmanr, pearsonr
 import scipy.special as special
 from scipy.spatial.distance import pdist, squareform
+from dol.info_analysis import infodynamics
 from dol.run_from_dir import run_simulation_from_dir
 from numpy.polynomial.polynomial import polyfit
 from dol.run_from_dir import run_simulation_from_dir
 from numpy.random import RandomState
 from itertools import combinations
-from dol.info_analysis.info_utils import interpretObservedEffectSize, showDescriptiveStatistics
+from dol.info_analysis import info_utils
+
 
 class InfoAnalysis:
 
@@ -33,19 +35,19 @@ class InfoAnalysis:
         2: '[0 ..1] Scaled'
     }	
 
-    def __init__(self, agent_nodes, sim_type_path, whichNormalization, 
+    def __init__(self, agent_nodes, sim_type_path, norm_type, 
         random_seed, num_cores=1, num_seeds_boostrapping=None, bootstrapping_runs=None,
         restrict_to_first_n_converged_seeds = None,
         output_dir=None, debug=True, plot=True, test_num_seeds=None):
 
-        self.initiJVM()
+        infodynamics.init_JVM()
 
         self.agent_nodes = agent_nodes
         self.sim_type_path = sim_type_path	
         self.simulation_types = list(sim_type_path.keys())
         
-        self.whichNormalization = whichNormalization   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
-        self.norm_label = InfoAnalysis.NORM_LABELS[whichNormalization]
+        self.norm_type = norm_type   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling			
+        self.norm_label = InfoAnalysis.NORM_LABELS[norm_type]
 
         self.random_seed = random_seed
         self.rs = RandomState(random_seed)
@@ -93,16 +95,6 @@ class InfoAnalysis:
         
         self.data = None # dictionary sim_type -> seed_dir -> sim_data		
 
-    def initiJVM(self):
-            jarLocation = os.path.join(os.getcwd(), "./", "infodynamics.jar")
-
-            if (not(os.path.isfile(jarLocation))):
-                exit("infodynamics.jar not found (expected at " + os.path.abspath(jarLocation) + ") - are you running from demos/python?")			
-            jp.startJVM(jp.getDefaultJVMPath(), "-ea", "-Djava.class.path=" + jarLocation, convertStrings = False)   # convertStrings = False to silence the Warning while starting JVM 						
-
-    def shutdownJVM(self):
-        jp.shutdownJVM()
-
     def computeConditionalMultiVariateMutualInfo(self, agent1, agent2, target):
         if agent1.size == 0 or agent2.size == 0 or target.size == 0:
             print('Agent(s) or Traget Data Empty!')
@@ -127,9 +119,9 @@ class InfoAnalysis:
         return result
 
     def normalizeData(self, M):
-        if self.whichNormalization == 0:
+        if self.norm_type == 0:
             return M
-        scaler = preprocessing.StandardScaler().fit(M) if self.whichNormalization == 1 else preprocessing.MinMaxScaler().fit(M)
+        scaler = preprocessing.StandardScaler().fit(M) if self.norm_type == 1 else preprocessing.MinMaxScaler().fit(M)
         return scaler.transform(M)
 
     def checkDataNormality(self, M, whichData):
@@ -151,9 +143,9 @@ class InfoAnalysis:
     # 				[sW, pW] = ranksums(M[:, i], M[:, j])
     # 				effectSize = abs(sW/np.sqrt(M.shape[0]))
     # 				print(self.simulation_types[i], ' vs. ', self.simulation_types[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
-    # 					interpretObservedEffectSize(effectSize, 2), ')')
-    # 				showDescriptiveStatistics(M[:, i], self.simulation_types[i])
-    # 				showDescriptiveStatistics(M[:, j], self.simulation_types[j])
+    # 					info_utils.interpret_observed_effect_size(effectSize, 2), ')')
+    # 				info_utils.show_descriptive_stats(M[:, i], self.simulation_types[i])
+    # 				info_utils.show_descriptive_stats(M[:, j], self.simulation_types[j])
 
 
     def performKruskalWallis_n_PosthocWilcoxonTest(self, M, whichData):
@@ -170,8 +162,8 @@ class InfoAnalysis:
 
             if self.debug:
                 print('Kruskal-Wallis Test -  ', whichData, ':  H-statistic = ', h, '  p = ', p, '  eta^2 = ', etaSquaredEffectSize, '(', \
-                    interpretObservedEffectSize(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
-                    interpretObservedEffectSize(etaSquaredEffectSize, 1), ')')
+                    info_utils.interpret_observed_effect_size(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
+                    info_utils.interpret_observed_effect_size(etaSquaredEffectSize, 1), ')')
 
         post_hoc_computation = M.shape[1]<=2 or self.bootstrapping or p < self.BonferroniCorrection
 
@@ -185,17 +177,17 @@ class InfoAnalysis:
                 post_hoc_stats[p_index] = [sW, pW, effectSize]
                 if self.debug:
                     print(self.simulation_types[i], ' vs. ', self.simulation_types[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
-                        interpretObservedEffectSize(effectSize, 2), ')')
-                    showDescriptiveStatistics(M[:, i], self.simulation_types[i])
-                    showDescriptiveStatistics(M[:, j], self.simulation_types[j])					
+                        info_utils.interpret_observed_effect_size(effectSize, 2), ')')
+                    info_utils.show_descriptive_stats(M[:, i], self.simulation_types[i])
+                    info_utils.show_descriptive_stats(M[:, j], self.simulation_types[j])					
 
         return h, p, etaSquaredEffectSize, epsilonSquaredEffectSize, post_hoc_stats
 
     def computeSpearmanCorr(self, M, distance, whichScenario, ylabel):
         np.random.seed(self.random_seed) # reproducibility
         fig = plt.figure(figsize = (40, 13))
-        if self.whichNormalization != 0:
-            if self.whichNormalization == 1:
+        if self.norm_type != 0:
+            if self.norm_type == 1:
                 meanDistGroup = [(val - np.mean(meanDistGroup))/np.std(meanDistGroup) for val in meanDistGroup]
             else:
                 meanDistGroup = [(val - min(meanDistGroup))/(max(meanDistGroup) - min(meanDistGroup)) for val in meanDistGroup]			
@@ -288,7 +280,7 @@ class InfoAnalysis:
         agent2 = np.concatenate([data[node][trial_idx,1,:,:] for node in self.agent_nodes], axis=1)
         agentsM = np.concatenate((agent1, agent2), axis = 1).T
 
-        agentsM = self.normalizeData(agentsM)			
+        agentsM = info_utils.normalize_data(agentsM, self.norm_type)			
 
         agentsM = squareform(pdist(agentsM, whichDistance))
 
@@ -525,7 +517,7 @@ class InfoAnalysis:
                         sim_type = self.simulation_types[sim_index]
                         sim_type_seed_idx_counter[sim_type].update(sim_type_seed_idx_choices)
 
-                    selected_stat = self.normalizeData(selected_stat) 
+                    selected_stat = info_utils.normalize_data(selected_stat, self.norm_type) 
                 
                     ################# We might want to check whether data follows normal distribution and if positive apply parametric tests instead.
 
@@ -548,7 +540,7 @@ class InfoAnalysis:
                 boostrapping_stats_measure = boostrapping_stats[measure]
                 print(label)
                 for sub_measure, data in boostrapping_stats_measure.items():					
-                    showDescriptiveStatistics(data, sub_measure)
+                    info_utils.show_descriptive_stats(data, sub_measure)
 
                 
         else:
@@ -558,9 +550,9 @@ class InfoAnalysis:
             multVarMI = np.array([results[sim_type]['multVarMI'] for sim_type in self.simulation_types]).T
             coinformation = np.array([results[sim_type]['coinformation'] for sim_type in self.simulation_types]).T
             
-            condMultVarMI = self.normalizeData(condMultVarMI) 
-            multVarMI = self.normalizeData(multVarMI)
-            coinformation = self.normalizeData(coinformation)
+            condMultVarMI = info_utils.normalize_data(condMultVarMI, self.norm_type) 
+            multVarMI = info_utils.normalize_data(multVarMI, self.norm_type)
+            coinformation = info_utils.normalize_data(coinformation, self.norm_type)
 
             ################# We might want to check whether data follows normal distribution and if positive apply parametric tests instead.
 
@@ -630,7 +622,7 @@ if __name__ == "__main__":
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
             sim_type_path = data_path_utils.overlap_dir_xN(2), # overlap 3 neurons
-            whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
+            norm_type = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
@@ -645,7 +637,7 @@ if __name__ == "__main__":
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
             sim_type_path = data_path_utils.exc_switch_xN_dir(3), # exclusive + switch 3 neurons
-            whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
+            norm_type = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
             num_seeds_boostrapping = 12, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
@@ -660,7 +652,7 @@ if __name__ == "__main__":
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
             sim_type_path = data_path_utils.exc_switch_xN_dir(3), # exclusive + switch 3 neurons
-            whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
+            norm_type = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
@@ -675,7 +667,7 @@ if __name__ == "__main__":
         IA = InfoAnalysis(
             agent_nodes = agent_nodes, 
             sim_type_path = data_path_utils.alife_dir_xN(2), # alife dir
-            whichNormalization = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
+            norm_type = 0,   ## 0 : Use Orginal Data   1 : Z-Score Normalization   2 : [0 .. 1] Scaling	
             num_cores = args.cores,
             random_seed = 1, # random seed used to initialize np.random.seed (for result reproducibility)		
             num_seeds_boostrapping = None, # specified min num of seeds to be used for bootstrapping (seed selection with replacement) - None (default) if no bootstrapping takes place (all sim type have same number of converged seeds)
@@ -709,4 +701,4 @@ if __name__ == "__main__":
     # for metric in distanceMetrics:
     # 	IA.computeDistanceMetricsForSpecificSeed('individual', 'seed_001', 0, metric)
 
-    IA.shutdownJVM()			
+    infodynamics.shutdownJVM()			
