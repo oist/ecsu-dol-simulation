@@ -1,15 +1,17 @@
 import os
-from measures.plots import box_plot
+
 import numpy as np
 from tqdm import tqdm
 import pickle
-from measures.dii import DII
-from measures import infodynamics
+from dol.info_analysis.dii import DII
+from dol.info_analysis import infodynamics
+from dol.info_analysis.plots import box_plot
+from dol.info_analysis.info_utils import interpretObservedEffectSize, showDescriptiveStatistics
 from joblib import Parallel, delayed
 from collections import defaultdict
 from scipy.stats import spearmanr, ranksums
 
-from dol.info_analysis.info_utils import interpretObservedEffectSize, showDescriptiveStatistics
+
 
 def load_data_from_pickle(pickle_file):
     with open(pickle_file, 'rb') as handle:

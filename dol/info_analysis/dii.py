@@ -1,9 +1,8 @@
 # dyadic integrated information
-import os
 import numpy as np
 import jpype as jp
-from measures import utils, plots, infodynamics
 from numpy.random import RandomState
+from dol.info_analysis import info_utils, plots, infodynamics
 
 infodynamics.startJVM()
 
@@ -28,8 +27,8 @@ class DII:
         self.__check_params()
         
         # matrix normalization
-        matrix_a = utils.normalize_data(self.matrix_a, self.norm_type)
-        matrix_b = utils.normalize_data(self.matrix_b, self.norm_type)
+        matrix_a = info_utils.normalize_data(self.matrix_a, self.norm_type)
+        matrix_b = info_utils.normalize_data(self.matrix_b, self.norm_type)
 
         # init JP
         jp_kraskov_pkg = jp.JPackage("infodynamics.measures.continuous.kraskov")
@@ -94,7 +93,7 @@ class DII:
 
         return multivar_cond_mi
 
-    def compute_dii(self, plot=False):
+    def compute_dii_powerset(self, plot=False):
         """compute dyadic integrated information
 
         Args:
@@ -102,7 +101,7 @@ class DII:
         """
 
         # computer power set of each matrix columns (except for empty set)
-        power_set_idx = utils.powerset_idx(self.num_columns, remove_empty=True)
+        power_set_idx = info_utils.powerset_idx(self.num_columns, remove_empty=True)
         heat_map_size = len(power_set_idx)
 
         COND_MI_matrix = np.zeros((heat_map_size, heat_map_size))
@@ -118,9 +117,6 @@ class DII:
                 MI_matrix[i][j] = self.__compute_mi(sub_matrix_a, sub_matrix_b)
                 COND_MI_matrix[i][j] = self.__compute_cond_mi(sub_matrix_a, sub_matrix_b)
 
-        overall_MI = self.__compute_mi(self.matrix_a, self.matrix_b)
-        overall_COND_MI = self.__compute_cond_mi(self.matrix_a, self.matrix_b)
-
         if plot:
             matrices = [MI_matrix, COND_MI_matrix]
             titles = ['MI heat map', 'Cond MI heat map']
@@ -134,7 +130,23 @@ class DII:
                     ylabel='B'
                 )        
 
-        return MI_matrix, COND_MI_matrix, overall_MI, overall_COND_MI
+        return MI_matrix, COND_MI_matrix
+
+    def compute_dii_overall(self):
+        """compute dyadic integrated information
+
+        Args:
+            plot (bool): if to plot results
+        """
+
+        # computer power set of each matrix columns (except for empty set)
+        power_set_idx = info_utils.powerset_idx(self.num_columns, remove_empty=True)
+        heat_map_size = len(power_set_idx)
+
+        overall_MI = self.__compute_mi(self.matrix_a, self.matrix_b)
+        overall_COND_MI = self.__compute_cond_mi(self.matrix_a, self.matrix_b)
+
+        return overall_MI, overall_COND_MI
 
 
 
