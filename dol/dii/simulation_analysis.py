@@ -7,6 +7,7 @@ from measures.dii import DII
 from measures import infodynamics
 from joblib import Parallel, delayed
 from collections import defaultdict
+from scipy.stats import spearmanr
 
 def load_data_from_pickle(pickle_file):
     with open(pickle_file, 'rb') as handle:
@@ -14,6 +15,16 @@ def load_data_from_pickle(pickle_file):
     return data
 
 def compute_info_values(sim_data, agent_nodes, conditioning_node):
+    """compute info measures for data of a specific simulation type and a specific seed
+
+    Args:
+        sim_data ([type]): [description]
+        agent_nodes ([type]): [description]
+        conditioning_node ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
     
     # we know num trials is first dim in data
     # TODO: fix this to make it more robust
@@ -24,7 +35,7 @@ def compute_info_values(sim_data, agent_nodes, conditioning_node):
     cond_mi_trials = np.zeros(num_trials)
     cond_mi_overall_trials = np.zeros(num_trials)
     synergy_powerset = np.zeros(num_trials)
-    synergy_non_powerset = np.zeros(num_trials)
+    synergy_overall = np.zeros(num_trials)
 
     for t in range(num_trials):
         agent1 = np.concatenate([sim_data[node][t,0,:,:] for node in agent_nodes], axis=1)
@@ -37,14 +48,17 @@ def compute_info_values(sim_data, agent_nodes, conditioning_node):
         cond_mi_overall_trials[t] = overall_cond_mi
         synergy_powerset[t] = cond_mi_trials[t] - mi_trials[t]
         mi_overall_trials[t] = overall_mi
-        synergy_non_powerset[t] = cond_mi_trials[t] - mi_overall_trials[t]
+        synergy_overrall_trial = cond_mi_overall_trials[t] - mi_overall_trials[t]
+        synergy_overall[t] = synergy_overrall_trial
+
 
     result = {
         'MI powerset': mi_trials.mean(),
         'Cond MI powerset': cond_mi_trials.mean(),
-        'MI overall': mi_overall_trials.mean(),    
+        'MI overall': mi_overall_trials.mean(),
+        'CMI overall': cond_mi_overall_trials.mean(),
         'Synergy powerset': synergy_powerset.mean(),
-        'Synergy non-powerset': synergy_non_powerset.mean()
+        'Synergy overall': synergy_overall.mean()
     }
 
     return result
@@ -78,6 +92,23 @@ def perform_analysis(data, ouput_dir, num_cores, agent_nodes, conditioning_node)
     output_file = None
     
     result_metrics = list(sim_type_results[first_sim_type][0].keys())
+    '''
+    'MI powerset'
+    'Cond MI powerset'
+    'MI overall'
+    'CMI overall'
+    'Synergy powerset'
+    'Synergy overall'
+    '''
+
+    
+    # # SpearmanCorr for ['MI overall', 'CMI overall', 'Synergy overall']        
+    for x in ['MI overall', 'CMI overall', 'Synergy overall']:            
+        delta = None # average target-tracker distance for all seeds (averaged across timesteps and then trials)
+        # self.delta_target = target_position - self.position
+        # delta_abs = np.abs(self.delta_target)
+        [r, p] = spearmanr(x, delta) # where x and delta are arrays of num_seeds values
+
     
     for metric in result_metrics:
 
