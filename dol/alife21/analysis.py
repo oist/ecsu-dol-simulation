@@ -1,4 +1,4 @@
-from dol import analyze_complexity
+from dol.info_analysis import analyze_complexity
 from dol import utils
 
 def run_alife21_analysis(indir, csvdir, plotdir):
