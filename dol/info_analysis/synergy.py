@@ -23,6 +23,7 @@ from numpy.polynomial.polynomial import polyfit
 from dol.run_from_dir import run_simulation_from_dir
 from numpy.random import RandomState
 from itertools import combinations
+from dol.info_analysis.info_utils import interpretObservedEffectSize, showDescriptiveStatistics
 
 class InfoAnalysis:
 
@@ -150,29 +151,10 @@ class InfoAnalysis:
     # 				[sW, pW] = ranksums(M[:, i], M[:, j])
     # 				effectSize = abs(sW/np.sqrt(M.shape[0]))
     # 				print(self.simulation_types[i], ' vs. ', self.simulation_types[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
-    # 					self.interpretObservedEffectSize(effectSize, 2), ')')
-    # 				self.showDescriptiveStatistics(M[:, i], self.simulation_types[i])
-    # 				self.showDescriptiveStatistics(M[:, j], self.simulation_types[j])
+    # 					interpretObservedEffectSize(effectSize, 2), ')')
+    # 				showDescriptiveStatistics(M[:, i], self.simulation_types[i])
+    # 				showDescriptiveStatistics(M[:, j], self.simulation_types[j])
 
-    def interpretObservedEffectSize(self, effectSize, whichOne):
-        if whichOne == 1: #####  Eta^2 OR Epsilon^2
-            if effectSize <= 0.01:					
-                return 'Very Small Effect'
-            elif 0.01 < effectSize < 0.06:					
-                return 'Small Effect'
-            elif 0.06 <= effectSize < 0.14:					
-                return 'Medium Effect'
-            elif effectSize >= 0.14:
-                return 'Large Effect'
-        elif whichOne == 2:				
-            if effectSize < 0.1:					
-                return 'Very Small Effect'
-            elif 0.01 <= effectSize < 0.3:					
-                return 'Small Effect'
-            elif 0.3 <= effectSize < 0.5:					
-                return 'Medium Effect'
-            elif effectSize >= 0.5:
-                return 'Large Effect'				
 
     def performKruskalWallis_n_PosthocWilcoxonTest(self, M, whichData):
         np.random.seed(self.random_seed) # reproducibility
@@ -188,8 +170,8 @@ class InfoAnalysis:
 
             if self.debug:
                 print('Kruskal-Wallis Test -  ', whichData, ':  H-statistic = ', h, '  p = ', p, '  eta^2 = ', etaSquaredEffectSize, '(', \
-                    self.interpretObservedEffectSize(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
-                    self.interpretObservedEffectSize(etaSquaredEffectSize, 1), ')')
+                    interpretObservedEffectSize(etaSquaredEffectSize, 1), '),  Epsilon^2 = ', epsilonSquaredEffectSize, ' (', \
+                    interpretObservedEffectSize(etaSquaredEffectSize, 1), ')')
 
         post_hoc_computation = M.shape[1]<=2 or self.bootstrapping or p < self.BonferroniCorrection
 
@@ -203,15 +185,11 @@ class InfoAnalysis:
                 post_hoc_stats[p_index] = [sW, pW, effectSize]
                 if self.debug:
                     print(self.simulation_types[i], ' vs. ', self.simulation_types[j], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
-                        self.interpretObservedEffectSize(effectSize, 2), ')')
-                    self.showDescriptiveStatistics(M[:, i], self.simulation_types[i])
-                    self.showDescriptiveStatistics(M[:, j], self.simulation_types[j])					
+                        interpretObservedEffectSize(effectSize, 2), ')')
+                    showDescriptiveStatistics(M[:, i], self.simulation_types[i])
+                    showDescriptiveStatistics(M[:, j], self.simulation_types[j])					
 
         return h, p, etaSquaredEffectSize, epsilonSquaredEffectSize, post_hoc_stats
-
-    def showDescriptiveStatistics(self, data, whichOne):
-        print('M-' + whichOne, ' = ', np.mean(data), ' SD-' + whichOne, ' = ', np.std(data), '  Mdn-' + whichOne, ' = ', np.median(data), \
-            '  CI_95%-' + whichOne + ' = ', [np.percentile(data, 2.5), np.percentile(data, 97.5)])
 
     def computeSpearmanCorr(self, M, distance, whichScenario, ylabel):
         np.random.seed(self.random_seed) # reproducibility
@@ -570,7 +548,7 @@ class InfoAnalysis:
                 boostrapping_stats_measure = boostrapping_stats[measure]
                 print(label)
                 for sub_measure, data in boostrapping_stats_measure.items():					
-                    self.showDescriptiveStatistics(data, sub_measure)
+                    showDescriptiveStatistics(data, sub_measure)
 
                 
         else:
