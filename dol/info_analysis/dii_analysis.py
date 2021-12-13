@@ -127,7 +127,8 @@ def perform_analysis(IA, agent_nodes, conditioning_node, powerset=False):
         )
         
         print('-------------')
-        print(f'sim_type: {sim_types} ({measures})')
+        print(f'sim_type: {sim_type}')
+        # print(mi_cmi_values)
         sW, pW = ranksums(mi_cmi_values[0], mi_cmi_values[1])        
         effectSize = abs(sW/np.sqrt(len(mi_cmi_values[0])))
         print(measures[0], ' vs. ', measures[1], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
