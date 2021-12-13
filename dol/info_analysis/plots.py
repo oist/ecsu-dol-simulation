@@ -38,9 +38,9 @@ def box_plot(data, labels, title, ylabel, output_file=None, random_seed=0):
     }
     sb.boxplot(data = data, showmeans = True, meanprops=meanprops, showfliers=False)
     sb.stripplot(color='black', data = data)
-    plt.xticks(range(0, len(labels)), labels, rotation = 0)
-    plt.title(title)
-    plt.ylabel(ylabel, fontsize = 25)
+    plt.xticks(range(0, len(labels)), labels, rotation = 0, fontsize = 15)
+    plt.title(title, fontsize = 15)
+    plt.ylabel(ylabel, fontsize = 15) 
 
     if output_file is not None:
         plt.savefig(output_file)

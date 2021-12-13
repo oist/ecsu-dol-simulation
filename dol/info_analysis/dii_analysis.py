@@ -89,8 +89,8 @@ def perform_analysis(IA, agent_nodes, conditioning_node, powerset=False):
         box_plot(
             data = sims_metric_data,
             labels = sim_types, 
-            title = '', # Dyadic Integrated Information
-            ylabel = metric,
+            title = metric.split()[0], # Dyadic Integrated Information
+            ylabel = 'bits',
             output_file = output_file
         )
         
@@ -121,7 +121,7 @@ def perform_analysis(IA, agent_nodes, conditioning_node, powerset=False):
         box_plot(
             data = mi_cmi_values,
             labels = ['MI','cMI'], 
-            title = '', # Dyadic Integrated Information
+            title = sim_type, # Dyadic Integrated Information
             ylabel = 'bits',
             output_file = output_file
         )
