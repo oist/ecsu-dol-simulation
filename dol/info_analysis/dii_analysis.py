@@ -72,6 +72,7 @@ def perform_analysis(IA, agent_nodes, conditioning_node, powerset=False):
             print('r:', r)
             print('p:', p)
     
+    # Compute box plots, ranksums, descriptive stats and effect size for all metrics between groups (sim types)
     for metric in result_metrics:
 
         if ouput_dir is not None:
@@ -102,6 +103,35 @@ def perform_analysis(IA, agent_nodes, conditioning_node, powerset=False):
             interpret_observed_effect_size(effectSize, 2), ')')
         show_descriptive_stats(sims_metric_data[0], sim_type[0])
         show_descriptive_stats(sims_metric_data[1], sim_type[1])        
+
+    # Compute box plots, ranksums and effect size within group
+    for sim_type in sim_types:
+        measure_values = {}
+        measures = ['MI overall', 'CMI overall']
+        for m in measures:
+            measure_values[m] = [
+                sim_type_results[sim_type][s][m] 
+                for s in range(num_seeds)
+            ]
+
+        mi_cmi_values = list(measure_values.values())
+
+        output_file = os.path.join(ouput_dir, f'box_plot_{sim_type}_MI_CMI.pdf')
+
+        box_plot(
+            data = mi_cmi_values,
+            labels = ['MI','cMI'], 
+            title = '', # Dyadic Integrated Information
+            ylabel = 'bits',
+            output_file = output_file
+        )
+        
+        print('-------------')
+        print(f'sim_type: {sim_type} ({measures})')
+        sW, pW = ranksums(mi_cmi_values[0], mi_cmi_values[1])        
+        effectSize = abs(sW/np.sqrt(len(mi_cmi_values[0])))
+        print(measures[0], ' vs. ', measures[1], '  s = ', sW, '  p = ', pW, '  effect-size = ', effectSize, '(', \
+            interpret_observed_effect_size(effectSize, 2), ')')
 
 
 def compute_info_values(sim_data, agent_nodes, conditioning_node, powerset=False):
