@@ -204,6 +204,7 @@ if __name__ == "__main__":
 
     powerset = False
 
+    # read appropriate arguments from command line
     IA = build_info_analysis_from_experiments()
     perform_analysis(IA, agent_nodes, conditioning_node, powerset=False)
     

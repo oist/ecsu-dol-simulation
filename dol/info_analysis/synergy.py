@@ -228,10 +228,13 @@ def computeDistanceMetricsForSpecificSeed(IA, agent_nodes, whichSetting, whichSe
         
 
 if __name__ == "__main__":
+    # read appropriate arguments from command line
     IA = build_info_analysis_from_experiments()
+
+    agent_nodes = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
     
     # main computation script
-    compute_synergy(IA)
+    compute_synergy(IA, agent_nodes)
 
     ''' 
     correlation = 1 - corr(x, y)  AND  canberra = \sum_i (abs(x_i - y_i))/(abs(x_i) + abs(y_i))
