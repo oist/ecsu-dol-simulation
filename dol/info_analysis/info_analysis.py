@@ -427,7 +427,8 @@ def build_info_analysis_from_experiments(raw_args=None):
         assert False, 'Wron run_type type'
     
     # load/build/save data
-    if args.load_pickle and os.path.exists(args.load_pickle):
+    if args.load_pickle: 
+        assert os.path.exists(args.load_pickle)
         IA.load_data_from_pickle(args.load_pickle)
     else:
         IA.build_data()
