@@ -512,7 +512,7 @@ class SimulationSynergy:
             # print('Trial # ', (t + 1))
             agents_data_keys = ['agents_brain_input', 'agents_brain_state', 'agents_brain_output']
             agent1_data = np.concatenate([self.synergy_data[k][t,0,:,:] for k in agents_data_keys], axis=1)
-            agent2_data = np.concatenate([self.synergy_data[k][t,0,:,:] for k in agents_data_keys], axis=1)
+            agent2_data = np.concatenate([self.synergy_data[k][t,1,:,:] for k in agents_data_keys], axis=1)
             target_pos = np.expand_dims(self.synergy_data['delta_tracker_target'][t], axis = 1) # (data_points, 1)
             
 
