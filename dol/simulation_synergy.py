@@ -26,7 +26,7 @@ def initiJVM():
 
         if (not(os.path.isfile(jarLocation))):
             exit("infodynamics.jar not found (expected at " + os.path.abspath(jarLocation) + ") - are you running from demos/python?")			
-        jp.startJVM(jp.getDefaultJVMPath(), "-ea", "-Djava.class.path=" + jarLocation, convertStrings = False)   # convertStrings = False to silence the Warning while starting JVM 						
+        jp.startJVM(jp.getDefaultJVMPath(), "-Xmx1024M", "-ea", "-Djava.class.path=" + jarLocation, convertStrings = False)   # convertStrings = False to silence the Warning while starting JVM 						
 
 # once
 initiJVM()
