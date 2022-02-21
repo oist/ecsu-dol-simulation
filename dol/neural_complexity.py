@@ -199,6 +199,22 @@ def test_complexity_constant(num_nodes, num_data_points, seed):
     nc = compute_neural_complexity(data, rs)
     print('Nerual Complexity (Constat-ones)', nc)
 
+def test_complexity_random_constant(num_nodes, num_data_points, seed):
+    rs = RandomState(seed)
+    data = rs.uniform(-1, 1, size=(num_nodes, num_data_points))
+    for n in range(1, num_nodes):
+        data[n] = data[0]
+    nc = compute_neural_complexity(data, rs)
+    print('Nerual Complexity (Random-constant)', nc)
+
+def test_complexity_random_pairs(num_nodes, num_data_points, seed):
+    rs = RandomState(seed)
+    data = rs.uniform(-1, 1, size=(num_nodes, num_data_points))
+    for n in range(num_nodes//2):
+        data[n*2+1] = data[n*2]
+    nc = compute_neural_complexity(data, rs)
+    print('Nerual Complexity (Random-pairs)', nc)
+
 
 def generate_correlated_data(num_data_points, cov, rs):
     # see https://quantcorner.wordpress.com/2018/02/09/generation-of-correlated-random-numbers-using-python/
@@ -241,7 +257,7 @@ def test_complexity_correlated_data(num_nodes, num_data_points, cov, seed):
     )
     assert data.shape == (num_nodes, num_data_points)
     nc = compute_neural_complexity(data, rs)
-    print('Nerual Complexity (Correlated)', nc)
+    print(f'Nerual Complexity (Correlated {cov})', nc)
 
 
 def compute_mutual_information(AB):
@@ -297,7 +313,11 @@ def test_complexity(num_nodes, seed):
 
     test_complexity_constant(num_nodes, num_data_points, seed)
 
-    test_complexity_correlated_data(num_nodes, num_data_points, cov=0.9, seed=seed)
+    test_complexity_random_constant(num_nodes, num_data_points, seed)
+
+    test_complexity_random_pairs(num_nodes, num_data_points, seed)
+
+    test_complexity_correlated_data(num_nodes, num_data_points, cov=0.99, seed=seed)
 
 
 def test():
