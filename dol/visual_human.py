@@ -78,12 +78,14 @@ class Visualization:
 
     def draw_target_tracker(self):
 
-        for i,h_pos in enumerate([self.target_h_pos, self.tracker_h_pos]):
+        for i,h_pos in enumerate([self.target_h_pos, self.tracker_h_pos[0]]):
+            print(i)
             color = target_tracker_color[i]
             v_pos = target_tracker_vpos[i]
             h_pos = ZOOM_FACTOR * h_pos + CANVAS_H_CENTER            
             radius = ZOOM_FACTOR * body_radius
-            pos = [h_pos, v_pos]
+            pos = (h_pos, v_pos)
+            print(pos)
             line_start_pos = [0, v_pos]
             line_end_pos = [CANVAS_WIDTH, v_pos]
             pygame.draw.line(self.main_surface, white, line_start_pos, line_end_pos, width=1)

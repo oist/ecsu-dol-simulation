@@ -15,3 +15,4 @@ simulation_notes.txt
 scripts
 results
 .DS_Store
+dol/phidget/__pycache__
